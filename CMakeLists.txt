@@ -16,6 +16,7 @@ set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
 file(GLOB_RECURSE source ../source/*)
 add_library(dibidab ${source})
+target_include_directories(dibidab PUBLIC source/)
 set_target_properties(dibidab PROPERTIES LINKER_LANGUAGE CXX)
 
 set_property(TARGET dibidab PROPERTY CXX_STANDARD 17)
@@ -50,7 +51,7 @@ find_package(PythonInterp 3.7 REQUIRED)
 
 add_custom_target(
         generate_structs ALL
-        COMMAND ${PYTHON_EXECUTABLE} external/lua-serde/lua-json-serde.py source/generated/ source
+        COMMAND ${PYTHON_EXECUTABLE} external/lua-serde/lua-json-serde.py source/generated/ source ../macro_magic/component.h
         COMMENT "Generating structs from yaml"
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 )
