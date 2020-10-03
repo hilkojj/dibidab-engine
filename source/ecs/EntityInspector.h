@@ -47,9 +47,9 @@ class EntityInspector
 
     void editLuaScript(LuaEntityTemplate *);
 
-    void pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+    virtual void pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer) = 0;
 
-    void moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+    virtual void moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer) = 0;
 
     void drawEntityInspectorGUI(entt::entity e, Inspecting &ins);
 

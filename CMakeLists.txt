@@ -14,7 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 
-file(GLOB_RECURSE source ../source/*)
+file(GLOB_RECURSE source source/*)
 add_library(dibidab ${source})
 target_include_directories(dibidab PUBLIC source/)
 set_target_properties(dibidab PROPERTIES LINKER_LANGUAGE CXX)

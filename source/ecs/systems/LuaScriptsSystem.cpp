@@ -1,6 +1,5 @@
 
 #include "LuaScriptsSystem.h"
-#include "../../game/Game.h"
 
 void LuaScriptsSystem::init(EntityEngine *room)
 {

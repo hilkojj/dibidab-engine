@@ -5,12 +5,10 @@
 #include <utils/code_editor/CodeEditor.h>
 #include <imgui_internal.h>
 #include "EntityInspector.h"
-#include "../game/Game.h"
+#include "../game/dibidab.h"
 #include "entity_templates/LuaEntityTemplate.h"
 #include "../generated/LuaScripted.hpp"
-#include "../generated/Physics.hpp"
 #include "../generated/Inspecting.hpp"
-#include "components/component_methods.h"
 
 
 EntityInspector::EntityInspector(EntityEngine &engine, const std::string &name) : engine(engine), reg(engine.entities), inspectorName(name)
@@ -40,10 +38,10 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
     }
     if (activeInspector == inspectorName)
     {
-        pickEntity = KeyInput::justPressed(Game::settings.keyInput.inspectEntity);
-        moveEntity = KeyInput::justPressed(Game::settings.keyInput.moveEntity);
+        pickEntity = KeyInput::justPressed(dibidab::settings.keyInput.inspectEntity);
+        moveEntity = KeyInput::justPressed(dibidab::settings.keyInput.moveEntity);
 
-        if (KeyInput::justPressed(Game::settings.keyInput.createEntity))
+        if (KeyInput::justPressed(dibidab::settings.keyInput.createEntity))
         {
             ImGui::OpenPopup("Create entity");
             createEntityGUIJustOpened = true;
@@ -75,8 +73,8 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
             ImGui::EndMenu();
         }
 
-        pickEntity |= ImGui::MenuItem("Inspect entity", KeyInput::getKeyName(Game::settings.keyInput.inspectEntity));
-        moveEntity |= ImGui::MenuItem("Move entity", KeyInput::getKeyName(Game::settings.keyInput.moveEntity));
+        pickEntity |= ImGui::MenuItem("Inspect entity", KeyInput::getKeyName(dibidab::settings.keyInput.inspectEntity));
+        moveEntity |= ImGui::MenuItem("Move entity", KeyInput::getKeyName(dibidab::settings.keyInput.moveEntity));
 
         if (ImGui::BeginMenu("Systems"))
         {
@@ -89,107 +87,6 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
-}
-
-void EntityInspector::pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
-{
-    if (KeyInput::justPressed(GLFW_KEY_ESCAPE))
-        pickEntity = false;
-
-    vec2 p = cam->getCursorRayDirection() + cam->position;
-    bool breakk = false;
-    lineRenderer.axes(p, 10, vec3(1));
-
-    reg.view<AABB>().each([&] (entt::entity e, AABB &box) {
-
-        if (box.contains(p) && !breakk)
-        {
-            MouseInput::capture(GLFW_MOUSE_BUTTON_LEFT, 10, 10);
-            breakk = true;
-
-            draw(box, lineRenderer, mu::Y);
-
-            ImGui::SetTooltip("#%d", int(e));
-
-            if (MouseInput::justPressed(GLFW_MOUSE_BUTTON_LEFT, 10))
-            {
-                reg.assign_or_replace<Inspecting>(e);
-                pickEntity = false;
-            }
-            return;
-        }
-        else draw(box, lineRenderer, mu::X);
-    });
-}
-
-void EntityInspector::moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
-{
-    if (KeyInput::justPressed(GLFW_KEY_ESCAPE))
-        moveEntity = false;
-
-    vec2 p = cam->getCursorRayDirection() + cam->position;
-    bool breakk = false;
-
-    auto drawSpawnPoint = [&] (auto currPos, auto spawnPos) {
-        lineRenderer.axes(spawnPos, 10, mu::Y);
-        lineRenderer.circle(spawnPos, 10, 10, mu::Y);
-        lineRenderer.line(spawnPos, currPos, mu::Y);
-    };
-
-    if (movingEntity == entt::null)
-    {
-        lineRenderer.arrows(p, 10, vec3(1, 0, 1));
-
-        reg.view<AABB>().each([&] (entt::entity e, AABB &box) {
-
-            if (box.contains(p) && !breakk)
-            {
-                MouseInput::capture(GLFW_MOUSE_BUTTON_LEFT, 10);
-                breakk = true;
-
-                draw(box, lineRenderer, mu::Y);
-                auto *persistent = reg.try_get<Persistent>(e);
-                if (persistent && persistent->saveSpawnPosition)
-                    drawSpawnPoint(p, persistent->spawnPosition);
-
-                ImGui::SetTooltip("hold LMB to move #%d", int(e));
-
-                if (MouseInput::justPressed(GLFW_MOUSE_BUTTON_LEFT, 10))
-                    movingEntity = e;
-                return;
-            }
-            else draw(box, lineRenderer, mu::X);
-        });
-
-    }
-    else
-    {
-        MouseInput::capture(GLFW_MOUSE_BUTTON_LEFT, 10, 5);
-        lineRenderer.arrows(p, 5, vec3(0, 1, 0));
-        auto *aabb = reg.try_get<AABB>(movingEntity);
-
-        if (MouseInput::justReleased(GLFW_MOUSE_BUTTON_LEFT, 10) || aabb == NULL)
-        {
-            movingEntity = entt::null;
-            moveEntity = false;
-            return;
-        }
-        auto *persistent = reg.try_get<Persistent>(movingEntity);
-        if (persistent && persistent->saveSpawnPosition)
-        {
-            drawSpawnPoint(p, persistent->spawnPosition);
-            if (KeyInput::pressed(Game::settings.keyInput.moveEntityAndSpawnPoint))
-                persistent->spawnPosition = p;
-            else
-                ImGui::SetTooltip("Move SpawnPoint by holding %s", KeyInput::getKeyName(Game::settings.keyInput.moveEntityAndSpawnPoint));
-        }
-
-        auto *physics = reg.try_get<Physics>(movingEntity);
-        if (physics && physics->gravity != 0)
-            physics->velocity.y = 0;
-
-        aabb->center = p;
-    }
 }
 
 void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
@@ -222,7 +119,7 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
             ImGui::SameLine();
             if (ImGui::Button("Regenerate"))
             {
-                auto *aabb = reg.try_get<AABB>(e);
+                vec3 pos = engine.getPosition(e);
 
                 bool persistent = reg.try_get<Persistent>(e) != NULL;
 
@@ -230,16 +127,14 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
 
                 reg.get_or_assign<Inspecting>(newE).windowPos = ImGui::GetWindowPos();
 
-                auto *newAABB = reg.try_get<AABB>(newE);
-                if (newAABB && aabb)
-                    newAABB->center = aabb->center;
+                engine.setPosition(newE, pos);
 
                 reg.destroy(e);
                 ImGui::End();
                 return;
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("This will:\n- Destroy this entity\n- Create a new entity using the '%s' template\n- Copy the AABB's center from this entity", luaScripted->usedTemplate->name.c_str());
+                ImGui::SetTooltip("This will:\n- Destroy this entity\n- Create a new entity using the '%s' template\n- Copy the position from this entity", luaScripted->usedTemplate->name.c_str());
         }
     }
 

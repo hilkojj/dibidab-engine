@@ -76,7 +76,8 @@ void Level::update(double deltaTime)
 
 Level::~Level()
 {
-    save(loadedFromFile.empty() ? DEFAULT_LEVEL_PATH : loadedFromFile.c_str());
+    if (saveOnDestruct)
+        save(loadedFromFile.empty() ? DEFAULT_LEVEL_PATH : loadedFromFile.c_str());
 
     for (auto r : rooms)
         delete r;
@@ -98,7 +99,10 @@ void to_json(json &j, const Level &lvl)
 {
     j = json::object({{"spawnRoom", lvl.spawnRoom}, {"rooms", json::array()}});
     for (auto room : lvl.rooms)
-        j["rooms"].push_back(*room);
+    {
+        json &roomJ = j["rooms"].emplace_back();
+        room->toJson(roomJ);
+    }
 }
 
 void from_json(const json &j, Level &lvl)
@@ -106,12 +110,16 @@ void from_json(const json &j, Level &lvl)
     lvl.spawnRoom = j.at("spawnRoom");
     const json &roomsJson = j.at("rooms");
 
-    lvl.rooms.resize(roomsJson.size());
-    for (int i = 0; i < roomsJson.size(); i++)
+    for (const auto &rJ : roomsJson)
     {
-        lvl.rooms[i] = new Room;
-        from_json(roomsJson[i], *lvl.rooms[i]);
-        lvl.rooms[i]->level = &lvl;
+        if (Level::customRoomLoader)
+            lvl.addRoom(Level::customRoomLoader(rJ));
+        else
+        {
+            Room *r = new Room;
+            r->fromJson(rJ);
+            lvl.addRoom(r);
+        }
     }
 }
 
@@ -127,33 +135,6 @@ void Level::deleteRoom(int i)
 
     delete old;
     rooms.pop_back();
-}
-
-void Level::createRoom(int width, int height, const Room *duplicate)
-{
-    auto r = rooms.emplace_back(new Room(ivec2(width, height)));
-
-    if (duplicate)
-    {
-        assert(width == duplicate->getMap().width);
-        assert(height == duplicate->getMap().height);
-
-        json j;
-        to_json(j, *duplicate);
-        from_json(j, *r);
-        r->positionInLevel.x += width;
-        r->positionInLevel.y += height;
-        int copyN = 1;
-        do
-            r->name = duplicate->name + "_copy" + std::to_string(copyN++);
-        while (getRoomByName(r->name.c_str()) != r);
-    }
-
-    if (initialized)
-    {
-        r->roomI = rooms.size() - 1;
-        r->initialize(this);
-    }
 }
 
 void Level::save(const char *path) const
@@ -181,10 +162,10 @@ Level::Level(const char *filePath) : loadedFromFile(filePath)
 {
     if (!File::exists(filePath))
     {
-        createRoom(32, 24);
+        std::cout << "No level file found at " << filePath << ", creating empty Level...\n";
         return;
     }
-    try
+    try // Todo: create a loadCompressed() and saveCompressed() function in gu
     {
         auto compressedData = File::readBinary(filePath);
 
@@ -223,4 +204,17 @@ Room *Level::getRoomByName(const char *n)
 const Room *Level::getRoomByName(const char *n) const
 {
     return ((Level *) this)->getRoomByName(n);
+}
+
+void Level::addRoom(Room *r)
+{
+    assert(r->level == NULL);
+
+    rooms.push_back(r);
+
+    if (initialized)
+    {
+        r->roomI = rooms.size() - 1;
+        r->initialize(this);
+    }
 }

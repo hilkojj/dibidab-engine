@@ -1,6 +1,7 @@
 
+#include "game/session/SingleplayerSession.h"
 #include "luau.h"
-#include "game/Game.h"
+#include "game/dibidab.h"
 
 template<typename type, typename vec2Type = vec<2, type, defaultp>, typename vec3Type = vec<3, type, defaultp>, typename vec4Type = vec<4, type, defaultp>>
 void registerVecUserType(const std::string &name, sol::state &lua)
@@ -48,7 +49,7 @@ sol::state &luau::getLuaState()
 
         auto &env = lua->globals();
 
-        // math utils lol:
+        // math utils lol: todo: make this work with vec types instead
         env["rotate2d"] = [&](float x, float y, float degrees) -> sol::table {
             auto table = sol::table::create(env.lua_state());
 
@@ -58,14 +59,6 @@ sol::state &luau::getLuaState()
             return table;
         };
 
-        // colors:
-        auto colorTable = sol::table::create(env.lua_state());
-        Palette &palette = Game::palettes->effects.at(0).lightLevels[0].get();
-        int i = 0;
-        for (auto &[name, color] : palette.colors)
-            colorTable[name] = i++;
-        env["colors"] = colorTable;
-
         env["printTableAsJson"] = [&] (const sol::table &table, sol::optional<int> indent) // todo: this doest work properly
         {
             json j;
@@ -73,30 +66,41 @@ sol::state &luau::getLuaState()
             std::cout << j.dump(indent.has_value() ? indent.value() : -1) << std::endl;
         };
 
-        env["getSettings"] = [] () -> sol::table {
-            auto table = sol::table::create(getLuaState().lua_state());
-            jsonToLuaTable(table, Game::settings);
-            return table;
-        };
-        env["saveSettings"] = [] (const sol::table &settingsTable) {
-            json j;
-            jsonFromLuaTable(settingsTable, j);
-            Game::settings = j;
-        };
-        env["getGameStartupArgs"] = [] () -> sol::table {
-            auto table = sol::table::create(getLuaState().lua_state());
-            jsonToLuaTable(table, Game::startupArgs);
-            return table;
+        env["getGameStartupArgs"] = [] {
+            return &dibidab::startupArgs;
         };
         env["tryCloseGame"] = [] {
             gu::setShouldClose(true);
         };
 
-        env["openScreen"] = [] (const char *script) {
-            Game::uiScreenManager->openScreen(asset<Script>(script));
+        env["endCurrentSession"] = [] {
+            dibidab::setCurrentSession(NULL);
         };
-        env["closeActiveScreen"] = [] {
-            Game::uiScreenManager->closeActiveScreen();
+
+        env["startSinglePlayerSession"] = [] (const char *saveGamePath) {
+            dibidab::setCurrentSession(new SingleplayerSession(saveGamePath));
+        };
+        // todo: startMultiplayerServerSession and startMultiplayerClientsession
+
+        env["joinSession"] = [] (const char *username, const sol::function& onJoinRequestDeclined) {
+
+            auto &session = dibidab::getCurrentSession();
+
+            session.onJoinRequestDeclined = [onJoinRequestDeclined] (auto reason) {
+
+                sol::protected_function_result result = onJoinRequestDeclined(reason);
+                if (!result.valid())
+                    throw gu_err(result.get<sol::error>().what());
+            };
+            session.join(username);
+        };
+
+        env["loadOrCreateLevel"] = [](const char *path)
+        {
+            auto &session = dibidab::getCurrentSession();
+            auto singleplayerSession = dynamic_cast<SingleplayerSession *>(&session);
+            if (singleplayerSession)
+                singleplayerSession->setLevel(new Level(path));
         };
 
         env["include"] = [&] (const char *scriptPath, const sol::this_environment &currentEnv) -> sol::environment {

@@ -33,7 +33,7 @@ class EntityEngine
 
     void initialize();
 
-    void addSystem(EntitySystem *sys);
+    void addSystem(EntitySystem *sys, bool pushFront=false);
 
     std::list<EntitySystem *> getSystems() { return systems; }
 
@@ -86,6 +86,11 @@ class EntityEngine
 
     bool isUpdating() const { return updating; };
 
+
+    virtual vec3 getPosition(entt::entity) const;
+
+    virtual void setPosition(entt::entity, const vec3 &);
+
   protected:
 
     template <class EntityTemplate>
@@ -98,6 +103,13 @@ class EntityEngine
     void registerLuaEntityTemplate(const char *assetPath);
 
     void addEntityTemplate(const std::string &name, EntityTemplate *);
+
+  private:
+    void onChildCreation(entt::registry &, entt::entity);
+
+    void onChildDeletion(entt::registry &, entt::entity);
+
+    void onParentDeletion(entt::registry &, entt::entity);
 
 };
 

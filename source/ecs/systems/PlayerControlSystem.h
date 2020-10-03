@@ -3,6 +3,8 @@
 #define GAME_PLAYERCONTROLSYSTEM_H
 
 
+#include "../../generated/PlayerControlled.hpp"
+#include "../../level/Level.h"
 #include "EntitySystem.h"
 
 /**
@@ -40,7 +42,7 @@ class PlayerControlSystem : public EntitySystem
         room->getLevel().onPlayerLeftRoom(room, pC.playerId);
     }
 
-    void update(double deltaTime, EntityEngine *room) override
+    void update(double deltaTime, EntityEngine *) override
     {
 
     }

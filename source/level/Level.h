@@ -2,7 +2,6 @@
 #ifndef GAME_LEVEL_H
 #define GAME_LEVEL_H
 
-#include <json.hpp>
 #include "room/Room.h"
 
 /**
@@ -15,7 +14,7 @@ class Level
 
     bool updating = false, initialized = false;
     float updateAccumulator = 0;
-    constexpr static int
+    constexpr static int    // todo, make this overridable:
         MAX_UPDATES_PER_SEC = 100,
         MIN_UPDATES_PER_SEC = 30,
         MAX_UPDATES_PER_FRAME = 1;
@@ -25,7 +24,18 @@ class Level
 
   public:
 
+    /**
+     * By default a Level loads Rooms by doing `r = new Room(); r->fromJson(j);`
+     *
+     * If you want to use (a) custom room type(s) in your game however,
+     * you can set `customRoomLoader` to a function that returns a new room of your type.
+     *
+     * You should use the given json object for calling `fromJson()` on your newly created room.
+     */
+    static std::function<Room *(const json &)> customRoomLoader;
+
     const std::string loadedFromFile;
+    bool saveOnDestruct = true;
 
     std::string spawnRoom;
 
@@ -48,7 +58,7 @@ class Level
 
     void deleteRoom(int i);
 
-    void createRoom(int width, int height, const Room *duplicate=NULL);
+    void addRoom(Room *);
 
     double getTime() const { return time; }
 

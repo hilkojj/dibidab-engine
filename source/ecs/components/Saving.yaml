@@ -4,7 +4,7 @@ Persistent:
 
   saveFinalPosition: [ bool, false ]
   saveSpawnPosition: [ bool, false ]
-  spawnPosition: [ ivec2, ivec2(0) ]
+  spawnPosition: [ vec3, vec3(0) ]
 
   revive: [ bool, false ]
   saveAllComponents: [ bool, false ]

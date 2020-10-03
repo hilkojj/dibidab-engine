@@ -3,7 +3,6 @@
 #define GAME_ENTITYSYSTEM_H
 
 #include <string>
-#include <iostream>
 
 class EntityEngine;
 
@@ -31,7 +30,6 @@ class EntitySystem
     virtual void update(double deltaTime, EntityEngine *) = 0;
 
     friend EntityEngine;
-    friend class Room; // todo remove this
 
     virtual ~EntitySystem() = default;
 

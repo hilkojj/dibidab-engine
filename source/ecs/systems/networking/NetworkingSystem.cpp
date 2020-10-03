@@ -80,14 +80,6 @@ void NetworkingSystem::onNetworkedEntityDestroyed(entt::registry &reg, entt::ent
 
 void NetworkingSystem::update(double deltaTime, EntityEngine *)
 {
-    if (mpSession->isServer() && !room->getMap().updatesSinceLastUpdate().empty())
-    {
-        Packet::from_server::tilemap_update update;
-        update.roomI = room->getIndexInLevel();
-        update.tileUpdates = room->getMap().updatesSinceLastUpdate();
-        mpSession->sendPacketToAllPlayers(update);
-    }
-
     room->entities.view<Networked>().each([&](auto e, Networked &networked) {
 
         for (auto &c : networked.toReceive.list)
