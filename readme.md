@@ -4,14 +4,14 @@ Dibidab is a small game engine with some nice features that I'd like to reuse, b
 
 ### Features:
 - **ECS based** (Entities are built out of Components, using [EnTT](https://github.com/skypjack/entt))
-- [**All components are serializable**](#Magic serializable Components)
+- [**All components are serializable**](#magic-serializable-components)
 - **Saving and loading Levels** (entities and their components)
 - **SaveGames** (saving custom progress data, or custom data specific to an entity)
 - **Multiplayer** (automagically sending entities and component updates over the network)
-- [**Lua scripting**](#Lua Scripting) (create and update entities and their components using the Lua API)
+- [**Lua scripting**](#lua-scripting) (create and update entities and their components using the Lua API)
 - **Live reloading** (reload assets **and scripts** while your game is running)
-- [**Entity Inspector**](#Entity Inspector) (inspect and change component values in a GUI)
-- [**Profiler**](#Profiler) (get an overview of what is taking up the most time in your game-loop)
+- [**Entity Inspector**](#entity-inspector) (inspect and change component values in a GUI)
+- [**Profiler**](#profiler) (get an overview of what is taking up the most time in your game-loop)
 - **Cross Platform** (Linux, Windows, **and Web browsers**)
 
 ### Non-Features:
@@ -48,7 +48,7 @@ Alongside these structs, functions are generated to make the serializing and lua
 
 
 ## Lua Scripting
-I hate it when I have to recompile my game everytime I change a variable or a little bit of game logic.
+I hate it when I have to recompile my game every time I change a variable or a little bit of game logic.
 It slows down development a lot*.
 
 So with this game engine you can create and update your entity's components inside a (live-reloadable) Lua script!
@@ -90,6 +90,7 @@ end
 
 ## Entity Inspector
 Inspect your components as if it were a JSON tree:
+
 ![](https://imgur.com/91eVQg9l.png)
 
 ## Profiler
