@@ -14,7 +14,7 @@ Dibidab is a small game engine with some nice features that I'd like to reuse, b
 - [**Profiler**](#profiler) (get an overview of what is taking up the most time in your game-loop)
 - **Cross Platform** (Linux, Windows, **and Web browsers**)
 
-### Non-Features:
+### Missing Features:
 - Documentation
 - Ease-of-use
 - Unit-testing
