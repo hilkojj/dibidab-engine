@@ -18,7 +18,7 @@ GraphicsSettings:
   imGuiThemeColor_mainAccent: [ u8vec3,"vec3(121, 35, 89)" ]
   imGuiThemeColor_highLight: [ u8vec3,"vec3(199, 239, 0)" ]
 
-  imGuiFont: std::string
+  imGuiFont: string
 
 AudioSettings:
   _flags:

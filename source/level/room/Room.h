@@ -21,11 +21,10 @@ class Room : public EntityEngine
 
     json persistentEntitiesToLoad, revivableEntitiesToSave;
 
-    void initialize(Level *lvl);
-
-  private:
-
     void loadPersistentEntities();
+
+  protected:
+    virtual void initialize(Level *lvl);
 
   public:
 

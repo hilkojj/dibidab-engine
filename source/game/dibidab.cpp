@@ -10,6 +10,8 @@
 #include "../rendering/ImGuiStyle.h"
 #include "dibidab.h"
 
+dibidab::EngineSettings dibidab::settings;
+
 std::map<std::string, std::string> dibidab::startupArgs;
 
 Session &dibidab::getCurrentSession()
@@ -114,7 +116,7 @@ void showDeveloperOptionsMenuBar()
     );
 }
 
-void addAssetLoaders()
+void addStandardAssetLoaders()
 {
     AssetManager::addAssetLoader<Texture>(".png|.jpg|.jpeg|.tga|.bmp|.psd|.gif|.hdr", [&](auto path) {
 
@@ -194,7 +196,7 @@ void dibidab::init(int argc, char **argv)
     assetWatcher.startWatchingAsync();
     #endif
 
-    addAssetLoaders();
+    addStandardAssetLoaders();
     AssetManager::load("assets");
 
     // save window size in settings:

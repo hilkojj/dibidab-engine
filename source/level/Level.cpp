@@ -8,6 +8,8 @@
 #include "Level.h"
 #include "../generated/PlayerControlled.hpp"
 
+std::function<Room *(const json &)> Level::customRoomLoader;
+
 void Level::initialize()
 {
     int i = 0;

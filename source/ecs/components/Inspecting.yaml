@@ -27,4 +27,5 @@ Inspecting:
 
   _methods:
     - InspectPathState &getState()
+      { std::string pathKey; for (auto &s:currentPath) pathKey += "--->" + s; return state[pathKey]; }
 
