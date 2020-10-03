@@ -15,8 +15,6 @@ struct Inspecting;
 class EntityInspector
 {
     std::string inspectorName;
-    EntityEngine &engine;
-    entt::registry &reg;
 
     LuaEntityTemplate *creatingTempl = NULL;
     json creatingTemplArgs;
@@ -38,6 +36,14 @@ class EntityInspector
 
     static void drawInspectingDropDown();
 
+  protected:
+    EntityEngine &engine;
+    entt::registry &reg;
+
+    virtual void pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+
+    virtual void moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+
   private:
     void createEntityGUI();
 
@@ -46,10 +52,6 @@ class EntityInspector
     void templateArgsGUI();
 
     void editLuaScript(LuaEntityTemplate *);
-
-    virtual void pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer) = 0;
-
-    virtual void moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer) = 0;
 
     void drawEntityInspectorGUI(entt::entity e, Inspecting &ins);
 

@@ -749,3 +749,13 @@ void EntityInspector::drawInspectingDropDown()
 
     inspectors.clear();
 }
+
+void EntityInspector::pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
+{
+    pickEntity = false;
+}
+
+void EntityInspector::moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
+{
+    moveEntity = false;
+}
