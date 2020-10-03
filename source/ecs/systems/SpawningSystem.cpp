@@ -1,6 +1,5 @@
 
 #include "SpawningSystem.h"
-#include "../../generated/Physics.hpp"
 #include "../../generated/Spawning.hpp"
 
 void SpawningSystem::update(double deltaTime, EntityEngine *room)
@@ -35,11 +34,7 @@ void SpawningSystem::spawn(entt::entity spawnerEntity, TemplateSpawner &spawner)
         auto &spawnedBy = room->entities.assign<SpawnedBy>(spawned);
         spawnedBy.spawner = spawnerEntity;
         spawnedBy.customData = spawner.customData;
-
-
-        AABB *aabb = room->entities.try_get<AABB>(spawnerEntity);
-        if (aabb)
-            spawnedBy.spawnerPos = aabb->center;
+        spawnedBy.spawnerPos = room->getPosition(spawnerEntity);
 
         room->getTemplate(spawner.templateName).createComponents(spawned);
     }

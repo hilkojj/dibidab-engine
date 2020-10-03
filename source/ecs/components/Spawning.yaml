@@ -15,7 +15,7 @@ TemplateSpawner:
 SpawnedBy:
   spawner: entt::entity
   customData: json
-  spawnerPos: ivec2
+  spawnerPos: vec3
 
 
 DespawnAfter:

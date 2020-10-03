@@ -4,6 +4,7 @@
 
 #include "EntitySystem.h"
 #include "../../level/room/Room.h"
+#include "../../game/dibidab.h"
 #include "../../generated/SoundSpeaker.hpp"
 
 class AudioSystem : public EntitySystem
@@ -38,7 +39,7 @@ class AudioSystem : public EntitySystem
                             speaker.source->play();
                     }
 
-                    speaker.source->setVolume(speaker.volume * Game::settings.audio.masterVolume);
+                    speaker.source->setVolume(speaker.volume * dibidab::settings.audio.masterVolume);
                     speaker.source->setLooping(speaker.looping);
                     speaker.source->setPitch(speaker.pitch);
                 }

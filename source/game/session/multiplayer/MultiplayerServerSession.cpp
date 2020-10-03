@@ -1,7 +1,6 @@
 
 #include <gu/profiler.h>
 #include "MultiplayerServerSession.h"
-#include "../../../generated/Physics.hpp"
 
 using namespace Packet;
 using namespace Packet::from_player;
@@ -42,7 +41,6 @@ MultiplayerServerSession::MultiplayerServerSession(SocketServer *server, const c
         io->addJsonPacketType<player_left>();
 
         io->addJsonPacketType<Level>();
-        io->addJsonPacketType<tilemap_update>();
         io->addJsonPacketType<entity_created>();
         io->addJsonPacketType<entity_destroyed>();
         io->addJsonPacketHandler<entity_data_update>([=](entity_data_update *packet) {

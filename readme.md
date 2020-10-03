@@ -1,68 +1,121 @@
+# Dibidab Engine
 
-### [Play game in browser](https://dibidabidab.github.io/dibidab-engine/game.html)
-#### [Download for Linux](https://dibidabidab.github.io/dibidab-engine/game-linux.zip)
-#### [Download for Windows](https://dibidabidab.github.io/dibidab-engine/game-windows.zip)
+Dibidab is a small game engine with some nice features that I'd like to reuse, but probably won't.
 
-[![Build & deploy to gh-pages](https://github.com/hilkojj/dibidabidab/workflows/Build%20&%20deploy%20to%20gh-pages/badge.svg)](https://github.com/hilkojj/dibidabidab/actions)
-[![BCH compliance](https://bettercodehub.com/edge/badge/hilkojj/dibidabidab?branch=master)](https://bettercodehub.com/)
+### Features:
+- **ECS based** (Entities are built out of Components, using [EnTT](https://github.com/skypjack/entt))
+- [**All components are serializable**](#magic-serializable-components)
+- **Saving and loading Levels** (entities and their components)
+- **SaveGames** (saving custom progress data, or custom data specific to an entity)
+- **Multiplayer** (automagically sending entities and component updates over the network)
+- [**Lua scripting**](#lua-scripting) (create and update entities and their components using the Lua API)
+- **Live reloading** (reload assets **and scripts** while your game is running)
+- [**Entity Inspector**](#entity-inspector) (inspect and change component values in a GUI)
+- [**Profiler**](#profiler) (get an overview of what is taking up the most time in your game-loop)
+- **Cross Platform** (Linux, Windows, **and Web browsers**)
 
-## Usage
+### Non-Features:
+- Documentation
+- Ease-of-use
+- Unit-testing
+- all the boring stuff
+- seriously, don't use this game engine, it's a personal project
 
-Clone this repository.
 
-make sure you have [Git LFS](https://git-lfs.github.com/)
+## Magic serializable Components
+Usually you would define a component as a C-style struct like this:
+```C++
+struct MyComponent {
+    int a;
+    float x = -30;
+    std::list<std::string> myHobbies = {"writing shit code", "sleeping"};
+};
+```
+But using C-structs there's no easy way to...
+- send `MyComponent` over the network without breaking pointers
+- serialize `MyComponent` to json, used for saving and loading
+- read and change `MyComponent`'s values from within a Lua script
 
-run `python3 initialize_project.py` to download dependencies.
+ So instead we define components in YAML files:
+```yaml
+MyComponent:
+  - a: int
+  - x: [float, -30]
+  - myHobbies: std::list<std::string>
+```
+*Before* compilation these Yaml files automagically get converted into C++ structs ([thanks to Niek](https://github.com/dibidabidab/lua-serde)).
+Alongside these structs, functions are generated to make the serializing and lua magic stuff listed above possible.
 
-### Compile for Desktop
 
-`cd desktop`
+## Lua Scripting
+I hate it when I have to recompile my game every time I change a variable or a little bit of game logic.
+It slows down development a lot*.
 
-`cmake .` (or `cmake . -DCMAKE_BUILD_TYPE=Release`)
+So with this game engine you can create and update your entity's components inside a (live-reloadable) Lua script!
 
-`make -j8` (or `cmake --build . -j8 --config Release`)
+Example of an entity-template written in Lua:
+```lua
+-- On game restart: recreate this entity with the same template, at the original spawn position
+persistenceMode(TEMPLATE | SPAWN_POS | REVIVE) 
 
-`cd ..`
+function create(enemy)
+    setComponents(enemy, {
+        Position {
+            x = 3, y = 50
+        },
+        Physics(),
+        Health {
+            maxHealth = 4
+        },
+        AsepriteView {
+            sprite = "sprites/enemy"
+        }
+    })
 
-`./desktop/out/game` (or `./desktop/out/Release/game.exe`)
+    onEntityEvent(enemy, "Attacked", function(attack)
 
-##### Note for windows:
-Make sure you move `OpenAL32.dll` to the working directory (the game might not launch without). 
+        local health = component.Health.getFor(enemy)
 
-You can find it in `desktop/out/Release/bin/gu/bin/openal/Release/` or in a similar directory. 
+        print("OUCH!", attack.points, health.currHealth, "/", health.maxHealth)
+    end)
+    
+    setUpdateFunction(enemy, .1, function(deltaTime)
+        -- do stuff every 0.1 second
+    end)
+end
+```
 
-### Compile for HTML/Web
+<sup><sup>* You know what slows down development even more? Writing your own Game Engine in C++ with a scripting API that should speed up development.</sup></sup>
 
-**NOTE**: [install Emscripten first](https://emscripten.org/docs/getting_started/downloads.html)
 
-`cd html`
+## Entity Inspector
+Inspect your components as if it were a JSON tree:
 
-`emconfigure cmake .` (only the first time, and everytime you add new files)
+![](https://imgur.com/91eVQg9l.png)
 
-`make -j8`
+## Profiler
 
-`emrun out/game.html`
+```c++
+void updateLevel()
+{
+    gu::profiler::Zone zone("level update");
+    
+    doStuff();
+}
 
-### Configure GitHub build & deploy automation
+void loop()
+{
+    {
+        gu::profiler::Zone zone("logic");
+    
+        updateLevel();
+    }
+    {
+        gu::profiler::Zone zone("render");
+    
+        // render stuff...
+    }
+}
+```
 
-This repository contains a Github Workflow which automates the building and deploying of the game to GitHub Pages.
-The workflow will generate the following files:
-- `game.html` and asset files (directly playable in browser)
-- `game-linux.zip`
-- `game-windows.zip`
-
-This workflow can be found in `.github/workflows/` and in the Actions tab on GitHub.
-
-This workflow will require a secret access token in order to deploy the game to GitHub pages.
-
-#### Steps to add the secret access token:
-
-- Go to your account settings on GitHub
-- Go to 'Developer settings' -> 'Personal access tokens'
-- Click 'Generate new token'
-- Create a token with the 'repo' scope
-- Copy the access token
-- Go to 'Secrets' in your repository's settings
-- Add a new secret with the name 'ACCESS_TOKEN' and paste the token in the text field
-- Trigger the workflow (by commiting something for example) and the game should appear on `https://*your-username*.github.io/*your-repo-name*/game.html`
-
+![](https://imgur.com/NZcTBPy.png)

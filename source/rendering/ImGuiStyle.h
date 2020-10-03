@@ -3,7 +3,7 @@
 #define GAME_IMGUISTYLE_H
 
 #include <imgui.h>
-#include "../game/Game.h"
+#include "../game/dibidab.h"
 
 namespace
 {
@@ -24,11 +24,11 @@ inline void setImGuiStyleAndConfig()
 {
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
-    /**
-     * Color scheme taken from https://github.com/ocornut/imgui/issues/707#issuecomment-512669512
-     */
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("assets/fonts/ruda/Ruda-Bold.ttf", 15.5f);
+
+    if (!dibidab::settings.graphics.imGuiFont.empty())
+        ImGui::GetIO().Fonts->AddFontFromFileTTF(dibidab::settings.graphics.imGuiFont.c_str(), 15.5f);
     ImGui::GetIO().Fonts->AddFontDefault();
+
     auto &style = ImGui::GetStyle();
     style.FrameRounding = style.GrabRounding = style.ChildRounding = style.PopupRounding = 4.0f;
 
@@ -37,11 +37,11 @@ inline void setImGuiStyleAndConfig()
     ImVec4* colors = style.Colors;
 
     auto
-        TextColor = Game::settings.graphics.imGuiThemeColor_text,
-        BackGroundColor = Game::settings.graphics.imGuiThemeColor_background,
-        MainColor = Game::settings.graphics.imGuiThemeColor_main,
-        MainAccentColor = Game::settings.graphics.imGuiThemeColor_mainAccent,
-        HighlightColor = Game::settings.graphics.imGuiThemeColor_highLight;
+        TextColor = dibidab::settings.graphics.imGuiThemeColor_text,
+        BackGroundColor = dibidab::settings.graphics.imGuiThemeColor_background,
+        MainColor = dibidab::settings.graphics.imGuiThemeColor_main,
+        MainAccentColor = dibidab::settings.graphics.imGuiThemeColor_mainAccent,
+        HighlightColor = dibidab::settings.graphics.imGuiThemeColor_highLight;
 
     colors[ImGuiCol_Text]					= GetColor(TextColor);
     colors[ImGuiCol_TextDisabled]			= Disabled(colors[ImGuiCol_Text]);

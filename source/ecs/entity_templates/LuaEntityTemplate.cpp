@@ -1,7 +1,6 @@
 
+#include "../../game/SaveGame.h"
 #include "LuaEntityTemplate.h"
-#include "../../generated/Physics.hpp"
-#include "../../game/Game.h"
 #include "../../generated/LuaScripted.hpp"
 
 
@@ -141,10 +140,8 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
 
         if (persistent)
         {
-            auto *p = engine->entities.try_get<Persistent>(e);
-            auto *aabb = p && p->saveSpawnPosition ? engine->entities.try_get<AABB>(e) : NULL;
-            if (aabb)
-                p->spawnPosition = aabb->center;
+            if (auto *p = engine->entities.try_get<Persistent>(e))
+                p->spawnPosition = engine->getPosition(e);
         }
     }
     catch (std::exception &e)

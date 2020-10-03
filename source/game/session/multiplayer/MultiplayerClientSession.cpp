@@ -5,7 +5,6 @@
 
 
 #include "MultiplayerClientSession.h"
-#include "../../../generated/Physics.hpp"
 
 using namespace Packet;
 using namespace Packet::from_player;
@@ -72,16 +71,6 @@ MultiplayerClientSession::MultiplayerClientSession(SharedSocket socket, const ch
 
         networkingSystems.at(packet->roomI)->handleEntityDestroyed(packet);
         delete packet;
-    });
-    io.addJsonPacketHandler<tilemap_update>([&](tilemap_update *update) {
-
-        if (level)
-        {
-            TileMap &map = level->getRoom(update->roomI).getMap();
-            for (auto &tileUpdate : update->tileUpdates)
-                map.setTile(tileUpdate.x, tileUpdate.y, Tile(tileUpdate.newTile), TileMaterial(tileUpdate.newTileMaterial));
-        }
-        delete update;
     });
 
     socket->onClose = [&]

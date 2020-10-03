@@ -4,11 +4,15 @@
 #include <utils/gu_error.h>
 #include "entity_templates/LuaEntityTemplate.h"
 #include "../generated/Children.hpp"
+#include "../generated/Position3d.hpp"
 
-void EntityEngine::addSystem(EntitySystem *sys)
+void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
 {
     assert(!initialized);
-    systems.push_back(sys);
+    if (pushFront)
+        systems.push_front(sys);
+    else
+        systems.push_back(sys);
 }
 
 EntityTemplate &EntityEngine::getTemplate(std::string name)
@@ -81,6 +85,10 @@ EntityEngine::~EntityEngine()
 void EntityEngine::initialize()
 {
     assert(!initialized);
+
+    entities.on_construct<Child>().connect<&EntityEngine::onChildCreation>(this);
+    entities.on_destroy<Child>().connect<&EntityEngine::onChildDeletion>(this);
+    entities.on_destroy<Parent>().connect<&EntityEngine::onParentDeletion>(this);
 
     initializeLuaEnvironment();
 
@@ -225,4 +233,60 @@ void EntityEngine::update(double deltaTime)
     }
     updating = false;
 }
+
+void EntityEngine::onChildCreation(entt::registry &reg, entt::entity entity)
+{
+    Child &child = reg.get<Child>(entity);
+
+    Parent &parent = reg.get_or_assign<Parent>(child.parent);
+
+    parent.children.push_back(entity);
+    if (!child.name.empty())
+        parent.childrenByName[child.name] = entity;
+}
+
+void EntityEngine::onChildDeletion(entt::registry &reg, entt::entity entity)
+{
+    Child &child = reg.get<Child>(entity);
+    Parent &parent = reg.get_or_assign<Parent>(child.parent);
+
+    if (!child.name.empty())
+        parent.childrenByName.erase(child.name);
+
+    for (int i = 0; i < parent.children.size(); i++)
+    {
+        if (parent.children[i] != entity)
+            continue;
+
+        parent.children[i] = parent.children.back();
+        parent.children.pop_back();
+    }
+}
+
+void EntityEngine::onParentDeletion(entt::registry &reg, entt::entity entity)
+{
+    Parent &parent = reg.get_or_assign<Parent>(entity);
+
+    auto tmpChildren(parent.children);
+    parent.children.clear();
+
+    if (parent.deleteChildrenOnDeletion)
+        for (auto child : tmpChildren)
+            reg.destroy(child);
+    else
+        for (auto child : tmpChildren)
+            reg.remove<Child>(child);
+}
+
+
+vec3 EntityEngine::getPosition(entt::entity e) const
+{
+    return entities.has<Position3d>(e) ? entities.get<Position3d>(e).vec : vec3(0);
+}
+
+void EntityEngine::setPosition(entt::entity e, const vec3 &pos)
+{
+    entities.get_or_assign<Position3d>(e).vec = pos;
+}
+
 
