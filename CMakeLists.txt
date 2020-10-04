@@ -4,6 +4,12 @@ project(dibidab)
 add_compile_definitions(PUT_A_SOCK_IN_IT)   # disable verbose logging of external/gu
 
 
+find_package(PythonInterp 3.7 REQUIRED)
+set(LUA_SERDE_COMMAND ${PYTHON_EXECUTABLE} external/lua-serde/lua-json-serde.py source/generated/ source ../macro_magic/component.h)
+
+execute_process(COMMAND ${LUA_SERDE_COMMAND} WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+
+
 # dependencies for https://github.com/atasak/lua-serde
 execute_process(COMMAND python -m pip install --user jinja2)
 execute_process(COMMAND python -m pip install --user pyYAML)
@@ -47,11 +53,9 @@ target_link_libraries(dibidab sol2_single)
 
 
 # ---Generate structs with LUA SERDE---
-find_package(PythonInterp 3.7 REQUIRED)
-
 add_custom_target(
         generate_structs ALL
-        COMMAND ${PYTHON_EXECUTABLE} external/lua-serde/lua-json-serde.py source/generated/ source ../macro_magic/component.h
+        COMMAND ${LUA_SERDE_COMMAND}
         COMMENT "Generating structs from yaml"
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 )
