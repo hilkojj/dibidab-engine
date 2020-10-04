@@ -97,13 +97,6 @@ void showDeveloperOptionsMenuBar()
             ImGui::EndMenu();
         }
 
-
-        ImGui::Separator();
-        ImGui::TextDisabled("Latest git commit:");
-        // todo
-//        ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive), GIT_COMMIT_HASH);
-//        ImGui::TextWrapped(GIT_COMMIT_MESSAGE);
-
         ImGui::EndMenu();
     }
 
