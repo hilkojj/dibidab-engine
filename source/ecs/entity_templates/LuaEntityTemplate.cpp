@@ -48,7 +48,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
     env["description"] = [&](const char *d) {
         description = d;
     };
-    env["setUpdateFunction"] = [&](entt::entity entity, float updateFrequency, const sol::function &func, sol::optional<bool> randomAcummulationDelay) {
+    env["setUpdateFunction"] = [&](entt::entity entity, float updateFrequency, const sol::safe_function &func, sol::optional<bool> randomAcummulationDelay) {
 
         LuaScripted &scripted = engine->entities.get_or_assign<LuaScripted>(entity);
         scripted.updateFrequency = updateFrequency;
@@ -61,7 +61,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
         scripted.updateFunc = func;
         scripted.updateFuncScript = script;
     };
-    env["setOnDestroyCallback"] = [&](entt::entity entity, const sol::function &func) {
+    env["setOnDestroyCallback"] = [&](entt::entity entity, const sol::safe_function &func) {
 
         LuaScripted &scripted = engine->entities.get_or_assign<LuaScripted>(entity);
         scripted.onDestroyFunc = func;
@@ -76,7 +76,7 @@ void LuaEntityTemplate::runScript()
     try
     {
         // todo: use same lua_state as 'env' is in
-        luau::getLuaState().unsafe_script(script->getByteCode().as_string_view(), env);
+        luau::getLuaState().safe_script(script->getByteCode().as_string_view(), env);
         createFunc = env["create"];
         if (!createFunc.valid())
             throw gu_err("No create() function found!");
@@ -137,6 +137,7 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
         sol::protected_function_result result = createFunc(e, arguments, luaScripted.saveData);
         if (!result.valid())
             throw gu_err(result.get<sol::error>().what());
+        // NOTE!!: ALL REFERENCES TO COMPONENTS MIGHT BE BROKEN AFTER CALLING createFunc. (EnTT might resize containers)
 
         if (persistent)
         {

@@ -49,11 +49,7 @@ int sol_lua_push(sol::types<asset<type>>, lua_State* L, const asset<type>& asset
 template <typename Handler>
 bool sol_lua_check(sol::types<entt::entity>, lua_State* L, int index, Handler&& handler, sol::stack::record& tracking) {
 
-    bool success = sol::stack::check<int>(L, index, handler);
-    if (!success)
-        success = sol::stack::check<sol::nil_t>(L, index, handler);
-    tracking.use(1);
-    return success;
+    return sol::stack::check<sol::optional<int>>(L, index, handler, tracking);
 }
 
 entt::entity sol_lua_get(sol::types<entt::entity>, lua_State* L, int index, sol::stack::record& tracking);

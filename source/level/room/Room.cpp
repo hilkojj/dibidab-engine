@@ -17,8 +17,9 @@ void Room::initialize(Level *lvl)
 
     addSystem(new PlayerControlSystem("player control"));
     addSystem(new AudioSystem("audio"));
-    addSystem(new LuaScriptsSystem("lua functions"));
 
+
+    addSystem(new LuaScriptsSystem("lua functions"), true); // execute lua functions first, in case they might spawn entities, same reason as below:
     addSystem(new SpawningSystem("(de)spawning"), true); // SPAWN ENTITIES FIRST, so they get a chance to be updated before being rendered
     EntityEngine::initialize();
 

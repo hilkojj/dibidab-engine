@@ -9,8 +9,8 @@ LuaScripted:
   _cpp_only:
     usedTemplate: [LuaEntityTemplate*, NULL]
 
-    updateFunc: sol::function
-    onDestroyFunc: sol::function
+    updateFunc: sol::safe_function
+    onDestroyFunc: sol::safe_function
 
     updateFuncScript: asset<luau::Script>
     onDestroyFuncScript: asset<luau::Script>
