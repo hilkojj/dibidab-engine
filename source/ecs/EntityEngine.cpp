@@ -76,6 +76,8 @@ void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
 
 EntityEngine::~EntityEngine()
 {
+    events.emit(0, "BeforeDelete");
+
     for (auto sys : systems)
         delete sys;
     for (auto &entry : entityTemplates)
@@ -118,6 +120,12 @@ void EntityEngine::initializeLuaEnvironment()
 
     luaEnvironment = sol::environment(luau::getLuaState(), sol::create, luau::getLuaState().globals());
     auto &env = luaEnvironment;
+
+    env["currentEngine"] = env;
+
+    env["valid"] = [&](entt::entity e) {
+        return entities.valid(e);
+    };
 
     env["setComponent"] = [&](entt::entity entity, const sol::table &component) {
         setComponentFromLua(entity, component, entities);

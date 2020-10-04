@@ -32,8 +32,16 @@ namespace nlohmann {
         }
 
         static void from_json(const json& j, asset<type>& v) {
-            if (!j.empty())
-                v.set(j);
+            if (!j.is_string())
+                v = asset<type>();
+            else
+            {
+                std::string path = j;
+                if (path.empty())
+                    v = asset<type>();
+                else
+                    v.set(path);
+            }
         }
     };
 }
