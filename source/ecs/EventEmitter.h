@@ -38,7 +38,16 @@ class EventEmitter
         while (it != listeners.end())
         {
             auto &listener = *it;
-            listener(&event, removeCallback);
+
+            sol::protected_function_result result;
+
+            if constexpr (sizeof(type) > 4)
+                result = listener(&event, removeCallback);   // TODO: lua function might do stuff that breaks stuff, like it did in LuaScriptsSystem::callUpdateFunc()
+            else
+                result = listener(event, removeCallback); // copy the value instead of giving a pointer.
+
+            if (!result.valid())
+                throw gu_err(result.get<sol::error>().what());
 
             if (removeListener)
             {
