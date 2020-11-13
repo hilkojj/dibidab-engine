@@ -2,6 +2,7 @@
 #include "EntityEngine.h"
 #include <utils/hashing.h>
 #include <utils/gu_error.h>
+#include "./systems/AnimationSystem.h"
 #include "entity_templates/LuaEntityTemplate.h"
 #include "../generated/Children.hpp"
 #include "../generated/Position3d.hpp"
@@ -87,6 +88,8 @@ EntityEngine::~EntityEngine()
 void EntityEngine::initialize()
 {
     assert(!initialized);
+
+    addSystem(new AnimationSystem("animations"));
 
     entities.on_construct<Child>().connect<&EntityEngine::onChildCreation>(this);
     entities.on_destroy<Child>().connect<&EntityEngine::onChildDeletion>(this);

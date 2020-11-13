@@ -43,9 +43,7 @@ void LuaScriptsSystem::callUpdateFunc(entt::entity e, LuaScripted &scripted, flo
         sol::table saveData = scripted.saveData;
         // cpy and saveData are copied because EnTT might move them if the lua script causes a `LuaScripted` component to be created
 
-        sol::protected_function_result result = cpy(deltaTime, e, saveData);
-        if (!result.valid())
-            throw gu_err(result.get<sol::error>().what());
+        luau::callFunction(cpy, deltaTime, e, saveData);
     }
     catch (std::exception &exc)
     {
@@ -67,9 +65,7 @@ void LuaScriptsSystem::onDestroyed(entt::registry &reg, entt::entity e)
         sol::table saveData = scripted.saveData;
         // cpy and saveData are copied because EnTT might move them if the lua script causes a `LuaScripted` component to be created
 
-        sol::protected_function_result result = cpy(e, saveData);
-        if (!result.valid())
-            throw gu_err(result.get<sol::error>().what());
+        luau::callFunction(cpy, e, saveData);
     }
     catch (std::exception &exc)
     {
