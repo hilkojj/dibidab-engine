@@ -124,6 +124,24 @@ sol::state &luau::getLuaState()
         registerVecUserType<uint8>("u8vec", *lua);
         registerVecUserType<uint16>("u16vec", *lua);
         registerVecUserType<float>("vec", *lua);
+
+        // register glm quat:
+        sol::usertype<quat> qut = lua->new_usertype<quat>("quat");
+
+        for (int axis = 0; axis < 3; axis++)
+            qut[axis == 0 ? "x" : (axis == 1 ? "y" : "z")] = sol::property([axis](quat &q) {
+                return glm::eulerAngles(q)[axis] * mu::RAD_TO_DEGREES;
+            }, [axis](quat &q, float x) {
+                vec3 euler = glm::eulerAngles(q);
+                euler[axis] = x * mu::DEGREES_TO_RAD;
+                q = quat(euler);
+            });
+
+        qut["getAngle"] = [] (quat &q) -> float { return angle(q) * mu::RAD_TO_DEGREES; };
+        qut["getAxis"] = [] (quat &q) -> vec3 { return axis(q); };
+        qut["setFromAngleAndAxis"] = [] (quat &q, float angle, vec3 axis) {
+            q = angleAxis(angle * mu::DEGREES_TO_RAD, axis);
+        };
     }
     return *lua;
 }

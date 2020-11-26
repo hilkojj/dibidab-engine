@@ -20,9 +20,20 @@ namespace nlohmann {
                 v[i] = j.at(i);
         }
     };
-}
 
-namespace nlohmann {
+    template <>
+    struct adl_serializer<quat> {
+        static void to_json(json& j, const quat& v) {
+            vec3 euler = eulerAngles(v) * mu::RAD_TO_DEGREES;
+            j = json::array({euler.x, euler.y, euler.z});
+        }
+
+        static void from_json(const json& j, quat& v) {
+            vec3 euler(j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>());
+            v = quat(euler * mu::DEGREES_TO_RAD);
+        }
+    };
+
     template <typename type>
     struct adl_serializer<asset<type>> {
         static void to_json(json& j, const asset<type>& v) {
