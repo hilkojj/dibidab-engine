@@ -1,6 +1,6 @@
 # Dibidab Engine
 
-Dibidab is a small game engine with some nice features that I'd like to reuse, but probably won't.
+Dibidab is a small game engine with some nice features that I'd like to reuse.
 
 ### Features:
 - **ECS based** (Entities are built out of Components, using [EnTT](https://github.com/skypjack/entt))
