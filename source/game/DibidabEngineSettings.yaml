@@ -11,6 +11,8 @@ GraphicsSettings:
   windowSize: [ ivec2, "ivec2(1600, 900)" ]
   printOpenGLMessages: [ bool, false ]
   printOpenGLErrors: [ bool, false ]
+  openGLMajorVersion: [ int, 4 ]
+  openGLMinorVersion: [int, 2]
 
   imGuiThemeColor_background: [ u8vec3, "vec3(37, 33, 49)" ]
   imGuiThemeColor_text: [ u8vec3, "vec3(244, 241, 222)" ]

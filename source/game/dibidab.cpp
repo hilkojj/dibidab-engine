@@ -158,6 +158,8 @@ void dibidab::init(int argc, char **argv)
     config.samples = 0;
     config.printOpenGLMessages = dibidab::settings.graphics.printOpenGLMessages;
     config.printOpenGLErrors = dibidab::settings.graphics.printOpenGLErrors;
+    config.openGLMajorVersion = dibidab::settings.graphics.openGLMajorVersion;
+    config.openGLMinorVersion = dibidab::settings.graphics.openGLMinorVersion;
     gu::fullscreen = dibidab::settings.graphics.fullscreen; // dont ask me why this is not in config
     if (!gu::init(config))
         throw gu_err("Error while initializing gu");
