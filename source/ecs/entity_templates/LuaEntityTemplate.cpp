@@ -76,7 +76,11 @@ void LuaEntityTemplate::runScript()
     try
     {
         // todo: use same lua_state as 'env' is in
-        luau::getLuaState().safe_script(script->getByteCode().as_string_view(), env);
+
+        sol::protected_function_result result = luau::getLuaState().safe_script(script->getByteCode().as_string_view(), env);
+        if (!result.valid())
+            throw gu_err(result.get<sol::error>().what());
+
         createFunc = env["create"];
         if (!createFunc.valid())
             throw gu_err("No create() function found!");
