@@ -9,6 +9,8 @@ SoundSpeaker:
   looping: [bool, false]
   paused: [bool, false]
 
+  pauseOnLeavingRoom: [bool, false]
+
   _hash:
     [paused, looping, pitch, volume, sound.isSet()]
 
