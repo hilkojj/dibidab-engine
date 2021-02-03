@@ -28,6 +28,10 @@ void populateVecUserType(sol::usertype<vecType> &vus)
         vus["length"] = [] (const vecType &v) {
             return length(v);
         };
+
+    vus[sol::meta_function::to_string] = [] (const vecType &a) {
+        return to_string(a);
+    };
 }
 
 template<typename type, typename vec2Type = vec<2, type, defaultp>, typename vec3Type = vec<3, type, defaultp>, typename vec4Type = vec<4, type, defaultp>>
@@ -187,7 +191,7 @@ const sol::bytecode &luau::Script::getByteCode()
 
     sol::load_result lr = luau::getLuaState().load_file(path);
     if (!lr.valid())
-        throw gu_err("Lua code invalid!");
+        throw gu_err("Lua code invalid!:\n" + std::string(lr.get<sol::error>().what()));
 
     bytecode = sol::protected_function(lr).dump();
     return bytecode;
