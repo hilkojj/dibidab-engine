@@ -28,6 +28,10 @@ set_target_properties(dibidab PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET dibidab PROPERTY CXX_STANDARD 17)
 set_property(TARGET dibidab PROPERTY CXX_STANDARD_REQUIRED ON)
 
+if (MSVC)
+    set(CMAKE_CXX_FLAGS  "/Ox /EHsc /bigobj")
+endif()
+
 # gameutils repo:
 add_subdirectory(external/gu/library ./bin/gu)
 target_link_libraries(dibidab gameutils)
@@ -61,4 +65,3 @@ add_custom_target(
 )
 
 add_dependencies(dibidab generate_structs)
-
