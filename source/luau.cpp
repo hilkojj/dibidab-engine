@@ -3,19 +3,47 @@
 #include "luau.h"
 #include "game/dibidab.h"
 
+template<typename type, typename vecType>
+void populateVecUserType(sol::usertype<vecType> &vus)
+{
+    vus[sol::meta_function::multiplication] = [] (const vecType &a, const vecType &b) {
+        return a * b;
+    };
+    vus[sol::meta_function::addition] = [] (const vecType &a, const vecType &b) {
+        return a + b;
+    };
+    vus[sol::meta_function::subtraction] = [] (const vecType &a, const vecType &b) {
+        return a - b;
+    };
+    vus[sol::meta_function::division] = [] (const vecType &a, const vecType &b) {
+        for (int i = 0; i < vecType::length(); i++)
+            if (b[i] == 0)
+                throw gu_err("Division by zero. a = " + to_string(a) + ", b = " + to_string(b));
+        return a / b;
+    };
+    vus[sol::meta_function::equal_to] = [] (const vecType &a, const vecType &b) {
+        return a == b;
+    };
+    if constexpr (std::is_same_v<float, type>)
+        vus["length"] = [] (const vecType &v) {
+            return length(v);
+        };
+}
+
 template<typename type, typename vec2Type = vec<2, type, defaultp>, typename vec3Type = vec<3, type, defaultp>, typename vec4Type = vec<4, type, defaultp>>
 void registerVecUserType(const std::string &name, sol::state &lua)
 {
     sol::usertype<vec2Type> v2 = lua.new_usertype<vec2Type>(name + "2", sol::call_constructor,
 
-        sol::constructors<vec2Type(), vec2Type(type), vec2Type(type, type)>()
+        sol::constructors<vec2Type(), vec2Type(type), vec2Type(type, type), vec2Type(vec2Type), vec2Type(vec<2, int, defaultp>), vec2Type(vec<2, float, defaultp>)>()
     );
     v2["x"] = &vec2Type::x;
     v2["y"] = &vec2Type::y;
+    populateVecUserType<type>(v2);
 
     sol::usertype<vec3Type> v3 = lua.new_usertype<vec3Type>(name + "3", sol::call_constructor,
 
-        sol::constructors<vec3Type(), vec3Type(type), vec3Type(type, type, type)>()
+        sol::constructors<vec3Type(), vec3Type(type), vec3Type(type, type, type), vec3Type(vec3Type), vec3Type(vec<3, int, defaultp>), vec3Type(vec<3, float, defaultp>)>()
     );
     v3["x"] = &vec3Type::x;
     v3["r"] = &vec3Type::x;
@@ -23,9 +51,11 @@ void registerVecUserType(const std::string &name, sol::state &lua)
     v3["g"] = &vec3Type::y;
     v3["z"] = &vec3Type::z;
     v3["b"] = &vec3Type::z;
+    populateVecUserType<type>(v3);
+
     sol::usertype<vec4Type> v4 = lua.new_usertype<vec4Type>(name + "4", sol::call_constructor,
 
-        sol::constructors<vec4Type(), vec4Type(type), vec4Type(type, type, type, type)>()
+        sol::constructors<vec4Type(), vec4Type(type), vec4Type(type, type, type, type), vec4Type(vec4Type), vec4Type(vec<4, int, defaultp>), vec4Type(vec<4, float, defaultp>)>()
     );
     v4["x"] = &vec4Type::x;
     v4["r"] = &vec4Type::x;
@@ -35,6 +65,7 @@ void registerVecUserType(const std::string &name, sol::state &lua)
     v4["b"] = &vec4Type::z;
     v4["w"] = &vec4Type::w;
     v4["a"] = &vec4Type::w;
+    populateVecUserType<type>(v4);
 }
 
 

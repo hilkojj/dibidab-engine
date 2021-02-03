@@ -70,6 +70,7 @@ int Room::nrOfPersistentEntities() const
 
 void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, json &j) const
 {
+    std::cout << "template: " << persistent.applyTemplateOnLoad << '\n';
     j["template"] = persistent.applyTemplateOnLoad;
     j["data"] = persistent.data;
     if (persistent.saveFinalPosition)
@@ -85,6 +86,7 @@ void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, 
         if (utils->entityHasComponent(e, entities))
             utils->getJsonComponentWithKeys(componentsJson[componentTypeName], e, entities);
     }
+    std::cout << j.dump() << '\n';
 }
 
 void Room::tryToSaveRevivableEntity(entt::registry &, entt::entity entity)

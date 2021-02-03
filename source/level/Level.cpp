@@ -141,13 +141,16 @@ void Level::deleteRoom(int i)
 
 void Level::save(const char *path) const
 {
-    std::vector<unsigned char> data;
-    json::to_cbor(*this, data);
+//    std::vector<unsigned char> data;
+
+    auto data = json(*this).dump();
+
+//    json::to_cbor(*this, data);
 
     std::vector<uint8> compressedData(12 + data.size() * 1.1);
     unsigned long compressedDataSize = compressedData.size();
 
-    int zResult = compress(&compressedData[0], &compressedDataSize, &data[0], data.size());
+    int zResult = compress(&compressedData[0], &compressedDataSize, (const uint8 *) &data[0], data.size());
 
     if (zResult != Z_OK)
         throw gu_err("Error while compressing level");
@@ -186,7 +189,7 @@ Level::Level(const char *filePath) : loadedFromFile(filePath)
         if (zResult != Z_OK)
             throw gu_err("Error while UNcompressing");
 
-        json j = json::from_cbor(uncompressedData.begin(), uncompressedData.end());
+        json j = json::parse(uncompressedData.begin(), uncompressedData.end()); //json::from_cbor(uncompressedData.begin(), uncompressedData.end());
         from_json(j, *this);
     }
     catch (std::exception &e)
