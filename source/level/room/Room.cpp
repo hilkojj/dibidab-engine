@@ -99,8 +99,9 @@ void Room::tryToSaveRevivableEntity(entt::registry &, entt::entity entity)
     persistentEntityToJson(entity, p, revivableEntitiesToSave.back());
 }
 
-void Room::toJson(json &j) const
+void Room::toJson(json &j)
 {
+    events.emit(0, "BeforeSave");
     j = json{
         {"name", name},
         {"entities", revivableEntitiesToSave}

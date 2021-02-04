@@ -95,6 +95,44 @@ struct sol::usertype_container<json> : public container_detail::usertype_contain
         return 1;
     }
 
+
+    static int index_set(lua_State *lua)
+    {
+        json &j = *sol::stack::unqualified_check_get<json *>(lua, 1).value();
+
+        sol::object luaVal = sol::stack::unqualified_check_get<sol::object>(lua, 3).value();
+
+        json jsonVal;
+
+        switch (luaVal.get_type())  // copied from jsonFromLuaTable(). todo: move this switch to separate function
+        {
+            case sol::type::number:
+                jsonVal = luaVal.as<double>();
+                break;
+            case sol::type::boolean:
+                jsonVal = luaVal.as<bool>();
+                break;
+            case sol::type::string:
+                jsonVal = luaVal.as<std::string>();
+                break;
+            case sol::type::table:
+                jsonFromLuaTable(luaVal.as<sol::table>(), jsonVal);
+                break;
+            default:
+                break;
+        }
+
+        const char *keyStr = sol::stack::unqualified_check_get<const char *>(lua, 2).value_or((const char *) NULL);
+        if (keyStr)
+            j[keyStr] = jsonVal;
+
+        else
+        {
+            int keyInt = sol::stack::unqualified_check_get<int>(lua, 2).value();
+            j[keyInt] = jsonVal;
+        }
+        return 1;
+    }
 };
 
 #endif //GAME_LUA_CONVERTERS_H

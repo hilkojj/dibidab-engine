@@ -38,7 +38,7 @@ class Room : public EntityEngine
 
     void update(double deltaTime) override;
 
-    virtual void toJson(json &) const;
+    virtual void toJson(json &);
 
     virtual void fromJson(const json &);
 
