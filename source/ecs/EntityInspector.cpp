@@ -106,6 +106,7 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
         ImGui::End();
         return;
     }
+
     if (ImGui::Button("Destroy entity"))
     {
         reg.destroy(e);
@@ -136,6 +137,21 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("This will:\n- Destroy this entity\n- Create a new entity using the '%s' template\n- Copy the position from this entity", luaScripted->usedTemplate->name.c_str());
         }
+    }
+    {
+        std::string currName;
+        if (auto name = engine.getName(e))
+            currName = name;
+        const int extraBuffer = 1024;
+        char *ptr = new char[currName.length() + extraBuffer]();
+        memcpy(ptr, &currName[0], currName.length());
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(120);
+        if (ImGui::InputText("Name", ptr, currName.length() + extraBuffer))
+            if (ImGui::IsItemDeactivatedAfterEdit())
+                if (!engine.setName(e, ptr[0] == '\0' ? NULL : ptr))
+                    std::cerr << "Name '" << ptr << "' already in use!" << std::endl;
+        delete[] ptr;
     }
 
     // ---- COMPONENTS TREE -------

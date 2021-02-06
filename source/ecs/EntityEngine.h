@@ -73,6 +73,13 @@ class EntityEngine
 
     void setParent(entt::entity child, entt::entity parent, const char *childName="");
 
+    // returns false if name is already in use
+    bool setName(entt::entity, const char *name=NULL);
+
+    entt::entity getByName(const char *name) const;
+
+    const char *getName(entt::entity) const;
+
     template<typename type>
     void emitEntityEvent(entt::entity e, const type &event, const char *customEventName=NULL)
     {
@@ -110,6 +117,10 @@ class EntityEngine
     void onChildDeletion(entt::registry &, entt::entity);
 
     void onParentDeletion(entt::registry &, entt::entity);
+
+    std::unordered_map<std::string, entt::entity> namedEntities;
+
+    void onEnitiyDenaming(entt::registry &, entt::entity);
 
 };
 

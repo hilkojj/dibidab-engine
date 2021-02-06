@@ -46,6 +46,12 @@ void Room::loadPersistentEntities()
             if (jsonEntity.contains("position"))
                 setPosition(e, jsonEntity["position"]);
 
+            if (jsonEntity.contains("name"))
+            {
+                std::string eName = jsonEntity["name"];
+                setName(e, eName.c_str());
+            }
+
             for (auto &[componentName, componentJson] : jsonEntity.at("components").items())
                 componentUtils(componentName).setJsonComponentWithKeys(componentJson, e, entities);
 
@@ -77,6 +83,10 @@ void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, 
         j["position"] = getPosition(e);
     else if (persistent.saveSpawnPosition)
         j["position"] = persistent.spawnPosition;
+
+    if (persistent.saveName)
+        if (const char *eName = getName(e))
+            j["name"] = eName;
 
     json &componentsJson = j["components"] = json::object();
 

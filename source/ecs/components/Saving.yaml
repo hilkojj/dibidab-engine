@@ -10,3 +10,4 @@ Persistent:
   saveAllComponents: [ bool, false ]
   saveComponents: std::vector<std::string>
 
+  saveName: [ bool, true ]

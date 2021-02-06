@@ -85,6 +85,10 @@ EntityEngine::~EntityEngine()
         delete entry.second;
 }
 
+struct Named {
+    std::string name_dont_change;
+};
+
 void EntityEngine::initialize()
 {
     assert(!initialized);
@@ -93,7 +97,10 @@ void EntityEngine::initialize()
 
     entities.on_construct<Child>().connect<&EntityEngine::onChildCreation>(this);
     entities.on_destroy<Child>().connect<&EntityEngine::onChildDeletion>(this);
+
     entities.on_destroy<Parent>().connect<&EntityEngine::onParentDeletion>(this);
+
+    entities.on_destroy<Named>().connect<&EntityEngine::onEnitiyDenaming>(this);
 
     initializeLuaEnvironment();
 
@@ -128,6 +135,18 @@ void EntityEngine::initializeLuaEnvironment()
 
     env["valid"] = [&](entt::entity e) {
         return entities.valid(e);
+    };
+
+    env["setName"] = [&](entt::entity e, sol::optional<const char *> name) {
+        return setName(e, name.has_value() ? name.value() : NULL);
+    };
+    env["getName"] = [&](entt::entity e) -> sol::optional<std::string> {
+        if (Named *named = entities.try_get<Named>(e))
+            return named->name_dont_change;
+        else return sol::nullopt;
+    };
+    env["getByName"] = [&] (const char *name) {
+        return getByName(name);
     };
 
     env["setComponent"] = [&](entt::entity entity, const sol::table &component) {
@@ -298,6 +317,49 @@ vec3 EntityEngine::getPosition(entt::entity e) const
 void EntityEngine::setPosition(entt::entity e, const vec3 &pos)
 {
     entities.get_or_assign<Position3d>(e).vec = pos;
+}
+
+entt::entity EntityEngine::getByName(const char *name) const
+{
+    auto it = namedEntities.find(name);
+    if (it == namedEntities.end())
+        return entt::null;
+    return it->second;
+}
+
+bool EntityEngine::setName(entt::entity e, const char *name)
+{
+    if (name)
+    {
+        if (strcmp(name, "") == 0)
+            throw gu_err("Tried to set name of entity#" + std::to_string(int(e)) + " to empty string! Pass NULL or nil instead to remove the name.");
+
+        if (getByName(name) == entt::null)
+        {
+            entities.remove_if_exists<Named>(e);
+            entities.assign<Named>(e, name);
+            namedEntities[name] = e;
+            return true;
+        }
+        else return false;
+    }
+    else
+    {
+        entities.remove_if_exists<Named>(e);
+        return true;
+    }
+}
+
+void EntityEngine::onEnitiyDenaming(entt::registry &, entt::entity e)
+{
+    namedEntities.erase(entities.get<Named>(e).name_dont_change);
+}
+
+const char *EntityEngine::getName(entt::entity e) const
+{
+    if (const Named *named = entities.try_get<Named>(e))
+        return named->name_dont_change.c_str();
+    else return NULL;
 }
 
 
