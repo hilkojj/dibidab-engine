@@ -80,6 +80,8 @@ class EntityEngine
 
     const char *getName(entt::entity) const;
 
+    const std::unordered_map<std::string, entt::entity> &getNamedEntities() const { return namedEntities; };
+
     template<typename type>
     void emitEntityEvent(entt::entity e, const type &event, const char *customEventName=NULL)
     {

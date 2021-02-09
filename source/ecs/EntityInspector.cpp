@@ -9,6 +9,7 @@
 #include "entity_templates/LuaEntityTemplate.h"
 #include "../generated/LuaScripted.hpp"
 #include "../generated/Inspecting.hpp"
+#include "../generated/Children.hpp"
 
 
 EntityInspector::EntityInspector(EntityEngine &engine, const std::string &name) : engine(engine), reg(engine.entities), inspectorName(name)
@@ -75,6 +76,13 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
 
         pickEntity |= ImGui::MenuItem("Inspect entity", KeyInput::getKeyName(dibidab::settings.keyInput.inspectEntity));
         moveEntity |= ImGui::MenuItem("Move entity", KeyInput::getKeyName(dibidab::settings.keyInput.moveEntity));
+
+        ImGui::SetNextWindowSize(ImVec2(490, 0));
+        if (ImGui::BeginMenu("Entity tree"))
+        {
+            drawNamedEntitiesTree(cam, lineRenderer);
+            ImGui::EndMenu();
+        }
 
         if (ImGui::BeginMenu("Systems"))
         {
@@ -774,4 +782,80 @@ void EntityInspector::pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRe
 void EntityInspector::moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
 {
     moveEntity = false;
+}
+
+void EntityInspector::highLightEntity(entt::entity, const Camera *, DebugLineRenderer &)
+{
+    // :)
+}
+
+void EntityInspector::drawNamedEntitiesTree(const Camera *cam, DebugLineRenderer &lineRenderer)
+{
+    {
+        static int inspectByID = 0;
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputInt("Inspect by ID", &inspectByID);
+        ImGui::SameLine();
+        bool valid = reg.valid(entt::entity(inspectByID));
+        bool inspect = ImGui::Button("Inspect");
+        if (ImGui::IsItemHovered() && !valid)
+            ImGui::SetTooltip("Entity #%d does not exist!", int(inspectByID));
+        if (inspect && valid)
+            engine.entities.assign_or_replace<Inspecting>(entt::entity(inspectByID));
+    }
+
+    ImGui::Columns(2, NULL, false);
+    ImGui::SetColumnWidth(0, 400);
+    ImGui::Separator();
+
+    struct funcs
+    {
+        static void showEntity(const std::string &name, entt::entity e, EntityEngine &engine)
+        {
+            ImGui::PushID(&name);                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
+            ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
+
+            Parent *isParent = engine.entities.try_get<Parent>(e);
+            bool node_open = false;
+
+            if (!isParent)
+                ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_None);
+            else
+                node_open = ImGui::TreeNode(name.c_str());
+
+            LuaScripted *luaScripted = engine.entities.try_get<LuaScripted>(e);
+            if (luaScripted)
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled("Lua: %s", luaScripted->usedTemplate->name.c_str());
+            }
+
+            ImGui::NextColumn();
+            ImGui::AlignTextToFramePadding();
+            if (ImGui::Button(std::to_string(int(e)).c_str()))
+                engine.entities.assign_or_replace<Inspecting>(e);
+            ImGui::NextColumn();
+            if (node_open && isParent)
+            {
+                for (auto &[childName, child] : isParent->childrenByName)
+                {
+                    std::string childNameStr;
+                    if (auto globalName = engine.getName(child))
+                    {
+                        childNameStr = globalName;
+                        childNameStr += " ";
+                    }
+                    childNameStr += "[child '" + childName + "']";
+                    funcs::showEntity(childNameStr, child, engine);
+                }
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+    };
+
+    for (auto &[name, e] : engine.getNamedEntities())
+        funcs::showEntity(name, e, engine);
+
+    ImGui::Columns(1);
 }

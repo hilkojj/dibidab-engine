@@ -40,9 +40,11 @@ class EntityInspector
     EntityEngine &engine;
     entt::registry &reg;
 
-    virtual void pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+    virtual void pickEntityGUI(const Camera *, DebugLineRenderer &);
 
-    virtual void moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+    virtual void moveEntityGUI(const Camera *, DebugLineRenderer &);
+
+    virtual void highLightEntity(entt::entity, const Camera *, DebugLineRenderer &);
 
   private:
     void createEntityGUI();
@@ -52,6 +54,8 @@ class EntityInspector
     void templateArgsGUI();
 
     void editLuaScript(LuaEntityTemplate *);
+
+    void drawNamedEntitiesTree(const Camera *, DebugLineRenderer &);
 
     void drawEntityInspectorGUI(entt::entity e, Inspecting &ins);
 
