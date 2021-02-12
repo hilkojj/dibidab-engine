@@ -21,11 +21,11 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
         ALL_COMPONENTS = env["ALL_COMPONENTS"] = 1 << 4,
         REVIVE = env["REVIVE"] = 1 << 5;
 
-    auto setPersistentMode = [&, name](int mode, sol::optional<std::vector<std::string>> componentsToSave) {
+    auto setPersistentMode = [&](int mode, sol::optional<std::vector<std::string>> componentsToSave) {
 
         persistency = Persistent();
         if (mode & TEMPLATE)
-            persistency.applyTemplateOnLoad = name;
+            persistency.applyTemplateOnLoad = this->name;   // 'name' is a pointer and thus can break. 'this->name' is a string :)
 
         persistentArgs = mode & ARGS;
         persistency.saveFinalPosition = mode & FINAL_POS;
