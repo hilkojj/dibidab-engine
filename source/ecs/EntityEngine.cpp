@@ -334,7 +334,10 @@ bool EntityEngine::setName(entt::entity e, const char *name)
         if (strcmp(name, "") == 0)
             throw gu_err("Tried to set name of entity#" + std::to_string(int(e)) + " to empty string! Pass NULL or nil instead to remove the name.");
 
-        if (getByName(name) == entt::null)
+        auto claimedBy = getByName(name);
+        if (claimedBy == e)
+            return true;
+        if (claimedBy == entt::null)
         {
             entities.remove_if_exists<Named>(e);
             entities.assign<Named>(e, name);

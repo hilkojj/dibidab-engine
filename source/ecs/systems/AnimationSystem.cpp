@@ -23,3 +23,13 @@ void AnimationSystem::update(double deltaTime, EntityEngine *engine)
         an.animationUpdateFunctions = mapCopy;
     });
 }
+
+void AnimationSystem::init(EntityEngine *engine)
+{
+    engine->luaEnvironment["removeAnimation"] = [engine] (entt::entity e, const char *fieldName) -> bool {
+        Animated *animated = engine->entities.try_get<Animated>(e);
+        if (!animated)
+            return false;
+        return !!animated->animationUpdateFunctions.erase(fieldName);
+    };
+}
