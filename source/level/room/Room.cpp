@@ -13,15 +13,15 @@ void Room::initialize(Level *lvl)
 
     level = lvl;
 
-    entities.on_destroy<Persistent>().connect<&Room::tryToSaveRevivableEntity>(this);
-
     addSystem(new PlayerControlSystem("player control"));
     addSystem(new AudioSystem("audio"));
-
 
     addSystem(new LuaScriptsSystem("lua functions"), true); // execute lua functions first, in case they might spawn entities, same reason as below:
     addSystem(new SpawningSystem("(de)spawning"), true); // SPAWN ENTITIES FIRST, so they get a chance to be updated before being rendered
     EntityEngine::initialize();
+
+    // THIS on_destroy() SHOULD STAY HERE (after EntityEngine::initialize()) OTHERWISE CALLBACK WILL BE CALLED AFTER `Named`-component (or other components) ARE ALREADY REMOVED!
+    entities.on_destroy<Persistent>().connect<&Room::tryToSaveRevivableEntity>(this);
 
     loadPersistentEntities();
 }
@@ -76,7 +76,6 @@ int Room::nrOfPersistentEntities() const
 
 void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, json &j) const
 {
-    std::cout << "template: " << persistent.applyTemplateOnLoad << '\n';
     j["template"] = persistent.applyTemplateOnLoad;
     j["data"] = persistent.data;
     if (persistent.saveFinalPosition)
@@ -96,7 +95,6 @@ void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, 
         if (utils->entityHasComponent(e, entities))
             utils->getJsonComponentWithKeys(componentsJson[componentTypeName], e, entities);
     }
-    std::cout << j.dump() << '\n';
 }
 
 void Room::tryToSaveRevivableEntity(entt::registry &, entt::entity entity)
