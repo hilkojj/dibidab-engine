@@ -6,6 +6,7 @@
 #include "entity_templates/LuaEntityTemplate.h"
 #include "../generated/Children.hpp"
 #include "../generated/Position3d.hpp"
+#include "../generated/LuaScripted.hpp"
 
 void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
 {
@@ -201,6 +202,13 @@ void EntityEngine::initializeLuaEnvironment()
     };
     env["onEvent"] = [&](const char *eventName, const sol::function &listener) {
         events.on(eventName, listener);
+    };
+
+    env["setTimeout"] = [&](entt::entity e, float time, const sol::function &func) {
+
+        auto &f = entities.get_or_assign<LuaScripted>(e).timeoutFuncs.emplace_back();
+        f.timer = time;
+        f.func = func;
     };
 
     auto componentUtilsTable = env["component"].get_or_create<sol::table>();

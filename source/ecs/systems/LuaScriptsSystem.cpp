@@ -29,6 +29,20 @@ void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
                     scriptedPtr = room->entities.try_get<LuaScripted>(e); // ptr might have been moved by EnTT/lua script
             }
         }
+
+        auto it = scripted.timeoutFuncs.begin();
+        while (it != scripted.timeoutFuncs.end())
+        {
+            auto &f = *it;
+            f.timer -= deltaTime;
+
+            if (f.timer < 0)
+            {
+                luau::callFunction(f.func, e);  // todo: I dont think it's needed, but maybe make a copy of the function before calling it? I dont think its needed because its stored in a linked list. see callUpdateFunc()
+                it = scripted.timeoutFuncs.erase(it);
+            }
+            else ++it;
+        }
     });
 }
 
