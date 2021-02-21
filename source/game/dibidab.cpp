@@ -54,7 +54,7 @@ void showDeveloperOptionsMenuBar()
                 &dibidab::settings.showDeveloperOptions);
 
         ImGui::SetNextItemWidth(120);
-        ImGui::SliderFloat("Master volume", &dibidab::settings.audio.masterVolume, 0.0f, 3.0f);
+        ImGui::SliderFloat("Master volume", &dibidab::settings.audio.masterVolume, 0.0f, 10.0f);
 
         if (ImGui::BeginMenu("Graphics"))
         {
