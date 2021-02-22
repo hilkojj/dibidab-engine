@@ -4,7 +4,7 @@
 
 void AnimationSystem::update(double deltaTime, EntityEngine *engine)
 {
-    engine->entities.view<Animated>().each([&](Animated &an) {
+    engine->entities.view<Animated>().each([&](auto e, Animated &an) {
 
         // all this copying is needed because the map can be modified while calling the animation functions
         auto mapCopy = an.animationUpdateFunctions;
@@ -17,10 +17,15 @@ void AnimationSystem::update(double deltaTime, EntityEngine *engine)
             else ++it;
         }
 
-        for (auto it = an.animationUpdateFunctions.cbegin(); it != an.animationUpdateFunctions.cend(); it++)
-            mapCopy[it->first] = it->second;
+        // REFERENCE TO an MIGHT BE INVALID AT THIS POINT! USE anPointer INSTEAD. I love C++
 
-        an.animationUpdateFunctions = mapCopy;
+        if (auto anPointer = engine->entities.try_get<Animated>(e))
+        {
+            for (auto it = anPointer->animationUpdateFunctions.cbegin(); it != anPointer->animationUpdateFunctions.cend(); it++)
+                mapCopy[it->first] = it->second;
+
+            anPointer->animationUpdateFunctions = mapCopy;
+        }
     });
 }
 

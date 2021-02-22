@@ -13,12 +13,13 @@ void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
 {
     room->entities.view<LuaScripted>().each([&](auto e, LuaScripted &scripted) {
 
+        auto scriptedPtr = &scripted;
+
         if (scripted.updateFrequency <= 0)
             callUpdateFunc(e, scripted, deltaTime);
         else
         {
             scripted.updateAccumulator += deltaTime;
-            auto scriptedPtr = &scripted;
             while (scriptedPtr != NULL && scriptedPtr->updateAccumulator > scriptedPtr->updateFrequency)
             {
                 scriptedPtr->updateAccumulator -= scriptedPtr->updateFrequency;
@@ -30,18 +31,29 @@ void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
             }
         }
 
-        auto it = scripted.timeoutFuncs.begin();
-        while (it != scripted.timeoutFuncs.end())
+        // ONLY USE scriptedPtr NOW!!!!
+
+        std::vector<sol::safe_function> call;
+
+        auto it = scriptedPtr->timeoutFuncs.begin();
+        while (it != scriptedPtr->timeoutFuncs.end())
         {
             auto &f = *it;
             f.timer -= deltaTime;
 
             if (f.timer < 0)
             {
-                luau::callFunction(f.func, e);  // todo: I dont think it's needed, but maybe make a copy of the function before calling it? I dont think its needed because its stored in a linked list. see callUpdateFunc()
-                it = scripted.timeoutFuncs.erase(it);
+                call.push_back(f.func);
+                it = scriptedPtr->timeoutFuncs.erase(it);
             }
             else ++it;
+        }
+
+        for (auto &func : call)
+        {
+            luau::callFunction(func, e);
+            if (!room->entities.valid(e))
+                return;
         }
     });
 }
