@@ -31,7 +31,11 @@ void SingleplayerSession::setLevel(Level *newLevel)
         throw gu_err("cant set a level while updating");
     delete level;
     level = newLevel;
-    level->initialize();
-    onNewLevel(level);
-    spawnPlayerEntities();
+    if (level)
+    {
+        level->initialize();
+        onNewLevel(level);
+        spawnPlayerEntities();
+    }
+    else onNewLevel(NULL);
 }

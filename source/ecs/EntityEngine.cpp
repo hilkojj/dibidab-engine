@@ -78,8 +78,6 @@ void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
 
 EntityEngine::~EntityEngine()
 {
-    events.emit(0, "BeforeDelete");
-
     for (auto sys : systems)
         delete sys;
     for (auto &entry : entityTemplates)

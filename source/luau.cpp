@@ -130,12 +130,12 @@ sol::state &luau::getLuaState()
             session.join(username);
         };
 
-        env["loadOrCreateLevel"] = [](const char *path)
+        env["loadOrCreateLevel"] = [](const sol::optional<std::string> &path)
         {
             auto &session = dibidab::getCurrentSession();
             auto singleplayerSession = dynamic_cast<SingleplayerSession *>(&session);
             if (singleplayerSession)
-                singleplayerSession->setLevel(new Level(path));
+                singleplayerSession->setLevel(path.has_value() ? new Level(path.value().c_str()) : NULL);
         };
 
         env["include"] = [&] (const char *scriptPath, const sol::this_environment &currentEnv) -> sol::environment {

@@ -82,6 +82,8 @@ Level::~Level()
         save(loadedFromFile.empty() ? DEFAULT_LEVEL_PATH : loadedFromFile.c_str());
 
     for (auto r : rooms)
+        r->events.emit(0, "BeforeDelete");
+    for (auto r : rooms)
         delete r;
 }
 

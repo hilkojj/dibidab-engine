@@ -97,6 +97,11 @@ void showDeveloperOptionsMenuBar()
             ImGui::EndMenu();
         }
 
+        ImGui::Separator();
+
+        std::string luamem = "Lua memory: " + std::to_string(luau::getLuaState().memory_used() / (1024.f*1024.f)) + "MB";
+        ImGui::MenuItem(luamem.c_str(), NULL, false, false);
+
         ImGui::EndMenu();
     }
 
