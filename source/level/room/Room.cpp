@@ -24,6 +24,7 @@ void Room::initialize(Level *lvl)
     entities.on_destroy<Persistent>().connect<&Room::tryToSaveRevivableEntity>(this);
 
     loadPersistentEntities();
+    afterLoad();
 }
 
 void Room::update(double deltaTime)

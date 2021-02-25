@@ -30,6 +30,8 @@ class Room : public EntityEngine
 
     std::string name;
 
+    delegate<void()> afterLoad;
+
     Level &getLevel() const { return *level; };
 
     int getIndexInLevel() const { return roomI; };
