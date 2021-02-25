@@ -17,7 +17,7 @@ EntityInspector::EntityInspector(EntityEngine &engine, const std::string &name) 
 
 }
 
-std::vector<std::string> inspectors;
+std::list<std::string> inspectors;
 std::string activeInspector;
 
 static bool createEntityGUIJustOpened = false;
@@ -26,7 +26,8 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
 {
     gu::profiler::Zone z("entity inspector");
 
-    inspectors.push_back(inspectorName);
+    if (showInDropDown)
+        inspectors.push_front(inspectorName);
     if (pickEntity)
     {
         pickEntityGUI(cam, lineRenderer);
@@ -748,6 +749,13 @@ void EntityInspector::drawInspectingDropDown()
 {
     if (inspectors.empty())
         return;
+
+    if (inspectors.size() == 1)
+    {
+        activeInspector = inspectors.front();
+        inspectors.clear();
+        return;
+    }
 
     ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_Button), "    Inspecting:");
     ImGui::SetNextItemWidth(120);

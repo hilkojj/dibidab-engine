@@ -23,6 +23,7 @@ class EntityInspector
 
     std::string createEntity_showSubFolder = "";
     bool createEntity_persistentOption = true;
+    bool showInDropDown = true;
 
     bool
         pickEntity = false,
