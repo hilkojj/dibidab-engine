@@ -1,0 +1,5 @@
+
+KeyListener:
+  _cpp_only:
+    keys: std::map<std::string, KeyInput::Key *>
+

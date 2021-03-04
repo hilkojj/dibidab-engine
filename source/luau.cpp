@@ -177,6 +177,12 @@ sol::state &luau::getLuaState()
         qut["setFromAngleAndAxis"] = [] (quat &q, float angle, vec3 axis) {
             q = angleAxis(angle * mu::DEGREES_TO_RAD, axis);
         };
+
+        // register KeyInput::Key
+        sol::usertype<KeyInput::Key> key = lua->new_usertype<KeyInput::Key>("Key");
+        key["getName"] = [] (KeyInput::Key &key) {
+            return KeyInput::getKeyName(key);
+        };
     }
     return *lua;
 }

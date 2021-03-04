@@ -211,7 +211,7 @@ void dibidab::init(int argc, char **argv)
         if (currSession)
             currSession->update(KeyInput::pressed(GLFW_KEY_KP_SUBTRACT) ? deltaTime * .03 : deltaTime);
 
-        if (KeyInput::justPressed(dibidab::settings.keyInput.reloadAssets))
+        if (KeyInput::justPressed(dibidab::settings.keyInput.reloadAssets) && dibidab::settings.showDeveloperOptions)
             AssetManager::load("assets", true);
 
         {

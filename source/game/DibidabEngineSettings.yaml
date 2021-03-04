@@ -35,7 +35,7 @@ KeyInputSettings:
     - not_a_component
     - json_with_keys
 
-  reloadAssets: [ KeyInput::Key, GLFW_KEY_R ]
+  reloadAssets: [ KeyInput::Key, GLFW_KEY_F4 ]
   toggleFullscreen: [ KeyInput::Key, GLFW_KEY_F11 ]
   toggleDeveloperOptions: [ KeyInput::Key, GLFW_KEY_F3 ]
 
