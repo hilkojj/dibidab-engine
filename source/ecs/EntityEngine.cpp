@@ -106,7 +106,7 @@ void EntityEngine::initialize()
     initializeLuaEnvironment();
 
     for (auto &el : AssetManager::getLoadedAssetsForType<luau::Script>())
-        if (stringStartsWith(el.first, "scripts/entities/"))
+        if (stringStartsWith(el.first, templateFolder))
             registerLuaEntityTemplate(el.second->shortPath.c_str());
 
     for (auto sys : systems)

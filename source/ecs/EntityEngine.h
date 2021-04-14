@@ -21,6 +21,7 @@ class EntityEngine
     std::list<EntitySystem *> systems;
     std::map<int, EntityTemplate *> entityTemplates;
     std::vector<std::string> entityTemplateNames;
+    std::string templateFolder = "scripts/entities/";
 
     virtual void initializeLuaEnvironment();
 
