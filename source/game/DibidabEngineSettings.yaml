@@ -54,3 +54,4 @@ EngineSettings:
   keyInput: KeyInputSettings
 
   showDeveloperOptions: [ bool, true ]
+  limitUpdatesPerSec: [ bool, false ]
