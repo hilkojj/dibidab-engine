@@ -6,6 +6,7 @@
 #include <audio/WavLoader.h>
 #include <audio/OggLoader.h>
 #include <utils/code_editor/CodeEditor.h>
+#include <graphics/cube_map.h>
 #include "../ecs/EntityInspector.h"
 #include "../rendering/ImGuiStyle.h"
 #include "dibidab.h"
@@ -116,9 +117,13 @@ void showDeveloperOptionsMenuBar()
 
 void addStandardAssetLoaders()
 {
-    AssetManager::addAssetLoader<Texture>(".png|.jpg|.jpeg|.tga|.bmp|.psd|.gif|.hdr", [&](auto path) {
+    AssetManager::addAssetLoader<Texture>(".png|.jpg|.jpeg|.tga|.bmp|.psd|.gif", [](auto path) {
 
         return new Texture(Texture::fromImageFile(path.c_str()));
+    });
+    AssetManager::addAssetLoader<CubeMap>(".hdr", [] (auto &path) {
+
+        return new CubeMap(CubeMap::fromHDRFile(path.c_str()));
     });
     AssetManager::addAssetLoader<std::string>(".frag|.vert", [](auto path) {
 
