@@ -79,6 +79,7 @@ void Level::update(double deltaTime)
     }
     else
     {
+        time += deltaTime;
         update(deltaTime);
     }
 
