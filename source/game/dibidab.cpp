@@ -169,21 +169,24 @@ void dibidab::init(int argc, char **argv)
     gu::fullscreen = dibidab::settings.graphics.fullscreen; // dont ask me why this is not in config
     if (!gu::init(config))
         throw gu_err("Error while initializing gu");
-    au::init();
-    setImGuiStyleAndConfig();
 
     std::cout << "Running game with\n - GL_VERSION: " << glGetString(GL_VERSION) << "\n";
     std::cout << " - GL_RENDERER: " << glGetString(GL_RENDERER) << "\n";
 
-    std::vector<std::string> audioDevices;
-    if (!au::getAvailableDevices(audioDevices, NULL))
-        throw gu_err("could not get audio devices");
+    // audio:
+    {
+        std::vector<std::string> audioDevices;
+        if (!au::getAvailableDevices(audioDevices, NULL))
+            throw gu_err("could not get audio devices");
 
-    std::cout << "Available audio devices:\n";
-    for (auto &dev : audioDevices)
-        std::cout << " - " << dev << std::endl;
+        std::cout << "Available audio devices:\n";
+        for (auto &dev : audioDevices)
+            std::cout << " - " << dev << std::endl;
 
+        au::init();
+    }
 
+    setImGuiStyleAndConfig();
 
     #ifdef linux
     assetWatcher.addDirectoryToWatch("assets", true);
