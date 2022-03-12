@@ -38,6 +38,21 @@ class EntityEngine
 
     std::list<EntitySystem *> getSystems() { return systems; }
 
+    template <class EntitySystem_>
+    EntitySystem_ *tryFindSystem()
+    {
+        auto it = std::find_if(
+            std::begin(systems),
+            std::end(systems),
+            [](const auto sys) {
+                return !!dynamic_cast<const EntitySystem_ *>(sys);
+            }
+        );
+        if (it == systems.end())
+            return NULL;
+        return (EntitySystem_ *) *it;
+    }
+
     template <class EntityTemplate_>
     EntityTemplate &getTemplate()
     {

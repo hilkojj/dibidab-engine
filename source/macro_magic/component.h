@@ -68,7 +68,12 @@ struct ComponentUtils
 
             auto optional = table.as<sol::optional<Component &>>();
             if (optional.has_value())
-                reg.get_or_assign<Component>(e).copyFieldsFrom(optional.value());
+            {
+                if (reg.has<Component>(e))
+                    reg.get<Component>(e).copyFieldsFrom(optional.value());
+                else
+                    reg.assign<Component>(e, optional.value());
+            }
 
             else // TODO: give error instead?
                 reg.get_or_assign<Component>(e).fromLuaTable(table);
