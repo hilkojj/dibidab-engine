@@ -251,8 +251,9 @@ bool drawStringInput(std::string &str, Inspecting &ins, bool expandable=true, co
     return false;
 }
 
-void drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool readOnly=false)
+bool drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool readOnly=false)
 {
+    bool changed = false;
     if (readOnly || (arrayPreview && value.is_array()))
     {
         std::string str = value.dump();
@@ -261,7 +262,7 @@ void drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool re
     else if (value.is_number_float())
     {
         float v = value;
-        if (ImGui::DragFloat(" ", &v))
+        if (changed = ImGui::DragFloat(" ", &v))
             value = v;
         ImGui::SameLine();
         helpMarker("Drag or double-click");
@@ -269,13 +270,13 @@ void drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool re
     else if (value.is_boolean())
     {
         bool v = value;
-        if (ImGui::Checkbox(" ", &v))
+        if (changed = ImGui::Checkbox(" ", &v))
             value = v;
     }
     else if (value.is_number_integer())
     {
         int v = value;
-        if (ImGui::DragInt(" ", &v))
+        if (changed = ImGui::DragInt(" ", &v))
             value = v;
         ImGui::SameLine();
         helpMarker("Drag or double-click");
@@ -283,13 +284,15 @@ void drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool re
     else if (value.is_string())
     {
         std::string v = value;
-        drawStringInput(v, ins);
+        changed = drawStringInput(v, ins);
         value = v;
     }
+    return changed;
 }
 
-void drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool readOnlyValues=false)
+bool drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool readOnlyValues=false)
 {
+    bool changed = false;
     int i = 0;
     int eraseI = -1;
     std::string eraseKey, addKey;
@@ -335,13 +338,13 @@ void drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool read
         ImGui::NextColumn();
         ImGui::AlignTextToFramePadding();
 
-        drawJsonValue(value, ins, true, readOnlyValues);
+        changed |= drawJsonValue(value, ins, true, readOnlyValues);
 
         ImGui::NextColumn();
 
         if (field_open)
         {
-            drawJsonTree(value, ins, true, readOnlyValues);
+            changed |= drawJsonTree(value, ins, true, readOnlyValues);
             ImGui::TreePop();
         }
         ImGui::PopID();
@@ -354,17 +357,17 @@ void drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool read
         if (obj.is_array())
         {
             ImGui::NextColumn();
-            if (ImGui::Button("float")) obj.push_back(float(0));
+            if (changed |= ImGui::Button("float")) obj.push_back(float(0));
             ImGui::SameLine();
-            if (ImGui::Button("int")) obj.push_back(int(0));
+            if (changed |= ImGui::Button("int")) obj.push_back(int(0));
             ImGui::SameLine();
-            if (ImGui::Button("string")) obj.push_back("");
+            if (changed |= ImGui::Button("string")) obj.push_back("");
             ImGui::SameLine();
-            if (ImGui::Button("bool")) obj.push_back(bool(false));
+            if (changed |= ImGui::Button("bool")) obj.push_back(bool(false));
             ImGui::SameLine();
-            if (ImGui::Button("array")) obj.push_back(json::array());
+            if (changed |= ImGui::Button("array")) obj.push_back(json::array());
             ImGui::SameLine();
-            if (ImGui::Button("object")) obj.push_back(json::object());
+            if (changed |= ImGui::Button("object")) obj.push_back(json::object());
             ImGui::SameLine();
             ImGui::NextColumn();
         } else
@@ -373,17 +376,17 @@ void drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool read
             drawStringInput(newKey, ins, false, "  ");
 
             ImGui::NextColumn();
-            if (ImGui::Button("float")) obj[newKey] = float(0);
+            if (changed |= ImGui::Button("float")) obj[newKey] = float(0);
             ImGui::SameLine();
-            if (ImGui::Button("int")) obj[newKey] = int(0);
+            if (changed |= ImGui::Button("int")) obj[newKey] = int(0);
             ImGui::SameLine();
-            if (ImGui::Button("string")) obj[newKey] = "";
+            if (changed |= ImGui::Button("string")) obj[newKey] = "";
             ImGui::SameLine();
-            if (ImGui::Button("bool")) obj[newKey] = bool(false);
+            if (changed |= ImGui::Button("bool")) obj[newKey] = bool(false);
             ImGui::SameLine();
-            if (ImGui::Button("array")) obj[newKey] = json::array();
+            if (changed |= ImGui::Button("array")) obj[newKey] = json::array();
             ImGui::SameLine();
-            if (ImGui::Button("object")) obj[newKey] = json::object();
+            if (changed |= ImGui::Button("object")) obj[newKey] = json::object();
             ImGui::SameLine();
             ImGui::NextColumn();
         }
@@ -391,18 +394,24 @@ void drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool read
     }
     if (eraseI > -1)
     {
+        changed = true;
         if (obj.is_array()) obj.erase(eraseI - 1);
         else obj.erase(eraseKey);
     }
     if (!addKey.empty())
+    {
+        changed = true;
         obj[addKey] = addJson;
+    }
+    return changed;
 }
 
-void drawFieldsTree(
+bool drawFieldsTree(
         json &valuesArray, const SerializableStructInfo *info, Inspecting &ins,
         bool readOnly=false, bool forceEditReadOnly=false
 )
 {
+    bool changed = false;
     for (int i = 0; i < info->nrOfFields; i++)
     {
         auto fieldName = info->fieldNames[i];
@@ -436,15 +445,15 @@ void drawFieldsTree(
                                 || std::string(fieldTypeName).compare(0, finalTypeBegin.length(), finalTypeBegin) == 0
                             );
 
-        drawJsonValue(value, ins, !subInfo, subReadOnly);
+        changed |= drawJsonValue(value, ins, !subInfo, subReadOnly);
 
         ImGui::NextColumn();
         if (field_open)
         {
             ins.currentPath.emplace_back(fieldName);
             if (subInfo)
-                drawFieldsTree(value, subInfo, ins, subReadOnly);
-            else drawJsonTree(
+                changed |= drawFieldsTree(value, subInfo, ins, subReadOnly);
+            else changed |= drawJsonTree(
                     value, ins,
                     !info->structFieldIsFixedSize[i] && !subReadOnly,
                     subReadOnly
@@ -454,6 +463,7 @@ void drawFieldsTree(
         }
         ImGui::PopID();
     }
+    return changed;
 }
 
 void EntityInspector::drawComponentFieldsTree(entt::entity e, Inspecting &ins, const char *componentName, const ComponentUtils *componentUtils)
@@ -464,14 +474,16 @@ void EntityInspector::drawComponentFieldsTree(entt::entity e, Inspecting &ins, c
 
     assert(ins.currentPath.empty());
     ins.currentPath.emplace_back(componentName);
-    drawFieldsTree(valuesArray, info, ins);
-    ins.currentPath.pop_back();
-
-    try {
-        componentUtils->setJsonComponent(valuesArray, e, reg);
-    } catch (std::exception& e) {
-        std::cerr << "Exception after editing component in inspector:\n" << e.what() << std::endl;
+    if (drawFieldsTree(valuesArray, info, ins))
+    {
+        try {
+            componentUtils->setJsonComponent(valuesArray, e, reg);
+        }
+        catch (std::exception &e) {
+            std::cerr << "Exception after editing component in inspector:\n" << e.what() << std::endl;
+        }
     }
+    ins.currentPath.pop_back();
 }
 
 void EntityInspector::drawAddComponent(entt::entity e, Inspecting &ins, const char *popupName)
