@@ -121,7 +121,7 @@ void addStandardAssetLoaders()
 
         return new Texture(Texture::fromImageFile(path.c_str()));
     });
-    AssetManager::addAssetLoader<std::string>(".frag|.vert", [](auto path) {
+    AssetManager::addAssetLoader<std::string>(".frag|.vert|.glsl", [](auto path) {
 
         return new std::string(File::readString(path.c_str()));
     });
