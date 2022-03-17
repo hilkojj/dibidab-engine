@@ -69,7 +69,7 @@ void showDeveloperOptionsMenuBar()
             {
                 for (auto &[name, asset] : AssetManager::getLoadedAssetsForType<std::string>())
                 {
-                    if (!stringEndsWith(name, ".frag") && !stringEndsWith(name, ".vert"))
+                    if (!stringEndsWith(name, ".frag") && !stringEndsWith(name, ".vert") && !stringEndsWith(name, ".glsl"))
                         continue;
                     if (ImGui::MenuItem(name.c_str()))
                     {
