@@ -105,9 +105,20 @@ void EntityEngine::initialize()
 
     initializeLuaEnvironment();
 
+    std::map<std::string, bool> registered;
+
     for (auto &el : AssetManager::getLoadedAssetsForType<luau::Script>())
+    {
+        auto shortPath = el.second->shortPath.c_str();
+        if (registered[shortPath])
+            continue;
+
         if (stringStartsWith(el.first, templateFolder))
-            registerLuaEntityTemplate(el.second->shortPath.c_str());
+        {
+            registerLuaEntityTemplate(shortPath);
+            registered[shortPath] = true;
+        }
+    }
 
     for (auto sys : systems)
         sys->init(this);

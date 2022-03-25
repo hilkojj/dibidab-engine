@@ -844,7 +844,7 @@ void EntityInspector::drawNamedEntitiesTree(const Camera *cam, DebugLineRenderer
                 node_open = ImGui::TreeNode(name.c_str());
 
             LuaScripted *luaScripted = engine.entities.try_get<LuaScripted>(e);
-            if (luaScripted)
+            if (luaScripted && luaScripted->usedTemplate)
             {
                 ImGui::SameLine();
                 ImGui::TextDisabled("Lua: %s", luaScripted->usedTemplate->name.c_str());
