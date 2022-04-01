@@ -3,3 +3,8 @@ KeyListener:
   _cpp_only:
     keys: std::map<std::string, KeyInput::Key *>
 
+GamepadListener:
+  gamepad: uint
+  _cpp_only:
+    buttons: std::map<std::string, GamepadInput::Button *>
+

@@ -183,6 +183,18 @@ sol::state &luau::getLuaState()
         key["getName"] = [] (KeyInput::Key &key) {
             return KeyInput::getKeyName(key);
         };
+
+        // register GamepadInput::Button
+        sol::usertype<GamepadInput::Button> gpb = lua->new_usertype<GamepadInput::Button>("GamepadButton");
+        gpb["getName"] = [](GamepadInput::Button &key) {
+            return GamepadInput::getButtonName(key);
+        };
+
+        // register GamepadInput::Axis
+        sol::usertype<GamepadInput::Axis> gpa = lua->new_usertype<GamepadInput::Axis>("GamepadAxis");
+        gpa["getName"] = [](GamepadInput::Axis &key) {
+            return GamepadInput::getAxisName(key);
+        };
     }
     return *lua;
 }
