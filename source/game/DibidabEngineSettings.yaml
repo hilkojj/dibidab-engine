@@ -21,6 +21,7 @@ GraphicsSettings:
   imGuiThemeColor_highLight: [ u8vec3,"vec3(199, 239, 0)" ]
 
   imGuiFont: string
+  imGuiFontSize: [ float, 16.0f ]
 
 AudioSettings:
   _flags:
