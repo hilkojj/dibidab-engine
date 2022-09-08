@@ -112,8 +112,8 @@ sol::state &luau::getLuaState()
             dibidab::setCurrentSession(NULL);
         };
 
-        env["startSinglePlayerSession"] = [] (const char *saveGamePath) {
-            dibidab::setCurrentSession(new SingleplayerSession(saveGamePath));
+        env["startSinglePlayerSession"] = [] (const sol::optional<std::string> &saveGamePath) {
+            dibidab::setCurrentSession(new SingleplayerSession(saveGamePath.has_value() ? saveGamePath->c_str() : nullptr));
         };
         // todo: startMultiplayerServerSession and startMultiplayerClientsession
 

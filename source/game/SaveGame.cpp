@@ -3,7 +3,7 @@
 #include "../macro_magic/lua_converters.h"
 #include "dibidab.h"
 
-SaveGame::SaveGame(const char *path) : loadedFromPath(path)
+SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
 {
     luaTable = sol::table::create(luau::getLuaState().lua_state());
 
@@ -19,6 +19,11 @@ const char *SAVE_GAME_ENTITIES_TABLE_NAME = "saveGameEntities";
 
 void SaveGame::save(const char *path)
 {
+    if (path == nullptr && loadedFromPath.empty())
+    {
+        return;
+    }
+
     json j = json::object();
     json &jsonLuaTable = j["luaTable"] = json::object();
     jsonFromLuaTable(luaTable, jsonLuaTable);
