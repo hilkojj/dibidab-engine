@@ -174,7 +174,7 @@ void Level::save(const char *path) const
     int *originalDataSize = (int *) &compressedData[compressedDataSize];
     *originalDataSize = int(data.size());
 
-    File::writeBinary(path, compressedData);
+    File::writeBinary(path ? path : loadedFromFile.c_str(), compressedData);
 }
 
 Level::Level(const char *filePath) : loadedFromFile(filePath)
