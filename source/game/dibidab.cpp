@@ -117,10 +117,12 @@ void showDeveloperOptionsMenuBar()
 
 void addStandardAssetLoaders()
 {
+#ifdef DIBIDAB_ADD_TEXTURE_ASSET_LOADER
     AssetManager::addAssetLoader<Texture>(".png|.jpg|.jpeg|.tga|.bmp|.psd|.gif", [](auto path) {
 
         return new Texture(Texture::fromImageFile(path.c_str()));
     });
+#endif
     AssetManager::addAssetLoader<std::string>(".frag|.vert|.glsl", [](auto path) {
 
         return new std::string(File::readString(path.c_str()));
