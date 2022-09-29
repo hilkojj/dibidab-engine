@@ -41,7 +41,7 @@ class EventEmitter
 
             sol::protected_function_result result;
 
-            if constexpr (sizeof(type) > 4)
+            if constexpr (sizeof(type) > 4 && !std::is_same_v<const char *, type>)
                 result = listener(&event, removeCallback);   // TODO: lua function might do stuff that breaks stuff, like it did in LuaScriptsSystem::callUpdateFunc()
             else
                 result = listener(event, removeCallback); // copy the value instead of giving a pointer.
