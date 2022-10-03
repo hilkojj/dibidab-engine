@@ -15,8 +15,8 @@ class Level
     bool updating = false, initialized = false;
     float updateAccumulator = 0;
     constexpr static int    // todo, make this overridable:
-        MAX_UPDATES_PER_SEC = 100,
-        MIN_UPDATES_PER_SEC = 30,
+        MAX_UPDATES_PER_SEC = 60,
+        MIN_UPDATES_PER_SEC = 60,
         MAX_UPDATES_PER_FRAME = 1;
 
     friend void to_json(json& j, const Level& lvl);
