@@ -171,7 +171,10 @@ sol::state &luau::getLuaState()
                 euler[axis] = x * mu::DEGREES_TO_RAD;
                 q = quat(euler);
             });
-
+        qut["setIdentity"] = [] (quat &q) -> quat & {
+            q = quat(1, 0, 0, 0);
+            return q;
+        };
         qut["getAngle"] = [] (quat &q) -> float { return angle(q) * mu::RAD_TO_DEGREES; };
         qut["getAxis"] = [] (quat &q) -> vec3 { return axis(q); };
         qut["setFromAngleAndAxis"] = [] (quat &q, float angle, vec3 axis) {
