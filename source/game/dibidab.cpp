@@ -115,7 +115,7 @@ void showDeveloperOptionsMenuBar()
     );
 }
 
-void addStandardAssetLoaders()
+void dibidab::addDefaultAssetLoaders()
 {
 #ifdef DIBIDAB_ADD_TEXTURE_ASSET_LOADER
     AssetManager::addAssetLoader<Texture>(".png|.jpg|.jpeg|.tga|.bmp|.psd|.gif", [](auto path) {
@@ -156,7 +156,6 @@ FileWatcher assetWatcher;
 void dibidab::init(int argc, char **argv)
 {
     startupArgsToMap(argc, argv, dibidab::startupArgs);
-
 
     gu::Config config;
     config.width = dibidab::settings.graphics.windowSize.x;
@@ -202,7 +201,6 @@ void dibidab::init(int argc, char **argv)
     assetWatcher.startWatchingAsync();
     #endif
 
-    addStandardAssetLoaders();
     AssetManager::load("assets");
 
     // save window size in settings:

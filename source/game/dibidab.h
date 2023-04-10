@@ -20,6 +20,8 @@ namespace dibidab
 
     void setCurrentSession(Session *);
 
+    void addDefaultAssetLoaders();
+
     void init(int argc, char *argv[]);
 
     void run();
