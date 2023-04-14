@@ -153,14 +153,12 @@ std::mutex assetToReloadMutex;
 std::string assetToReload;
 FileWatcher assetWatcher;
 
-void dibidab::init(int argc, char **argv)
+void dibidab::init(int argc, char **argv, gu::Config &config)
 {
     startupArgsToMap(argc, argv, dibidab::startupArgs);
 
-    gu::Config config;
     config.width = dibidab::settings.graphics.windowSize.x;
     config.height = dibidab::settings.graphics.windowSize.y;
-    config.title = "dibidabidab";
     config.vsync = dibidab::settings.graphics.vsync;
     config.samples = 0;
     config.printOpenGLMessages = dibidab::settings.graphics.printOpenGLMessages;

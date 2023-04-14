@@ -22,7 +22,7 @@ namespace dibidab
 
     void addDefaultAssetLoaders();
 
-    void init(int argc, char *argv[]);
+    void init(int argc, char *argv[], gu::Config &config);
 
     void run();
 };
