@@ -34,6 +34,7 @@ inline void setImGuiStyleAndConfig()
 
     style.WindowTitleAlign.x = .5f;
 
+#ifndef DIBIDAB_DONT_SET_IMGUI_COLORS
     ImVec4* colors = style.Colors;
 
     auto
@@ -91,6 +92,7 @@ inline void setImGuiStyleAndConfig()
     colors[ImGuiCol_NavWindowingHighlight]	= GetColor(White);
     colors[ImGuiCol_NavWindowingDimBg]		= GetColor(White);
     colors[ImGuiCol_ModalWindowDimBg]		= ImVec4(0, 0, 0, .3);
+#endif
 }
 
 #endif //GAME_IMGUISTYLE_H

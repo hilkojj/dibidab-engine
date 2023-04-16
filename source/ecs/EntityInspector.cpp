@@ -257,7 +257,7 @@ bool drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool re
     if (readOnly || (arrayPreview && value.is_array()))
     {
         std::string str = value.dump();
-        ImGui::TextColored(ImVec4(.3, .5, 1, 1), "%s", str.c_str());
+        ImGui::Text("%s", str.c_str());
     }
     else if (value.is_number_float())
     {
@@ -432,7 +432,7 @@ bool drawFieldsTree(
             );
 
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(.3, .5, .7, 1), "%s", fieldTypeName);
+        ImGui::Text("%s", fieldTypeName);
 
         ImGui::NextColumn();
         ImGui::AlignTextToFramePadding();
@@ -769,7 +769,7 @@ void EntityInspector::drawInspectingDropDown()
         return;
     }
 
-    ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_Button), "    Inspecting:");
+    ImGui::Text("    Inspecting:");
     ImGui::SetNextItemWidth(120);
 
     auto prevInspector = activeInspector;
