@@ -43,6 +43,7 @@ void Room::loadPersistentEntities()
         try
         {
             auto &p = entities.assign<Persistent>(e);
+            p.persistentId = jsonEntity.at("persistentId");
             p.data = jsonEntity.at("data");
             if (jsonEntity.contains("position"))
                 setPosition(e, jsonEntity["position"]);
@@ -77,6 +78,7 @@ int Room::nrOfPersistentEntities() const
 
 void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, json &j) const
 {
+    j["persistentId"] = persistent.persistentId;
     j["template"] = persistent.applyTemplateOnLoad;
     j["data"] = persistent.data;
     if (persistent.saveFinalPosition)
@@ -94,7 +96,9 @@ void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, 
     {
         auto utils = ComponentUtils::getFor(componentTypeName);
         if (utils->entityHasComponent(e, entities))
+        {
             utils->getJsonComponentWithKeys(componentsJson[componentTypeName], e, entities);
+        }
     }
 }
 
@@ -113,7 +117,8 @@ void Room::toJson(json &j)
     events.emit(0, "BeforeSave");
     j = json{
         {"name", name},
-        {"entities", revivableEntitiesToSave}
+        {"entities", revivableEntitiesToSave},
+        {"persistentIdCounter", entities.ctx_or_set<PersistentEntities>().idCounter}
     };
     entities.view<const Persistent>().each([&](auto e, const Persistent &persistent) {
 
@@ -126,4 +131,5 @@ void Room::fromJson(const json &j)
 {
     name = j.at("name");
     persistentEntitiesToLoad = j.at("entities");
+    entities.ctx_or_set<PersistentEntities>().idCounter = j.at("persistentIdCounter");
 }

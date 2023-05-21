@@ -3,6 +3,7 @@
 #define GAME_COMPONENT_H
 
 #include "../../external/entt/src/entt/entity/registry.hpp"
+#include "../ecs/PersistentEntityRef.h"
 #include "serializable.h"
 #include <ecs/components/Animation.h>
 #include <utils/hashing.h>

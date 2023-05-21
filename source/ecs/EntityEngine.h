@@ -2,16 +2,19 @@
 #ifndef GAME_ENTITYENGINE_H
 #define GAME_ENTITYENGINE_H
 
-#include <map>
-#include <list>
-#include <utils/type_name.h>
-#include <utils/math_utils.h>
-#include "../../external/entt/src/entt/entity/registry.hpp"
 #include "entity_templates/EntityTemplate.h"
 #include "systems/EntitySystem.h"
+#include "EventEmitter.h"
 #include "../luau.h"
 #include "../macro_magic/component.h"
-#include "EventEmitter.h"
+
+#include <utils/type_name.h>
+#include <utils/math_utils.h>
+
+#include "../../external/entt/src/entt/entity/registry.hpp"
+
+#include <map>
+#include <list>
 
 class EntityEngine
 {

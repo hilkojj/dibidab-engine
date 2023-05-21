@@ -1,4 +1,5 @@
 
+#include "ecs/PersistentEntityRef.h"
 #include "game/session/SingleplayerSession.h"
 #include "luau.h"
 #include "game/dibidab.h"

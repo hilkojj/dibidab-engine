@@ -129,7 +129,19 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
 
         if (persistent)
         {
+            PersistentEntityID persistentEntityID;
+            if (const Persistent *pOld = engine->entities.try_get<Persistent>(e))
+            {
+                persistentEntityID = pOld->persistentId;
+            }
+            else
+            {
+                persistentEntityID = ++engine->entities.ctx_or_set<PersistentEntities>().idCounter;
+            }
+            engine->entities.ctx_or_set<PersistentEntities>().persistentEntityIdMap[persistentEntityID] = e;
+
             auto &p = engine->entities.assign_or_replace<Persistent>(e, persistency);
+            p.persistentId = persistentEntityID;
             if (persistentArgs && arguments.has_value() && arguments.value().valid())
                 jsonFromLuaTable(arguments.value(), p.data);
 

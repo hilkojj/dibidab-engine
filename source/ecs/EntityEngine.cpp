@@ -145,78 +145,101 @@ void EntityEngine::initializeLuaEnvironment()
 
     env["currentEngine"] = env;
 
-    env["valid"] = [&](entt::entity e) {
+    env["valid"] = [&](entt::entity e)
+    {
         return entities.valid(e);
     };
 
-    env["setName"] = [&](entt::entity e, sol::optional<const char *> name) {
+    env["setName"] = [&](entt::entity e, sol::optional<const char *> name)
+    {
         return setName(e, name.has_value() ? name.value() : NULL);
     };
-    env["getName"] = [&](entt::entity e) -> sol::optional<std::string> {
+    env["getName"] = [&](entt::entity e) -> sol::optional<std::string>
+    {
         if (Named *named = entities.try_get<Named>(e))
             return named->name_dont_change;
         else return sol::nullopt;
     };
-    env["getByName"] = [&] (const char *name) {
+    env["getByName"] = [&] (const char *name)
+    {
         return getByName(name);
     };
 
-    env["setComponent"] = [&](entt::entity entity, const sol::table &component) {
+    // PersistentEntityRef
+    env["setPersistentRef"] = [&] (PersistentEntityRef &ref, entt::entity e)
+    {
+        ref.set(e, entities);
+    };
+    env["resolvePersistentRef"] = [&] (PersistentEntityRef &ref)
+    {
+        return ref.resolve(entities);
+    };
+    env["tryResolvePersistentRef"] = [&] (PersistentEntityRef &ref)
+    {
+        std::pair<bool, entt::entity> result;
+        result.first = ref.tryResolve(entities, result.second);
+        return result;
+    };
+
+    env["setComponent"] = [&](entt::entity entity, const sol::table &component)
+    {
         setComponentFromLua(entity, component, entities);
     };
 
-    env["setComponentFromJson"] = [&](entt::entity entity, const char *compName, const json &j) {
+    env["setComponentFromJson"] = [&](entt::entity entity, const char *compName, const json &j)
+    {
         componentUtils(compName).setJsonComponentWithKeys(j, entity, entities);
     };
 
-    env["setComponents"] = [&](entt::entity entity, const sol::table &componentsTable) {
-
+    env["setComponents"] = [&](entt::entity entity, const sol::table &componentsTable)
+    {
         for (const auto &[i, comp] : componentsTable)
             setComponentFromLua(entity, comp, entities);
     };
 
-    env["createEntity"] = [&]() -> entt::entity {
-
+    env["createEntity"] = [&]() -> entt::entity
+    {
         return entities.create();
     };
-    env["destroyEntity"] = [&](entt::entity e) {
-
+    env["destroyEntity"] = [&](entt::entity e)
+    {
         entities.destroy(e);
     };
-    env["createChild"] = [&](entt::entity parentEntity, sol::optional<std::string> childName) -> entt::entity {
-
+    env["createChild"] = [&](entt::entity parentEntity, sol::optional<std::string> childName) -> entt::entity
+    {
         return createChild(parentEntity, childName.value_or("").c_str());
     };
-    env["getChild"] = [&](entt::entity parentEntity, const char *childName) -> entt::entity {
-
+    env["getChild"] = [&](entt::entity parentEntity, const char *childName) -> entt::entity
+    {
         return getChildByName(parentEntity, childName);
     };
-    env["applyTemplate"] = [&](entt::entity extendE, const char *templateName, const sol::optional<sol::table> &extendArgs, sol::optional<bool> persistent) {
-
+    env["applyTemplate"] = [&](entt::entity extendE, const char *templateName, const sol::optional<sol::table> &extendArgs, sol::optional<bool> persistent)
+    {
         auto entityTemplate = &getTemplate(templateName); // could throw error :)
 
         bool makePersistent = persistent.value_or(false);
 
-        if (dynamic_cast<LuaEntityTemplate *>(entityTemplate))
+        if (LuaEntityTemplate *luaEntityTemplate = dynamic_cast<LuaEntityTemplate *>(entityTemplate))
         {
-            ((LuaEntityTemplate *) entityTemplate)->
-                    createComponentsWithLuaArguments(extendE, extendArgs, makePersistent);
+            luaEntityTemplate->createComponentsWithLuaArguments(extendE, extendArgs, makePersistent);
         }
         else
             entityTemplate->createComponents(extendE, makePersistent);
     };
 
-    env["onEntityEvent"] = [&](entt::entity entity, const char *eventName, const sol::function &listener) {
+    env["onEntityEvent"] = [&](entt::entity entity, const char *eventName, const sol::function &listener)
+    {
 
         auto &emitter = entities.get_or_assign<EventEmitter>(entity);
         emitter.on(eventName, listener);
     };
-    env["onEvent"] = [&](const char *eventName, const sol::function &listener) {
+    env["onEvent"] = [&](const char *eventName, const sol::function &listener)
+    {
         events.on(eventName, listener);
     };
 
-    env["setTimeout"] = [&](entt::entity e, float time, const sol::function &func) {
-
+    env["setTimeout"] = [&](entt::entity e, float time, const sol::function &func)
+    {
         auto &f = entities.get_or_assign<LuaScripted>(e).timeoutFuncs.emplace_back();
         f.timer = time;
         f.func = func;

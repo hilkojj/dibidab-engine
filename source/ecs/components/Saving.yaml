@@ -1,4 +1,10 @@
+config:
+  hpp_incl:
+    - "../ecs/PersistentEntityRef.h"
+
 Persistent:
+  persistentId: PersistentEntityID
+
   applyTemplateOnLoad: std::string
   data: [ json, json::object() ]
 
