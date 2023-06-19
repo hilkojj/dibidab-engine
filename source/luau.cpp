@@ -1,4 +1,5 @@
 
+#include "ai/behavior_trees/BehaviorTree.h"
 #include "ecs/PersistentEntityRef.h"
 #include "game/session/SingleplayerSession.h"
 #include "luau.h"
@@ -199,6 +200,8 @@ sol::state &luau::getLuaState()
         gpa["getName"] = [](GamepadInput::Axis &key) {
             return GamepadInput::getAxisName(key);
         };
+
+        BehaviorTree::addToLuaEnvironment(lua);
     }
     return *lua;
 }

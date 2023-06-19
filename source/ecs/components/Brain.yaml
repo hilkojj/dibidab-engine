@@ -1,0 +1,7 @@
+config:
+  hpp_incl:
+    - "../ai/behavior_trees/BehaviorTree.h"
+
+Brain:
+  _cpp_only:
+    behaviorTree: BehaviorTree
