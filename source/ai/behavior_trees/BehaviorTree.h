@@ -2,6 +2,8 @@
 #ifndef GAME_BEHAVIORTREE_H
 #define GAME_BEHAVIORTREE_H
 
+#include "../../ecs/EntityEngine.h"
+
 #include "../../luau.h"
 
 #include <vector>
@@ -17,15 +19,23 @@ class BehaviorTree
         enum class Result
         {
             SUCCESS,
-            FAILURE
+            FAILURE,
+            ABORTED
         };
 
-        virtual void enter() = 0;
+        Node();
 
-        virtual void abort() = 0;
+        virtual void enter();
+
+        virtual void abort();
 
         virtual void finish(Result result);
 
+        bool isEntered() const;
+
+        bool isAborted() const;
+
+        // TODO: delete children:
         virtual ~Node() = default;
 
       protected:
@@ -34,12 +44,16 @@ class BehaviorTree
 
         virtual void onChildFinished(Node *child, Result result) {};
 
-        Node *parent = nullptr;
+      private:
+        Node *parent;
+        bool bEntered;
+        bool bAborted;
     };
 
     struct CompositeNode : public Node
     {
-        CompositeNode &addChild(Node *child);
+        // TODO: calling this in a running tree.
+        virtual CompositeNode &addChild(Node *child);
 
         const std::vector<Node *> &getChildren() const;
 
@@ -49,7 +63,10 @@ class BehaviorTree
 
     struct DecoratorNode : public Node
     {
-        DecoratorNode &setChild(Node *child);
+        void abort() override;
+
+        // TODO: calling this in a running tree.
+        virtual DecoratorNode &setChild(Node *child);
 
         Node *getChild() const;
 
@@ -70,6 +87,8 @@ class BehaviorTree
 
         void abort() override;
 
+        void finish(Result result) override;
+
       protected:
         void onChildFinished(Node *child, Result result) override;
 
@@ -85,6 +104,8 @@ class BehaviorTree
 
         void abort() override;
 
+        void finish(Result result) override;
+
       protected:
         void onChildFinished(Node *child, Result result) override;
 
@@ -96,8 +117,6 @@ class BehaviorTree
     {
         void enter() override;
 
-        void abort() override;
-
       protected:
         void onChildFinished(Node *child, Result result) override;
     };
@@ -106,28 +125,76 @@ class BehaviorTree
     {
         void enter() override;
 
+      protected:
+        void onChildFinished(Node *child, Result result) override;
+    };
+
+    struct WaitNode : public LeafNode
+    {
         void abort() override;
+    };
+
+    // ------------------------ Event-based Node classes: -------------------------- //
+
+    struct ComponentObserverNode : public CompositeNode
+    {
+        ComponentObserverNode();
+
+        void enter() override;
+
+        void abort() override;
+
+        template<class Component>
+        void has(EntityEngine *engine, entt::entity entity)
+        {
+            has(engine, entity, ComponentUtils::getFor<Component>());
+        }
+
+        void has(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+
+        template<class Component>
+        void exclude(EntityEngine *engine, entt::entity entity)
+        {
+            exclude(engine, entity, ComponentUtils::getFor<Component>());
+        }
+
+        void exclude(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+
+        ComponentObserverNode &setOnFulfilledNode(Node *child);
+
+        ComponentObserverNode &setOnUnfulfilledNode(Node *child);
+
+        // Do not use:
+        CompositeNode &addChild(Node *child) override;
 
       protected:
         void onChildFinished(Node *child, Result result) override;
+
+      private:
+
+        void onConditionsChanged(bool bForceEnter = false);
+
+        int getChildIndexToEnter() const;
+
+        void enterChild();
+
+        std::vector<bool> conditions;
+        int fulfilledNodeIndex;
+        int unfulfilledNodeIndex;
+        bool bFulFilled;
+        int currentNodeIndex;
     };
 
     // ------------------------ Customization Node classes: -------------------------- //
 
     struct LuaLeafNode : public LeafNode
     {
-        LuaLeafNode();
-
         void enter() override;
 
         void abort() override;
 
-        void finish(Result result) override;
-
         sol::function luaEnterFunction;
-
-      private:
-        bool bEntered;
+        sol::function luaAbortFunction;
     };
 
     BehaviorTree();

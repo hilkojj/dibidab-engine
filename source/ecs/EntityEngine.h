@@ -29,6 +29,8 @@ class EntityEngine
     virtual void initializeLuaEnvironment();
 
   public:
+    constexpr static const char *LUA_ENV_PTR_NAME = "enginePtr";
+
     sol::environment luaEnvironment;
     entt::registry entities;
     EventEmitter events;

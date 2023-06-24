@@ -1,6 +1,72 @@
 
 #include "BehaviorTree.h"
 
+BehaviorTree::Node::Node() :
+    parent(nullptr),
+    bEntered(false),
+    bAborted(false)
+{
+}
+
+void BehaviorTree::Node::enter()
+{
+    bEntered = true;
+#ifndef NDEBUG
+    if (parent && !parent->isEntered())
+    {
+        throw gu_err("Cannot enter a child whose parent was not entered!");
+    }
+#endif
+}
+
+void BehaviorTree::Node::abort()
+{
+#ifndef NDEBUG
+    if (!bEntered)
+    {
+        throw gu_err("Cannot abort a non-entered Node!");
+    }
+    if (bAborted)
+    {
+        throw gu_err("Cannot abort a Node again!");
+    }
+#endif
+    bAborted = true;
+}
+
+void BehaviorTree::Node::finish(BehaviorTree::Node::Result result)
+{
+#ifndef NDEBUG
+    if (!bEntered)
+    {
+        throw gu_err("Cannot finish a non-entered Node!");
+    }
+#endif
+    if (bAborted)
+    {
+        if (result != Result::ABORTED)
+        {
+            throw gu_err("Cannot finish an aborted Node with an result other than ABORTED!");
+        }
+        bAborted = false;
+    }
+    bEntered = false;
+    if (parent != nullptr)
+    {
+        parent->onChildFinished(this, result);
+    }
+}
+
+bool BehaviorTree::Node::isEntered() const
+{
+    return bEntered;
+}
+
+bool BehaviorTree::Node::isAborted() const
+{
+    return bAborted;
+}
+
 void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
 {
     if (child->parent != nullptr)
@@ -8,14 +74,6 @@ void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
         throw gu_err("Child already has a parent!");
     }
     child->parent = this;
-}
-
-void BehaviorTree::Node::finish(BehaviorTree::Node::Result result)
-{
-    if (parent != nullptr)
-    {
-        parent->onChildFinished(this, result);
-    }
 }
 
 BehaviorTree::CompositeNode &BehaviorTree::CompositeNode::addChild(BehaviorTree::Node *child)
@@ -32,6 +90,15 @@ BehaviorTree::CompositeNode &BehaviorTree::CompositeNode::addChild(BehaviorTree:
 const std::vector<BehaviorTree::Node *> &BehaviorTree::CompositeNode::getChildren() const
 {
     return children;
+}
+
+void BehaviorTree::DecoratorNode::abort()
+{
+    Node::abort();
+    if (child && child->isEntered())
+    {
+        child->abort();
+    }
 }
 
 BehaviorTree::DecoratorNode &BehaviorTree::DecoratorNode::setChild(BehaviorTree::Node *inChild)
@@ -59,6 +126,7 @@ void BehaviorTree::SequenceNode::enter()
     {
         throw gu_err("Already entered this SequenceNode!");
     }
+    BehaviorTree::Node::enter();
 
     if (getChildren().empty())
     {
@@ -73,8 +141,20 @@ void BehaviorTree::SequenceNode::enter()
 
 void BehaviorTree::SequenceNode::abort()
 {
-    // TODO
+    BehaviorTree::Node::abort();
+#ifndef NDEBUG
+    if (currentChildIndex == INVALID_CHILD_INDEX)
+    {
+        throw gu_err("Trying to abort a sequence that has not entered a child.");
+    }
+#endif
+    getChildren().at(currentChildIndex)->abort();
+}
+
+void BehaviorTree::SequenceNode::finish(BehaviorTree::Node::Result result)
+{
     currentChildIndex = INVALID_CHILD_INDEX;
+    BehaviorTree::Node::finish(result);
 }
 
 void BehaviorTree::SequenceNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -90,7 +170,11 @@ void BehaviorTree::SequenceNode::onChildFinished(BehaviorTree::Node *child, Beha
         throw gu_err("Child that finished is not the current child that was entered!");
     }
 
-    if (result != Node::Result::SUCCESS)
+    if (result == Node::Result::ABORTED)
+    {
+        finish(Node::Result::ABORTED);
+    }
+    else if (result == Node::Result::FAILURE)
     {
         finish(Node::Result::FAILURE);
     }
@@ -115,6 +199,7 @@ void BehaviorTree::SelectorNode::enter()
     {
         throw gu_err("Already entered this SelectorNode!");
     }
+    BehaviorTree::Node::enter();
 
     if (getChildren().empty())
     {
@@ -130,8 +215,20 @@ void BehaviorTree::SelectorNode::enter()
 
 void BehaviorTree::SelectorNode::abort()
 {
-    // TODO
+    BehaviorTree::Node::abort();
+#ifndef NDEBUG
+    if (currentChildIndex == INVALID_CHILD_INDEX)
+    {
+        throw gu_err("Trying to abort a selector that has not entered a child.");
+    }
+#endif
+    getChildren().at(currentChildIndex)->abort();
+}
+
+void BehaviorTree::SelectorNode::finish(BehaviorTree::Node::Result result)
+{
     currentChildIndex = INVALID_CHILD_INDEX;
+    Node::finish(result);
 }
 
 void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -147,7 +244,11 @@ void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, Beha
         throw gu_err("Child that finished is not the current child that was entered!");
     }
 
-    if (result == Node::Result::SUCCESS)
+    if (result == Node::Result::ABORTED)
+    {
+        finish(Node::Result::ABORTED);
+    }
+    else if (result == Node::Result::SUCCESS)
     {
         finish(Node::Result::SUCCESS);
     }
@@ -168,18 +269,18 @@ void BehaviorTree::InverterNode::enter()
     {
         throw gu_err("InverterNode has no child!");
     }
+    BehaviorTree::Node::enter();
     child->enter();
-}
-
-void BehaviorTree::InverterNode::abort()
-{
-    // TODO
 }
 
 void BehaviorTree::InverterNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
 {
     Node::onChildFinished(child, result);
-    // TODO: what to return in case of termination?
+    if (result == Node::Result::ABORTED)
+    {
+        finish(Node::Result::ABORTED);
+        return;
+    }
     finish(result == Node::Result::SUCCESS ? Node::Result::FAILURE : Node::Result::SUCCESS);
 }
 
@@ -190,28 +291,185 @@ void BehaviorTree::SucceederNode::enter()
     {
         throw gu_err("SucceederNode has no child!");
     }
+    BehaviorTree::Node::enter();
     child->enter();
-}
-
-void BehaviorTree::SucceederNode::abort()
-{
-    // TODO
 }
 
 void BehaviorTree::SucceederNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
 {
     Node::onChildFinished(child, result);
+    if (result == Node::Result::ABORTED)
+    {
+        finish(Node::Result::ABORTED);
+        return;
+    }
     finish(Node::Result::SUCCESS);
 }
 
-BehaviorTree::LuaLeafNode::LuaLeafNode() :
-        bEntered(false)
+void BehaviorTree::WaitNode::abort()
 {
+    Node::abort();
+    finish(Node::Result::ABORTED);
+}
+
+BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
+    fulfilledNodeIndex(INVALID_CHILD_INDEX),
+    unfulfilledNodeIndex(INVALID_CHILD_INDEX),
+    bFulFilled(false),
+    currentNodeIndex(INVALID_CHILD_INDEX)
+{
+}
+
+void BehaviorTree::ComponentObserverNode::enter()
+{
+    BehaviorTree::CompositeNode::enter();
+    onConditionsChanged(true);
+}
+
+void BehaviorTree::ComponentObserverNode::abort()
+{
+    BehaviorTree::CompositeNode::abort();
+    if (currentNodeIndex != INVALID_CHILD_INDEX)
+    {
+        getChildren().at(currentNodeIndex)->abort();
+    }
+}
+
+void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
+                                              const ComponentUtils *componentUtils)
+{
+    if (engine == nullptr)
+    {
+        throw gu_err("No EntityEngine was given");
+    }
+    // TODO: store Handles. Only register callbacks on enter. Remove callbacks when leaving. Also remove in destructor
+    EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
+    const int conditionIndex = int(conditions.size());
+    observer->onConstruct(entity, [this, conditionIndex] () {
+        conditions[conditionIndex] = true;
+        onConditionsChanged();
+    });
+    observer->onDestroy(entity, [this, conditionIndex] () {
+        conditions[conditionIndex] = false;
+        onConditionsChanged();
+    });
+    conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities));
+}
+
+void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::entity entity,
+                                                  const ComponentUtils *componentUtils)
+{
+
+}
+
+BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnFulfilledNode(Node *child)
+{
+    if (fulfilledNodeIndex != INVALID_CHILD_INDEX)
+    {
+        throw gu_err("Cannot set fulfilled child for a second time.");
+    }
+    fulfilledNodeIndex = int(getChildren().size());
+    CompositeNode::addChild(child);
+    return *this;
+}
+
+BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnUnfulfilledNode(Node *child)
+{
+    if (unfulfilledNodeIndex != INVALID_CHILD_INDEX)
+    {
+        throw gu_err("Cannot set unfulfilled child for a second time.");
+    }
+    unfulfilledNodeIndex = int(getChildren().size());
+    CompositeNode::addChild(child);
+    return *this;
+}
+
+BehaviorTree::CompositeNode &BehaviorTree::ComponentObserverNode::addChild(BehaviorTree::Node *child)
+{
+    throw gu_err("Do not call addChild on this node.");
+}
+
+void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+{
+    Node::onChildFinished(child, result);
+    if (result == Node::Result::ABORTED)
+    {
+        if (isAborted())
+        {
+            finish(Node::Result::ABORTED);
+        }
+        else
+        {
+            enterChild();
+        }
+    }
+    else
+    {
+        finish(result);
+    }
+}
+
+void BehaviorTree::ComponentObserverNode::onConditionsChanged(const bool bForceEnter)
+{
+    bool newFulfilled = true;
+    for (const bool condition : conditions)
+    {
+        if (!condition)
+        {
+            newFulfilled = false;
+            break;
+        }
+    }
+    if (newFulfilled != bFulFilled || bForceEnter)
+    {
+        bFulFilled = newFulfilled;
+
+        if (isEntered())
+        {
+            if (currentNodeIndex == INVALID_CHILD_INDEX)
+            {
+                enterChild();
+            }
+            else
+            {
+                Node *toAbort = getChildren().at(currentNodeIndex);
+                if (!toAbort->isAborted())
+                {
+                    toAbort->abort();
+                }
+            }
+        }
+#ifndef NDEBUG
+        else
+        {
+            assert(!bForceEnter);
+        }
+#endif
+    }
+}
+
+int BehaviorTree::ComponentObserverNode::getChildIndexToEnter() const
+{
+    return bFulFilled ? fulfilledNodeIndex : unfulfilledNodeIndex;
+}
+
+void BehaviorTree::ComponentObserverNode::enterChild()
+{
+    int toEnterIndex = getChildIndexToEnter();
+    if (toEnterIndex == INVALID_CHILD_INDEX)
+    {
+        finish(Node::Result::SUCCESS);
+    }
+    else
+    {
+        currentNodeIndex = toEnterIndex;
+        getChildren().at(toEnterIndex)->enter();
+    }
 }
 
 void BehaviorTree::LuaLeafNode::enter()
 {
-    bEntered = true;
+    BehaviorTree::Node::enter();
     if (luaEnterFunction.valid())
     {
         sol::protected_function_result result = luaEnterFunction(this);
@@ -220,7 +478,7 @@ void BehaviorTree::LuaLeafNode::enter()
         {
             std::cerr << "LuaLeafNode::enter failed:\n" << result.get<sol::error>().what() << std::endl;
 
-            if (bEntered)
+            if (isEntered())
             {
                 finish(Node::Result::FAILURE);
             }
@@ -235,13 +493,25 @@ void BehaviorTree::LuaLeafNode::enter()
 
 void BehaviorTree::LuaLeafNode::abort()
 {
-    bEntered = false;
-}
+    BehaviorTree::Node::abort();
+    if (luaAbortFunction.valid())
+    {
+        sol::protected_function_result result = luaAbortFunction(this);
 
-void BehaviorTree::LuaLeafNode::finish(BehaviorTree::Node::Result result)
-{
-    bEntered = false;
-    Node::finish(result);
+        if (!result.valid())
+        {
+            std::cerr << "LuaLeafNode::abort failed:\n" << result.get<sol::error>().what() << std::endl;
+
+            if (isAborted())
+            {
+                finish(Node::Result::ABORTED);
+            }
+        }
+    }
+    else
+    {
+        finish(Node::Result::ABORTED);
+    }
 }
 
 BehaviorTree::BehaviorTree() :
@@ -269,7 +539,8 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
     lua->new_enum(
         "BTResult",
         "SUCCESS", BehaviorTree::Node::Result::SUCCESS,
-        "FAILURE", BehaviorTree::Node::Result::FAILURE
+        "FAILURE", BehaviorTree::Node::Result::FAILURE,
+        "ABORTED", BehaviorTree::Node::Result::ABORTED
     );
 
     // ------------------------ Abstract Node classes: -------------------------- //
@@ -330,6 +601,45 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
     );
 
+    sol::usertype<BehaviorTree::WaitNode> waitNodeType = lua->new_usertype<BehaviorTree::WaitNode>(
+        "BTWaitNode",
+        sol::factories([] ()
+        {
+            return new BehaviorTree::WaitNode();
+        }),
+        sol::base_classes,
+        sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>()
+    );
+
+    // ------------------------ Event-based Node classes: -------------------------- //
+
+    sol::usertype<BehaviorTree::ComponentObserverNode> componentObserverNodeType = lua->new_usertype<BehaviorTree::ComponentObserverNode>(
+        "BTComponentObserverNode",
+        sol::factories([] ()
+        {
+            return new BehaviorTree::ComponentObserverNode();
+        }),
+        sol::base_classes,
+        sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>(),
+
+        "has", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
+            const sol::this_environment &currentEnv) -> BehaviorTree::ComponentObserverNode &
+        {
+            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
+            node.has(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            return node;
+        },
+        "exclude", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
+            const sol::this_environment &currentEnv) -> BehaviorTree::ComponentObserverNode &
+        {
+            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
+            node.exclude(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            return node;
+        },
+        "fulfilled", &BehaviorTree::ComponentObserverNode::setOnFulfilledNode,
+        "unfulfilled", &BehaviorTree::ComponentObserverNode::setOnUnfulfilledNode
+    );
+
     // ------------------------ Customization Node classes: -------------------------- //
 
     sol::usertype<BehaviorTree::LuaLeafNode> luaLeafNodeType = lua->new_usertype<BehaviorTree::LuaLeafNode>(
@@ -345,7 +655,11 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         {
             luaLeafNode.luaEnterFunction = function;
             return luaLeafNode;
+        },
+        "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+        {
+            luaLeafNode.luaAbortFunction = function;
+            return luaLeafNode;
         }
     );
 }
-

@@ -3,5 +3,6 @@
 //
 #include "component.h"
 
-std::map<std::string, ComponentUtils *> *ComponentUtils::utils = NULL;
-std::vector<std::string> *ComponentUtils::names = NULL;
+std::map<std::size_t, ComponentUtils *> *ComponentUtils::utilsByType = nullptr;
+std::map<std::string, ComponentUtils *> *ComponentUtils::utils = nullptr;
+std::vector<std::string> *ComponentUtils::names = nullptr;

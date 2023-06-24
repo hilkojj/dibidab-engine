@@ -4,12 +4,24 @@
 
 #include "../../external/entt/src/entt/entity/registry.hpp"
 #include "../ecs/PersistentEntityRef.h"
+#include "../ecs/EntityObserver.h"
 #include "serializable.h"
 #include <ecs/components/Animation.h>
 #include <utils/hashing.h>
 
 struct ComponentUtils
 {
+    template<class Component>
+    struct TemplatedEntityObserverWrapper
+    {
+        EntityObserver observer;
+
+        TemplatedEntityObserverWrapper(entt::registry &registry) :
+            observer(std::in_place_type<Component>, registry)
+        {
+        }
+    };
+
   public:
 
     // todo: improve naming of these functions:
@@ -24,24 +36,28 @@ struct ComponentUtils
 
     std::function<void(sol::table &, entt::registry &)> registerLuaFunctions;
 
+    std::function<EntityObserver *(entt::registry &)> getEntityObserver;
+
     template <class Component>
     const static ComponentUtils *create()
     {
         if (!utils) utils = new std::map<std::string, ComponentUtils *>();
+        if (!utilsByType) utilsByType = new std::map<std::size_t, ComponentUtils *>();
         if (!names) names = new std::vector<std::string>();
 
         // for some reason ComponentUtils::create<Component>() is called multiple times for the same Component on Windows.... wtf...
         if (getFor(Component::COMPONENT_NAME))
             return getFor(Component::COMPONENT_NAME);
 
-        auto u = new ComponentUtils();
+        ComponentUtils *u = new ComponentUtils();
 
         (*utils)[Component::COMPONENT_NAME] = u;
+        (*utilsByType)[typeid(Component).hash_code()] = u;
         names->push_back(Component::COMPONENT_NAME);
 
         u->entityHasComponent = [] (entt::entity e, const entt::registry &reg)
         {
-            return reg.valid(e) ? reg.has<Component>(e) : false;    // todo: why the valid() check?
+            return reg.valid(e) && reg.has<Component>(e);    // todo: why the valid() check?
         };
         u->getJsonComponent = [] (json &j, entt::entity e, const entt::registry &reg)
         {
@@ -65,8 +81,8 @@ struct ComponentUtils
         };
         u->getDefaultJsonComponent = [] { return Component(); };
 
-        u->setFromLuaTable = [] (const sol::table &table, entt::entity e, entt::registry &reg) {
-
+        u->setFromLuaTable = [] (const sol::table &table, entt::entity e, entt::registry &reg)
+        {
             auto optional = table.as<sol::optional<Component &>>();
             if (optional.has_value())
             {
@@ -80,17 +96,45 @@ struct ComponentUtils
                 reg.get_or_assign<Component>(e).fromLuaTable(table);
         };
 
-        u->registerLuaFunctions = [] (sol::table &table, entt::registry &reg) {
+        u->registerLuaFunctions = [u] (sol::table &table, entt::registry &reg)
+        {
+            sol::table componentUtilsTable = table[Component::COMPONENT_NAME].template get_or_create<sol::table>();
+            Component::registerEntityEngineFunctions(componentUtilsTable, reg);
+            componentUtilsTable["componentUtils"] = u;
+        };
 
-            Component::registerEntityEngineFunctions(table, reg);
+        u->getEntityObserver = [] (entt::registry &reg)
+        {
+            if (TemplatedEntityObserverWrapper<Component> *wrapper = reg.try_ctx<TemplatedEntityObserverWrapper<Component>>())
+            {
+                return &wrapper->observer;
+            }
+            TemplatedEntityObserverWrapper<Component> &wrapper = reg.ctx_or_set<TemplatedEntityObserverWrapper<Component>>(reg);
+            return &wrapper.observer;
         };
 
         return u;
     }
 
+    template<class Component>
+    static const ComponentUtils *getFor()
+    {
+        return utilsByType->operator[](typeid(Component).hash_code());
+    }
+
     static const ComponentUtils *getFor(const std::string &componentName)
     {
         return utils->operator[](componentName);
+    }
+
+    static const ComponentUtils *getFromLuaComponentTable(const sol::table &componentTable)
+    {
+        ComponentUtils *ptr = componentTable.get<ComponentUtils *>("componentUtils");
+        if (!ptr)
+        {
+            throw gu_err("Provided table is not a component table!");
+        }
+        return ptr;
     }
 
     static const std::vector<std::string> &getAllComponentTypeNames()
@@ -99,6 +143,7 @@ struct ComponentUtils
     }
 
   private:
+    static std::map<std::size_t, ComponentUtils *> *utilsByType;
     static std::map<std::string, ComponentUtils *> *utils;
     static std::vector<std::string> *names;
 

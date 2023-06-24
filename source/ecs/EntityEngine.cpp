@@ -144,6 +144,7 @@ void EntityEngine::initializeLuaEnvironment()
     auto &env = luaEnvironment;
 
     env["currentEngine"] = env;
+    env[LUA_ENV_PTR_NAME] = this;
 
     env["valid"] = [&](entt::entity e)
     {
