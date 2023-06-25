@@ -675,12 +675,12 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>(),
 
-        "setEnterFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+        "setEnterFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function) -> BehaviorTree::LuaLeafNode &
         {
             luaLeafNode.luaEnterFunction = function;
             return luaLeafNode;
         },
-        "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+        "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function) -> BehaviorTree::LuaLeafNode &
         {
             luaLeafNode.luaAbortFunction = function;
             return luaLeafNode;
