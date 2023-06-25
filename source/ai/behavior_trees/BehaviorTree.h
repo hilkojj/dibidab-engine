@@ -8,6 +8,12 @@
 
 #include <vector>
 
+/**
+ * Behavior trees can be created in C++ or Lua, or both.
+ * Note that parent nodes should delete their children on their destruction.
+ * The root node will be deleted by the BehaviorTree's destructor.
+ * Created nodes that are not part of the tree will not be deleted automatically.
+ */
 class BehaviorTree
 {
   public:
@@ -35,7 +41,6 @@ class BehaviorTree
 
         bool isAborted() const;
 
-        // TODO: delete children:
         virtual ~Node() = default;
 
       protected:
@@ -57,6 +62,8 @@ class BehaviorTree
 
         const std::vector<Node *> &getChildren() const;
 
+        ~CompositeNode() override;
+
       private:
         std::vector<Node *> children;
     };
@@ -69,6 +76,8 @@ class BehaviorTree
         virtual DecoratorNode &setChild(Node *child);
 
         Node *getChild() const;
+
+        ~DecoratorNode() override;
 
       private:
         Node *child;
@@ -172,12 +181,16 @@ class BehaviorTree
 
       private:
 
+        void observe(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils, bool presentValue,
+            bool absentValue);
+
         void onConditionsChanged(bool bForceEnter = false);
 
         int getChildIndexToEnter() const;
 
         void enterChild();
 
+        std::vector<EntityObserver::Handle> observerHandles;
         std::vector<bool> conditions;
         int fulfilledNodeIndex;
         int unfulfilledNodeIndex;
@@ -202,6 +215,8 @@ class BehaviorTree
     void setRootNode(Node *root);
 
     Node *getRootNode() const;
+
+    ~BehaviorTree();
 
   private:
 

@@ -92,6 +92,16 @@ const std::vector<BehaviorTree::Node *> &BehaviorTree::CompositeNode::getChildre
     return children;
 }
 
+BehaviorTree::CompositeNode::~CompositeNode()
+{
+    for (Node *child : children)
+    {
+        delete child;
+    }
+    children.clear();
+}
+
+
 void BehaviorTree::DecoratorNode::abort()
 {
     Node::abort();
@@ -111,6 +121,11 @@ BehaviorTree::DecoratorNode &BehaviorTree::DecoratorNode::setChild(BehaviorTree:
 BehaviorTree::Node *BehaviorTree::DecoratorNode::getChild() const
 {
     return child;
+}
+
+BehaviorTree::DecoratorNode::~DecoratorNode()
+{
+    delete child;
 }
 
 constexpr static int INVALID_CHILD_INDEX = -1;
@@ -338,28 +353,13 @@ void BehaviorTree::ComponentObserverNode::abort()
 void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
                                               const ComponentUtils *componentUtils)
 {
-    if (engine == nullptr)
-    {
-        throw gu_err("No EntityEngine was given");
-    }
-    // TODO: store Handles. Only register callbacks on enter. Remove callbacks when leaving. Also remove in destructor
-    EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
-    const int conditionIndex = int(conditions.size());
-    observer->onConstruct(entity, [this, conditionIndex] () {
-        conditions[conditionIndex] = true;
-        onConditionsChanged();
-    });
-    observer->onDestroy(entity, [this, conditionIndex] () {
-        conditions[conditionIndex] = false;
-        onConditionsChanged();
-    });
-    conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities));
+    observe(engine, entity, componentUtils, true, false);
 }
 
 void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::entity entity,
                                                   const ComponentUtils *componentUtils)
 {
-
+    observe(engine, entity, componentUtils, false, true);
 }
 
 BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnFulfilledNode(Node *child)
@@ -407,6 +407,29 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
     {
         finish(result);
     }
+}
+
+void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
+    const ComponentUtils *componentUtils, const bool presentValue, const bool absentValue)
+{
+    if (engine == nullptr)
+    {
+        throw gu_err("No EntityEngine was given");
+    }
+    // TODO: Only register callbacks on enter. Remove callbacks when leaving. Also remove in destructor
+    EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
+    const int conditionIndex = int(conditions.size());
+    EntityObserver::Handle onConstructHandle = observer->onConstruct(entity, [this, conditionIndex, presentValue] () {
+        conditions[conditionIndex] = presentValue;
+        onConditionsChanged();
+    });
+    EntityObserver::Handle onDestroyHandle = observer->onDestroy(entity, [this, conditionIndex, absentValue] () {
+        conditions[conditionIndex] = absentValue;
+        onConditionsChanged();
+    });
+    observerHandles.push_back(onConstructHandle);
+    observerHandles.push_back(onDestroyHandle);
+    conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities) ? presentValue : absentValue);
 }
 
 void BehaviorTree::ComponentObserverNode::onConditionsChanged(const bool bForceEnter)
@@ -466,6 +489,7 @@ void BehaviorTree::ComponentObserverNode::enterChild()
         getChildren().at(toEnterIndex)->enter();
     }
 }
+
 
 void BehaviorTree::LuaLeafNode::enter()
 {
@@ -662,4 +686,9 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             return luaLeafNode;
         }
     );
+}
+
+BehaviorTree::~BehaviorTree()
+{
+    delete rootNode;
 }

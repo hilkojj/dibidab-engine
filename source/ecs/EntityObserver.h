@@ -42,7 +42,7 @@ class EntityObserver
         registry.on_construct<Component>().template connect<&EntityObserver::onComponentConstructed>(this);
         registry.on_destroy<Component>().template connect<&EntityObserver::onComponentDestroyed>(this);
 
-        tryGetOnConstructCallbacks = [] (entt::registry &registry, entt::entity e) -> typeof(Observed<Component>::onConstructCallbacks) *
+        tryGetOnConstructCallbacks = [] (entt::registry &registry, entt::entity e) -> std::list<std::shared_ptr<Callback>> *
         {
             if (Observed<Component> *observed = registry.try_get<Observed<Component>>(e))
             {
@@ -50,7 +50,7 @@ class EntityObserver
             }
             return nullptr;
         };
-        tryGetOnDestroyCallbacks = [] (entt::registry &registry, entt::entity e) -> typeof(Observed<Component>::onDestroyCallbacks) *
+        tryGetOnDestroyCallbacks = [] (entt::registry &registry, entt::entity e) -> std::list<std::shared_ptr<Callback>> *
         {
             if (Observed<Component> *observed = registry.try_get<Observed<Component>>(e))
             {
