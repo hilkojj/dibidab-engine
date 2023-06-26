@@ -18,7 +18,7 @@
 
 class EntityEngine
 {
-    bool initialized = false, updating = false;
+    bool bInitialized = false, bUpdating = false, bDestructing = false;
   protected:
 
     std::list<EntitySystem *> systems;
@@ -112,10 +112,11 @@ class EntityEngine
 
     virtual ~EntityEngine();
 
+    bool isDestructing() const;
+
     virtual void update(double deltaTime);
 
-    bool isUpdating() const { return updating; };
-
+    bool isUpdating() const;
 
     virtual vec3 getPosition(entt::entity) const;
 

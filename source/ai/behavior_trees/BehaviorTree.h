@@ -58,7 +58,7 @@ class BehaviorTree
     struct CompositeNode : public Node
     {
         // TODO: calling this in a running tree.
-        virtual CompositeNode &addChild(Node *child);
+        virtual CompositeNode *addChild(Node *child);
 
         const std::vector<Node *> &getChildren() const;
 
@@ -72,8 +72,7 @@ class BehaviorTree
     {
         void abort() override;
 
-        // TODO: calling this in a running tree.
-        virtual DecoratorNode &setChild(Node *child);
+        virtual DecoratorNode *setChild(Node *child);
 
         Node *getChild() const;
 
@@ -154,27 +153,31 @@ class BehaviorTree
         void abort() override;
 
         template<class Component>
-        void has(EntityEngine *engine, entt::entity entity)
+        ComponentObserverNode *has(EntityEngine *engine, entt::entity entity)
         {
             has(engine, entity, ComponentUtils::getFor<Component>());
+            return this;
         }
 
         void has(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
 
         template<class Component>
-        void exclude(EntityEngine *engine, entt::entity entity)
+        ComponentObserverNode *exclude(EntityEngine *engine, entt::entity entity)
         {
             exclude(engine, entity, ComponentUtils::getFor<Component>());
+            return this;
         }
 
         void exclude(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
 
-        ComponentObserverNode &setOnFulfilledNode(Node *child);
+        ComponentObserverNode *setOnFulfilledNode(Node *child);
 
-        ComponentObserverNode &setOnUnfulfilledNode(Node *child);
+        ComponentObserverNode *setOnUnfulfilledNode(Node *child);
 
         // Do not use:
-        CompositeNode &addChild(Node *child) override;
+        CompositeNode *addChild(Node *child) override;
+
+        ~ComponentObserverNode() override;
 
       protected:
         void onChildFinished(Node *child, Result result) override;
@@ -190,7 +193,14 @@ class BehaviorTree
 
         void enterChild();
 
-        std::vector<EntityObserver::Handle> observerHandles;
+        struct ObserverHandle
+        {
+            EntityEngine *engine = nullptr;
+            const ComponentUtils *componentUtils = nullptr;
+            EntityObserver::Handle handle;
+        };
+
+        std::vector<ObserverHandle> observerHandles;
         std::vector<bool> conditions;
         int fulfilledNodeIndex;
         int unfulfilledNodeIndex;
@@ -216,11 +226,10 @@ class BehaviorTree
 
     Node *getRootNode() const;
 
-    ~BehaviorTree();
-
   private:
 
-    Node *rootNode;
+    // Note: this is a shared pointer, so it only gets deleted when BehaviorTree is truly deleted and not copied.
+    std::shared_ptr<Node> rootNode;
 
   public:
     static void addToLuaEnvironment(sol::state *lua);

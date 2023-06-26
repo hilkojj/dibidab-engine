@@ -11,7 +11,7 @@
 
 void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
 {
-    assert(!initialized);
+    assert(!bInitialized);
     if (pushFront)
         systems.push_front(sys);
     else
@@ -79,10 +79,16 @@ void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
 
 EntityEngine::~EntityEngine()
 {
+    bDestructing = true;
     for (auto sys : systems)
         delete sys;
     for (auto &entry : entityTemplates)
         delete entry.second;
+}
+
+bool EntityEngine::isDestructing() const
+{
+    return bDestructing;
 }
 
 struct Named {
@@ -91,7 +97,7 @@ struct Named {
 
 void EntityEngine::initialize()
 {
-    assert(!initialized);
+    assert(!bInitialized);
 
     addSystem(new AnimationSystem("animations"));
     addSystem(new KeyEventsSystem("key listeners"));
@@ -123,7 +129,7 @@ void EntityEngine::initialize()
     for (auto sys : systems)
         sys->init(this);
 
-    initialized = true;
+    bInitialized = true;
 }
 
 void setComponentFromLua(entt::entity entity, const sol::table &component, entt::registry &reg)
@@ -282,10 +288,10 @@ entt::entity EntityEngine::createChild(entt::entity parent, const char *childNam
 
 void EntityEngine::update(double deltaTime)
 {
-    if (!initialized)
+    if (!bInitialized)
         throw gu_err("Cannot update non-initialized EntityEngine!");
 
-    updating = true;
+    bUpdating = true;
 
     for (auto sys : systems)
     {
@@ -304,7 +310,12 @@ void EntityEngine::update(double deltaTime)
             }
         }
     }
-    updating = false;
+    bUpdating = false;
+}
+
+bool EntityEngine::isUpdating() const
+{
+    return bUpdating;
 }
 
 void EntityEngine::onChildCreation(entt::registry &reg, entt::entity entity)
@@ -407,5 +418,3 @@ const char *EntityEngine::getName(entt::entity e) const
         return named->name_dont_change.c_str();
     else return NULL;
 }
-
-

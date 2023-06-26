@@ -34,8 +34,27 @@ void Room::update(double deltaTime)
     EntityEngine::update(deltaTime);
 }
 
+bool Room::isLoadingPersistentEntities() const
+{
+    return bLoadingPersistentEntities;
+}
+
 void Room::loadPersistentEntities()
 {
+    bLoadingPersistentEntities = true;
+
+    const char *resolveFuncName = "resolvePersistentRef";
+    const char *tryResolveFuncName = "tryResolvePersistentRef";
+    sol::function originalResolvePersistentRef = luaEnvironment[resolveFuncName];
+    sol::function originalTryResolvePersistentRef = luaEnvironment[tryResolveFuncName];
+    assert(originalResolvePersistentRef.valid());
+    assert(originalTryResolvePersistentRef.valid());
+    auto tmpResolveFunc = [] (const sol::object &) {
+        throw gu_err("You shouldn't try to resolve persistent entity references while loading persistent entities!");
+    };
+    luaEnvironment[resolveFuncName] = tmpResolveFunc;
+    luaEnvironment[tryResolveFuncName] = tmpResolveFunc;
+
     for (json &jsonEntity : persistentEntitiesToLoad)
     {
         auto e = entities.create();
@@ -69,6 +88,9 @@ void Room::loadPersistentEntities()
         }
     }
     persistentEntitiesToLoad.clear();
+    bLoadingPersistentEntities = false;
+    luaEnvironment[resolveFuncName] = originalResolvePersistentRef;
+    luaEnvironment[tryResolveFuncName] = originalTryResolvePersistentRef;
 }
 
 int Room::nrOfPersistentEntities() const

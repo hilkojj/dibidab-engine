@@ -20,6 +20,7 @@ class Room : public EntityEngine
     friend Level;
 
     json persistentEntitiesToLoad, revivableEntitiesToSave;
+    bool bLoadingPersistentEntities = false;
 
     void loadPersistentEntities();
 
@@ -39,6 +40,8 @@ class Room : public EntityEngine
     int nrOfPersistentEntities() const;
 
     void update(double deltaTime) override;
+
+    bool isLoadingPersistentEntities() const;
 
     virtual void toJson(json &);
 

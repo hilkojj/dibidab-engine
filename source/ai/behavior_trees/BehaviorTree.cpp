@@ -76,7 +76,7 @@ void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
     child->parent = this;
 }
 
-BehaviorTree::CompositeNode &BehaviorTree::CompositeNode::addChild(BehaviorTree::Node *child)
+BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(BehaviorTree::Node *child)
 {
     if (child == nullptr)
     {
@@ -84,7 +84,7 @@ BehaviorTree::CompositeNode &BehaviorTree::CompositeNode::addChild(BehaviorTree:
     }
     registerAsParent(child);
     children.push_back(child);
-    return *this;
+    return this;
 }
 
 const std::vector<BehaviorTree::Node *> &BehaviorTree::CompositeNode::getChildren() const
@@ -111,11 +111,19 @@ void BehaviorTree::DecoratorNode::abort()
     }
 }
 
-BehaviorTree::DecoratorNode &BehaviorTree::DecoratorNode::setChild(BehaviorTree::Node *inChild)
+BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(BehaviorTree::Node *inChild)
 {
+    if (child != nullptr)
+    {
+        if (isEntered())
+        {
+            throw gu_err("Cannot set child on a Decorator Node that is currently entered!");
+        }
+        delete child;
+    }
     registerAsParent(inChild);
     child = inChild;
-    return *this;
+    return this;
 }
 
 BehaviorTree::Node *BehaviorTree::DecoratorNode::getChild() const
@@ -362,7 +370,7 @@ void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::en
     observe(engine, entity, componentUtils, false, true);
 }
 
-BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnFulfilledNode(Node *child)
+BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnFulfilledNode(Node *child)
 {
     if (fulfilledNodeIndex != INVALID_CHILD_INDEX)
     {
@@ -370,10 +378,10 @@ BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnF
     }
     fulfilledNodeIndex = int(getChildren().size());
     CompositeNode::addChild(child);
-    return *this;
+    return this;
 }
 
-BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnUnfulfilledNode(Node *child)
+BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnUnfulfilledNode(Node *child)
 {
     if (unfulfilledNodeIndex != INVALID_CHILD_INDEX)
     {
@@ -381,10 +389,10 @@ BehaviorTree::ComponentObserverNode &BehaviorTree::ComponentObserverNode::setOnU
     }
     unfulfilledNodeIndex = int(getChildren().size());
     CompositeNode::addChild(child);
-    return *this;
+    return this;
 }
 
-BehaviorTree::CompositeNode &BehaviorTree::ComponentObserverNode::addChild(BehaviorTree::Node *child)
+BehaviorTree::CompositeNode *BehaviorTree::ComponentObserverNode::addChild(BehaviorTree::Node *child)
 {
     throw gu_err("Do not call addChild on this node.");
 }
@@ -412,11 +420,17 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
 void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
     const ComponentUtils *componentUtils, const bool presentValue, const bool absentValue)
 {
+#ifndef NDEBUG
     if (engine == nullptr)
     {
         throw gu_err("No EntityEngine was given");
     }
-    // TODO: Only register callbacks on enter. Remove callbacks when leaving. Also remove in destructor
+    if (!engine->entities.valid(entity))
+    {
+        throw gu_err("Invalid entity was given");
+    }
+#endif
+    // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
     EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
     const int conditionIndex = int(conditions.size());
     EntityObserver::Handle onConstructHandle = observer->onConstruct(entity, [this, conditionIndex, presentValue] () {
@@ -427,8 +441,12 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
         conditions[conditionIndex] = absentValue;
         onConditionsChanged();
     });
-    observerHandles.push_back(onConstructHandle);
-    observerHandles.push_back(onDestroyHandle);
+    observerHandles.push_back(ObserverHandle {
+        engine, componentUtils, onConstructHandle
+    });
+    observerHandles.push_back(ObserverHandle {
+        engine, componentUtils, onDestroyHandle
+    });
     conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities) ? presentValue : absentValue);
 }
 
@@ -487,6 +505,22 @@ void BehaviorTree::ComponentObserverNode::enterChild()
     {
         currentNodeIndex = toEnterIndex;
         getChildren().at(toEnterIndex)->enter();
+    }
+}
+
+BehaviorTree::ComponentObserverNode::~ComponentObserverNode()
+{
+    for (ObserverHandle &observerHandle : observerHandles)
+    {
+        if (observerHandle.engine->isDestructing())
+        {
+            // getEntityObserver() will crash because the registry's context variables are destroyed already.
+            // Unregistering is not needed because the callbacks will be destroyed anyway.
+            continue;
+        }
+        observerHandle.componentUtils
+            ->getEntityObserver(observerHandle.engine->entities)
+            ->unregister(observerHandle.handle);
     }
 }
 
@@ -550,12 +584,12 @@ void BehaviorTree::setRootNode(BehaviorTree::Node *root)
     {
         throw gu_err("A rootNode was already set!");
     }
-    rootNode = root;
+    rootNode = std::shared_ptr<Node>(root);
 }
 
 BehaviorTree::Node *BehaviorTree::getRootNode() const
 {
-    return rootNode;
+    return rootNode.get();
 }
 
 void BehaviorTree::addToLuaEnvironment(sol::state *lua)
@@ -581,6 +615,14 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::bases<BehaviorTree::Node>(),
 
         "addChild", &BehaviorTree::CompositeNode::addChild
+    );
+
+    sol::usertype<BehaviorTree::DecoratorNode> decoratorNodeType = lua->new_usertype<BehaviorTree::DecoratorNode>(
+        "BTDecoratorNode",
+        sol::base_classes,
+        sol::bases<BehaviorTree::Node>(),
+
+        "setChild", &BehaviorTree::DecoratorNode::setChild
     );
 
     // ------------------------ Basic Node classes: -------------------------- //
@@ -686,9 +728,4 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             return luaLeafNode;
         }
     );
-}
-
-BehaviorTree::~BehaviorTree()
-{
-    delete rootNode;
 }

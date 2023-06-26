@@ -51,7 +51,7 @@ void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
 
         for (auto &func : call)
         {
-            luau::callFunction(func, e);
+            luau::tryCallFunction(func, e);
             if (!room->entities.valid(e))
                 return;
         }
