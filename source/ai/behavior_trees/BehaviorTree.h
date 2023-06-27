@@ -137,6 +137,17 @@ class BehaviorTree
         void onChildFinished(Node *child, Result result) override;
     };
 
+    struct RepeaterNode : public DecoratorNode
+    {
+        void enter() override;
+
+      protected:
+        void onChildFinished(Node *child, Result result) override;
+
+      private:
+        void enterChild();
+    };
+
     struct WaitNode : public LeafNode
     {
         void abort() override;
@@ -151,6 +162,8 @@ class BehaviorTree
         void enter() override;
 
         void abort() override;
+
+        void finish(Result result) override;
 
         template<class Component>
         ComponentObserverNode *has(EntityEngine *engine, entt::entity entity)

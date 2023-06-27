@@ -329,6 +329,39 @@ void BehaviorTree::SucceederNode::onChildFinished(BehaviorTree::Node *child, Beh
     finish(Node::Result::SUCCESS);
 }
 
+void BehaviorTree::RepeaterNode::enter()
+{
+    BehaviorTree::Node::enter();
+    enterChild();
+}
+
+void BehaviorTree::RepeaterNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+{
+    Node::onChildFinished(child, result);
+    switch (result)
+    {
+        case Result::SUCCESS:
+            enterChild();
+            break;
+        case Result::FAILURE:
+            finish(Node::Result::SUCCESS);
+            break;
+        case Result::ABORTED:
+            finish(Node::Result::ABORTED);
+            break;
+    }
+}
+
+void BehaviorTree::RepeaterNode::enterChild()
+{
+    Node *child = getChild();
+    if (child == nullptr)
+    {
+        throw gu_err("RepeaterNode has no child!");
+    }
+    child->enter();
+}
+
 void BehaviorTree::WaitNode::abort()
 {
     Node::abort();
@@ -356,6 +389,12 @@ void BehaviorTree::ComponentObserverNode::abort()
     {
         getChildren().at(currentNodeIndex)->abort();
     }
+}
+
+void BehaviorTree::ComponentObserverNode::finish(BehaviorTree::Node::Result result)
+{
+    Node::finish(result);
+    currentNodeIndex = INVALID_CHILD_INDEX;
 }
 
 void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
@@ -524,7 +563,6 @@ BehaviorTree::ComponentObserverNode::~ComponentObserverNode()
     }
 }
 
-
 void BehaviorTree::LuaLeafNode::enter()
 {
     BehaviorTree::Node::enter();
@@ -662,6 +700,16 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::factories([] ()
         {
             return new BehaviorTree::SucceederNode();
+        }),
+        sol::base_classes,
+        sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
+    );
+
+    sol::usertype<BehaviorTree::RepeaterNode> repeaterNodeType = lua->new_usertype<BehaviorTree::RepeaterNode>(
+        "BTRepeaterNode",
+        sol::factories([] ()
+        {
+            return new BehaviorTree::RepeaterNode();
         }),
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
