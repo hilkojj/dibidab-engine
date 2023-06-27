@@ -73,19 +73,19 @@ struct sol::usertype_container<json> : public container_detail::usertype_contain
 
         const char *keyStr = sol::stack::unqualified_check_get<const char *>(lua, 2).value_or((const char *) NULL);
         if (keyStr)
-            jOut = &j.at(keyStr);
+            jOut = &j[keyStr];
 
         else
         {
             int keyInt = sol::stack::unqualified_check_get<int>(lua, 2).value();
-            jOut = &j.at(keyInt);
+            jOut = &j[keyInt];
         }
         if (jOut->is_structured())
             sol::stack::push(lua, jOut);
         else if (jOut->is_boolean())
             sol::stack::push(lua, bool(*jOut));
         else if (jOut->is_null())
-            sol::stack::push(lua, sol::nil);
+            return 0;
         else if (jOut->is_number_float())
             sol::stack::push(lua, float(*jOut));
         else if (jOut->is_number())
