@@ -173,6 +173,12 @@ void EntityEngine::initializeLuaEnvironment()
     };
 
     // PersistentEntityRef
+    env["createPersistentRef"] = [&] (entt::entity e) -> PersistentEntityRef
+    {
+        PersistentEntityRef ref;
+        ref.set(e, entities);
+        return ref;
+    };
     env["setPersistentRef"] = [&] (PersistentEntityRef &ref, entt::entity e)
     {
         ref.set(e, entities);
