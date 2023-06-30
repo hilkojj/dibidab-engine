@@ -13,9 +13,16 @@ PersistentEntityRef::PersistentEntityRef() :
 
 void PersistentEntityRef::set(entt::entity e, const entt::registry &reg)
 {
-    if (const Persistent *persistent = reg.valid(e) ? reg.try_get<Persistent>(e) : nullptr)
+    if (reg.valid(e))
     {
-        persistentEntityId = persistent->persistentId;
+        if (const Persistent *persistent = reg.try_get<Persistent>(e))
+        {
+            persistentEntityId = persistent->persistentId;
+        }
+        else
+        {
+            throw gu_err("Tried to set a PersistentEntityRef to an non-persistent entity (entity: " + std::to_string(int(e)) + ")");
+        }
     }
     else
     {

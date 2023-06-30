@@ -10,6 +10,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
 {
     this->engine = engine_; // DONT RENAME engine_ to engine!!!, lambdas should use this->engine.
     env["TEMPLATE_NAME"] = name;
+    env["TEMPLATE_PTR"] = this;
 
     defaultArgs = sol::table::create(env.lua_state());
 
