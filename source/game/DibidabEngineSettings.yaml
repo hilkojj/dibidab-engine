@@ -23,6 +23,9 @@ GraphicsSettings:
   imGuiFont: string
   imGuiFontSize: [ float, 16.0f ]
 
+  _cpp_only:
+    imGuiFontConfig: [struct ImFontConfig *, nullptr]
+
 AudioSettings:
   _flags:
     - not_a_component

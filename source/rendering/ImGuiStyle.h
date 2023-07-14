@@ -26,7 +26,10 @@ inline void setImGuiStyleAndConfig()
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
 
     if (!dibidab::settings.graphics.imGuiFont.empty())
-        ImGui::GetIO().Fonts->AddFontFromFileTTF(dibidab::settings.graphics.imGuiFont.c_str(), dibidab::settings.graphics.imGuiFontSize);
+    {
+        ImGui::GetIO().Fonts->AddFontFromFileTTF(dibidab::settings.graphics.imGuiFont.c_str(),
+            dibidab::settings.graphics.imGuiFontSize, dibidab::settings.graphics.imGuiFontConfig);
+    }
     ImGui::GetIO().Fonts->AddFontDefault();
 
     auto &style = ImGui::GetStyle();
