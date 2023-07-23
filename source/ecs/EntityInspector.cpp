@@ -1,16 +1,21 @@
 
-#include <gu/profiler.h>
-#include <input/mouse_input.h>
-#include <input/key_input.h>
-#include <utils/code_editor/CodeEditor.h>
-#include <imgui_internal.h>
 #include "EntityInspector.h"
-#include "../game/dibidab.h"
+
 #include "entity_templates/LuaEntityTemplate.h"
+#include "systems/EntitySystem.h"
+
+#include "../game/dibidab.h"
+
 #include "../generated/LuaScripted.hpp"
 #include "../generated/Inspecting.hpp"
 #include "../generated/Children.hpp"
 
+#include <gu/profiler.h>
+#include <input/mouse_input.h>
+#include <input/key_input.h>
+#include <utils/code_editor/CodeEditor.h>
+
+#include <imgui_internal.h>
 
 EntityInspector::EntityInspector(EntityEngine &engine, const std::string &name) : engine(engine), reg(engine.entities), inspectorName(name)
 {

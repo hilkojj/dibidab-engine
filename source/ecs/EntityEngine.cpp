@@ -1,10 +1,11 @@
 
 #include "EntityEngine.h"
-#include <utils/hashing.h>
-#include <utils/gu_error.h>
-#include "./systems/KeyEventsSystem.h"
-#include "./systems/AnimationSystem.h"
+
+#include "systems/KeyEventsSystem.h"
+#include "systems/AnimationSystem.h"
+#include "systems/TimeOutSystem.h"
 #include "entity_templates/LuaEntityTemplate.h"
+
 #include "../generated/Children.hpp"
 #include "../generated/Position3d.hpp"
 #include "../generated/LuaScripted.hpp"
@@ -16,6 +17,11 @@ void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
         systems.push_front(sys);
     else
         systems.push_back(sys);
+}
+
+TimeOutSystem *EntityEngine::getTimeOuts()
+{
+    return timeOutSystem;
 }
 
 EntityTemplate &EntityEngine::getTemplate(std::string name)
@@ -101,6 +107,8 @@ void EntityEngine::initialize()
 
     addSystem(new AnimationSystem("animations"));
     addSystem(new KeyEventsSystem("key listeners"));
+    timeOutSystem = new TimeOutSystem("timeouts");
+    addSystem(timeOutSystem);
 
     entities.on_construct<Child>().connect<&EntityEngine::onChildCreation>(this);
     entities.on_destroy<Child>().connect<&EntityEngine::onChildDeletion>(this);

@@ -1,6 +1,8 @@
 
 #include "BehaviorTree.h"
 
+#include "../../ecs/systems/TimeOutSystem.h"
+
 BehaviorTree::Node::Node() :
     parent(nullptr),
     bEntered(false),
@@ -108,6 +110,10 @@ void BehaviorTree::DecoratorNode::abort()
     if (child && child->isEntered())
     {
         child->abort();
+    }
+    else
+    {
+        finish(Node::Result::ABORTED);
     }
 }
 
@@ -362,10 +368,37 @@ void BehaviorTree::RepeaterNode::enterChild()
     child->enter();
 }
 
+BehaviorTree::WaitNode *BehaviorTree::WaitNode::finishAfter(const float inSeconds, const entt::entity inWaitingEntity,
+    EntityEngine *inEngine)
+{
+    seconds = inSeconds;
+    waitingEntity = inWaitingEntity;
+    engine = inEngine;
+    return this;
+}
+
+void BehaviorTree::WaitNode::enter()
+{
+    Node::enter();
+    if (seconds >= 0.0f && engine != nullptr)
+    {
+        onWaitFinished = engine->getTimeOuts()->callAfter(seconds, waitingEntity, [&] ()
+        {
+            finish(Node::Result::SUCCESS);
+        });
+    }
+}
+
 void BehaviorTree::WaitNode::abort()
 {
     Node::abort();
     finish(Node::Result::ABORTED);
+}
+
+void BehaviorTree::WaitNode::finish(BehaviorTree::Node::Result result)
+{
+    onWaitFinished.reset();
+    Node::finish(result);
 }
 
 BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
@@ -388,6 +421,10 @@ void BehaviorTree::ComponentObserverNode::abort()
     if (currentNodeIndex != INVALID_CHILD_INDEX)
     {
         getChildren().at(currentNodeIndex)->abort();
+    }
+    else
+    {
+        finish(Node::Result::ABORTED);
     }
 }
 
@@ -444,16 +481,15 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
         if (isAborted())
         {
             finish(Node::Result::ABORTED);
+            return;
         }
-        else
+        else if (getChildIndexToEnter() != currentNodeIndex)
         {
             enterChild();
+            return;
         }
     }
-    else
-    {
-        finish(result);
-    }
+    finish(result);
 }
 
 void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
@@ -722,7 +758,15 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             return new BehaviorTree::WaitNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>()
+        sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>(),
+
+        "finishAfter", [] (BehaviorTree::WaitNode &node, float seconds, entt::entity waitingEntity,
+            const sol::this_environment &currentEnv)
+            -> BehaviorTree::WaitNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
+        {
+            node.finishAfter(seconds, waitingEntity, currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME));
+            return node;
+        }
     );
 
     // ------------------------ Event-based Node classes: -------------------------- //
@@ -737,14 +781,16 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>(),
 
         "has", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
-            const sol::this_environment &currentEnv) -> BehaviorTree::ComponentObserverNode &
+            const sol::this_environment &currentEnv)
+            -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
             node.has(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
             return node;
         },
         "exclude", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
-            const sol::this_environment &currentEnv) -> BehaviorTree::ComponentObserverNode &
+            const sol::this_environment &currentEnv)
+            -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
             node.exclude(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
@@ -765,12 +811,14 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>(),
 
-        "setEnterFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function) -> BehaviorTree::LuaLeafNode &
+        "setEnterFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+            -> BehaviorTree::LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             luaLeafNode.luaEnterFunction = function;
             return luaLeafNode;
         },
-        "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function) -> BehaviorTree::LuaLeafNode &
+        "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+            -> BehaviorTree::LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             luaLeafNode.luaAbortFunction = function;
             return luaLeafNode;

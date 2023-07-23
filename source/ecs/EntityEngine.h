@@ -2,23 +2,29 @@
 #ifndef GAME_ENTITYENGINE_H
 #define GAME_ENTITYENGINE_H
 
-#include "entity_templates/EntityTemplate.h"
-#include "systems/EntitySystem.h"
 #include "EventEmitter.h"
+#include "entity_templates/EntityTemplate.h"
+
 #include "../luau.h"
 #include "../macro_magic/component.h"
+
+#include "../../external/entt/src/entt/entity/registry.hpp"
 
 #include <utils/type_name.h>
 #include <utils/math_utils.h>
 
-#include "../../external/entt/src/entt/entity/registry.hpp"
-
 #include <map>
 #include <list>
+
+class EntitySystem;
+class TimeOutSystem;
 
 class EntityEngine
 {
     bool bInitialized = false, bUpdating = false, bDestructing = false;
+
+    TimeOutSystem *timeOutSystem;
+
   protected:
 
     std::list<EntitySystem *> systems;
@@ -57,6 +63,8 @@ class EntityEngine
             return NULL;
         return (EntitySystem_ *) *it;
     }
+
+    TimeOutSystem *getTimeOuts();
 
     template <class EntityTemplate_>
     EntityTemplate &getTemplate()
