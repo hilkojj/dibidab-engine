@@ -7,7 +7,7 @@ SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
 {
     luaTable = sol::table::create(luau::getLuaState().lua_state());
 
-    if (File::exists(path))
+    if (!loadedFromPath.empty() && File::exists(path))
     {
         auto data = File::readBinary(path);
         json jsonData = json::from_cbor(data.begin(), data.end());
