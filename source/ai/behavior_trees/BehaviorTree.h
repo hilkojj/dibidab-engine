@@ -253,6 +253,22 @@ class BehaviorTree
         sol::function luaAbortFunction;
     };
 
+    struct FunctionalLeafNode : public LeafNode
+    {
+        FunctionalLeafNode *setOnEnter(std::function<void(FunctionalLeafNode &node)> function);
+
+        FunctionalLeafNode *setOnAbort(std::function<void(FunctionalLeafNode &node)> function);
+
+        void enter() override;
+
+        void abort() override;
+
+      private:
+
+        std::function<void(FunctionalLeafNode &node)> onEnter;
+        std::function<void(FunctionalLeafNode &node)> onAbort;
+    };
+
     BehaviorTree();
 
     void setRootNode(Node *root);

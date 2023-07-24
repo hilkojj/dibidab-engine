@@ -646,6 +646,46 @@ void BehaviorTree::LuaLeafNode::abort()
     }
 }
 
+BehaviorTree::FunctionalLeafNode *
+BehaviorTree::FunctionalLeafNode::setOnEnter(std::function<void(FunctionalLeafNode &)> function)
+{
+    onEnter = std::move(function);
+    return this;
+}
+
+BehaviorTree::FunctionalLeafNode *
+BehaviorTree::FunctionalLeafNode::setOnAbort(std::function<void(FunctionalLeafNode &)> function)
+{
+    onAbort = std::move(function);
+    return this;
+}
+
+void BehaviorTree::FunctionalLeafNode::enter()
+{
+    Node::enter();
+    if (onEnter)
+    {
+        onEnter(*this);
+    }
+    else
+    {
+        finish(BehaviorTree::Node::Result::SUCCESS);
+    }
+}
+
+void BehaviorTree::FunctionalLeafNode::abort()
+{
+    Node::abort();
+    if (onAbort)
+    {
+        onAbort(*this);
+    }
+    else
+    {
+        finish(BehaviorTree::Node::Result::ABORTED);
+    }
+}
+
 BehaviorTree::BehaviorTree() :
     rootNode(nullptr)
 {
