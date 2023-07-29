@@ -25,6 +25,8 @@ class EntityObserver
 
     struct Handle
     {
+        entt::entity getEntity() const;
+
       private:
         friend EntityObserver;
 

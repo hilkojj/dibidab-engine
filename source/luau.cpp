@@ -206,6 +206,17 @@ sol::state &luau::getLuaState()
     return *lua;
 }
 
+lua_Debug luau::getDebugInfo(sol::function func)
+{
+    func.push();
+    lua_Debug dbgInfo;
+    if (!lua_getinfo(func.lua_state(), ">nS", &dbgInfo))
+    {
+        throw gu_err("Failed to get debug info");
+    }
+    return dbgInfo;
+}
+
 luau::Script::Script(const std::string &path) : path(path)
 {}
 

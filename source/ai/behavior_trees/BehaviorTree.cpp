@@ -2,12 +2,40 @@
 #include "BehaviorTree.h"
 
 #include "../../ecs/systems/TimeOutSystem.h"
+#include "../../level/room/Room.h"
+#include "../../level/Level.h"
+
+#include <imgui.h>
+
+std::string getNodeErrorInfo(BehaviorTree::Node *node)
+{
+    std::string info = node->getName();
+    if (node->hasLuaDebugInfo())
+    {
+        const lua_Debug &debugInfo = node->getLuaDebugInfo();
+        std::vector<std::string> pathSplitted = splitString(debugInfo.source, "/");
+        if (!pathSplitted.empty())
+        {
+            info += "@" + pathSplitted.back() + ":" + std::to_string(debugInfo.currentline);
+        }
+    }
+    return info;
+}
 
 BehaviorTree::Node::Node() :
     parent(nullptr),
     bEntered(false),
-    bAborted(false)
+    bAborted(false),
+    bHasLuaDebugInfo(false)
 {
+    lua_State *luaState = luau::getLuaState().lua_state();
+    if (lua_getstack(luaState, 1, &luaDebugInfo))
+    {
+        if (lua_getinfo(luaState, "nSl", &luaDebugInfo))
+        {
+            bHasLuaDebugInfo = true;
+        }
+    }
 }
 
 void BehaviorTree::Node::enter()
@@ -26,11 +54,11 @@ void BehaviorTree::Node::abort()
 #ifndef NDEBUG
     if (!bEntered)
     {
-        throw gu_err("Cannot abort a non-entered Node!");
+        throw gu_err("Cannot abort a non-entered Node: " + getNodeErrorInfo(this));
     }
     if (bAborted)
     {
-        throw gu_err("Cannot abort a Node again!");
+        throw gu_err("Cannot abort a Node again: " + getNodeErrorInfo(this));
     }
 #endif
     bAborted = true;
@@ -41,18 +69,22 @@ void BehaviorTree::Node::finish(BehaviorTree::Node::Result result)
 #ifndef NDEBUG
     if (!bEntered)
     {
-        throw gu_err("Cannot finish a non-entered Node!");
+        throw gu_err("Cannot finish a non-entered Node: " + getNodeErrorInfo(this));
     }
 #endif
     if (bAborted)
     {
         if (result != Result::ABORTED)
         {
-            throw gu_err("Cannot finish an aborted Node with an result other than ABORTED!");
+            throw gu_err("Cannot finish an aborted Node with an result other than ABORTED: " + getNodeErrorInfo(this));
         }
         bAborted = false;
     }
     bEntered = false;
+#ifndef NDEBUG
+    bFinishedAtLeastOnce = true;
+    lastResult = result;
+#endif
     if (parent != nullptr)
     {
         parent->onChildFinished(this, result);
@@ -69,11 +101,33 @@ bool BehaviorTree::Node::isAborted() const
     return bAborted;
 }
 
+bool BehaviorTree::Node::hasLuaDebugInfo() const
+{
+    return bHasLuaDebugInfo;
+}
+
+const lua_Debug &BehaviorTree::Node::getLuaDebugInfo() const
+{
+    return luaDebugInfo;
+}
+
+#ifndef NDEBUG
+bool BehaviorTree::Node::hasFinishedAtLeastOnce() const
+{
+    return bFinishedAtLeastOnce;
+}
+
+BehaviorTree::Node::Result BehaviorTree::Node::getLastResult() const
+{
+    return lastResult;
+}
+#endif
+
 void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
 {
     if (child->parent != nullptr)
     {
-        throw gu_err("Child already has a parent!");
+        throw gu_err("Child already has a parent: " + getNodeErrorInfo(child));
     }
     child->parent = this;
 }
@@ -82,7 +136,7 @@ BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(BehaviorTree:
 {
     if (child == nullptr)
     {
-        throw gu_err("Child is null!");
+        throw gu_err("Child is null: " + getNodeErrorInfo(this));
     }
     registerAsParent(child);
     children.push_back(child);
@@ -103,7 +157,6 @@ BehaviorTree::CompositeNode::~CompositeNode()
     children.clear();
 }
 
-
 void BehaviorTree::DecoratorNode::abort()
 {
     Node::abort();
@@ -123,7 +176,7 @@ BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(BehaviorTree:
     {
         if (isEntered())
         {
-            throw gu_err("Cannot set child on a Decorator Node that is currently entered!");
+            throw gu_err("Cannot set child on a Decorator Node that is currently entered: " + getNodeErrorInfo(this));
         }
         delete child;
     }
@@ -153,7 +206,7 @@ void BehaviorTree::SequenceNode::enter()
 {
     if (currentChildIndex != INVALID_CHILD_INDEX)
     {
-        throw gu_err("Already entered this SequenceNode!");
+        throw gu_err("Already entered this SequenceNode: " + getNodeErrorInfo(this));
     }
     BehaviorTree::Node::enter();
 
@@ -174,7 +227,7 @@ void BehaviorTree::SequenceNode::abort()
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
-        throw gu_err("Trying to abort a sequence that has not entered a child.");
+        throw gu_err("Trying to abort a sequence that has not entered a child: " + getNodeErrorInfo(this));
     }
 #endif
     getChildren().at(currentChildIndex)->abort();
@@ -184,6 +237,11 @@ void BehaviorTree::SequenceNode::finish(BehaviorTree::Node::Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
     BehaviorTree::Node::finish(result);
+}
+
+const char *BehaviorTree::SequenceNode::getName() const
+{
+    return "Sequence";
 }
 
 void BehaviorTree::SequenceNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -196,7 +254,7 @@ void BehaviorTree::SequenceNode::onChildFinished(BehaviorTree::Node *child, Beha
 
     if (child != children[currentChildIndex])
     {
-        throw gu_err("Child that finished is not the current child that was entered!");
+        throw gu_err("Child that finished is not the current child that was entered:" + getNodeErrorInfo(child));
     }
 
     if (result == Node::Result::ABORTED)
@@ -226,7 +284,7 @@ void BehaviorTree::SelectorNode::enter()
 {
     if (currentChildIndex != INVALID_CHILD_INDEX)
     {
-        throw gu_err("Already entered this SelectorNode!");
+        throw gu_err("Already entered this SelectorNode: " + getNodeErrorInfo(this));
     }
     BehaviorTree::Node::enter();
 
@@ -248,7 +306,7 @@ void BehaviorTree::SelectorNode::abort()
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
-        throw gu_err("Trying to abort a selector that has not entered a child.");
+        throw gu_err("Trying to abort a selector that has not entered a child: " + getNodeErrorInfo(this));
     }
 #endif
     getChildren().at(currentChildIndex)->abort();
@@ -258,6 +316,11 @@ void BehaviorTree::SelectorNode::finish(BehaviorTree::Node::Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
     Node::finish(result);
+}
+
+const char *BehaviorTree::SelectorNode::getName() const
+{
+    return "Selector";
 }
 
 void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -270,7 +333,7 @@ void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, Beha
 
     if (child != children[currentChildIndex])
     {
-        throw gu_err("Child that finished is not the current child that was entered!");
+        throw gu_err("Child that finished is not the current child that was entered: " + getNodeErrorInfo(this));
     }
 
     if (result == Node::Result::ABORTED)
@@ -296,10 +359,15 @@ void BehaviorTree::InverterNode::enter()
     Node *child = getChild();
     if (child == nullptr)
     {
-        throw gu_err("InverterNode has no child!");
+        throw gu_err("InverterNode has no child: " + getNodeErrorInfo(this));
     }
     BehaviorTree::Node::enter();
     child->enter();
+}
+
+const char *BehaviorTree::InverterNode::getName() const
+{
+    return "Inverter";
 }
 
 void BehaviorTree::InverterNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -318,10 +386,15 @@ void BehaviorTree::SucceederNode::enter()
     Node *child = getChild();
     if (child == nullptr)
     {
-        throw gu_err("SucceederNode has no child!");
+        throw gu_err("SucceederNode has no child: " + getNodeErrorInfo(this));
     }
     BehaviorTree::Node::enter();
     child->enter();
+}
+
+const char *BehaviorTree::SucceederNode::getName() const
+{
+    return "Succeeder";
 }
 
 void BehaviorTree::SucceederNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -337,6 +410,9 @@ void BehaviorTree::SucceederNode::onChildFinished(BehaviorTree::Node *child, Beh
 
 void BehaviorTree::RepeaterNode::enter()
 {
+#ifndef NDEBUG
+    timesRepeated = 0;
+#endif
     BehaviorTree::Node::enter();
     enterChild();
 }
@@ -347,6 +423,9 @@ void BehaviorTree::RepeaterNode::onChildFinished(BehaviorTree::Node *child, Beha
     switch (result)
     {
         case Result::SUCCESS:
+#ifndef NDEBUG
+            timesRepeated++;
+#endif
             enterChild();
             break;
         case Result::FAILURE:
@@ -363,9 +442,22 @@ void BehaviorTree::RepeaterNode::enterChild()
     Node *child = getChild();
     if (child == nullptr)
     {
-        throw gu_err("RepeaterNode has no child!");
+        throw gu_err("RepeaterNode has no child: " + getNodeErrorInfo(this));
     }
     child->enter();
+}
+
+const char *BehaviorTree::RepeaterNode::getName() const
+{
+    return "Repeater";
+}
+
+void BehaviorTree::RepeaterNode::drawDebugInfo() const
+{
+    Node::drawDebugInfo();
+#ifndef NDEBUG
+    ImGui::Text("%dx", timesRepeated);
+#endif
 }
 
 BehaviorTree::WaitNode *BehaviorTree::WaitNode::finishAfter(const float inSeconds, const entt::entity inWaitingEntity,
@@ -386,6 +478,12 @@ void BehaviorTree::WaitNode::enter()
         {
             finish(Node::Result::SUCCESS);
         });
+#ifndef NDEBUG
+        if (Room *room = dynamic_cast<Room *>(engine))
+        {
+            timeStarted = float(room->getLevel().getTime());
+        }
+#endif
     }
 }
 
@@ -399,6 +497,52 @@ void BehaviorTree::WaitNode::finish(BehaviorTree::Node::Result result)
 {
     onWaitFinished.reset();
     Node::finish(result);
+}
+
+const char *BehaviorTree::WaitNode::getName() const
+{
+    return "Wait";
+}
+
+void BehaviorTree::WaitNode::drawDebugInfo() const
+{
+    Node::drawDebugInfo();
+    const bool bUsingTime = seconds >= 0.0f && engine != nullptr;
+    if (bUsingTime)
+    {
+        ImGui::Text("%.2fs", seconds);
+    }
+    else
+    {
+        ImGui::TextDisabled("Until abort");
+    }
+    if (ImGui::IsItemHovered())
+    {
+        if (engine != nullptr && engine->entities.valid(waitingEntity))
+        {
+            if (const char *waitingEntityName = engine->getName(waitingEntity))
+            {
+                ImGui::SetTooltip("Entity: #%d %s", int(waitingEntity), waitingEntityName);
+            }
+            else
+            {
+                ImGui::SetTooltip("Entity: #%d", int(waitingEntity));
+            }
+        }
+    }
+#ifndef NDEBUG
+    if (bUsingTime && isEntered())
+    {
+        if (Room *room = dynamic_cast<Room *>(engine))
+        {
+            ImGui::SameLine();
+            const float timeElapsed = float(room->getLevel().getTime()) - timeStarted;
+            ImGui::ProgressBar(timeElapsed / seconds, ImVec2(100.0f, 0.0f), std::string(std::to_string(int(timeElapsed))
+                + "." + std::to_string(int(fract(timeElapsed) * 10.0f)) + "s").c_str());
+        }
+    }
+#endif
+
 }
 
 BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
@@ -450,7 +594,7 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnF
 {
     if (fulfilledNodeIndex != INVALID_CHILD_INDEX)
     {
-        throw gu_err("Cannot set fulfilled child for a second time.");
+        throw gu_err("Cannot set fulfilled child for a second time: " + getNodeErrorInfo(this));
     }
     fulfilledNodeIndex = int(getChildren().size());
     CompositeNode::addChild(child);
@@ -461,7 +605,7 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnU
 {
     if (unfulfilledNodeIndex != INVALID_CHILD_INDEX)
     {
-        throw gu_err("Cannot set unfulfilled child for a second time.");
+        throw gu_err("Cannot set unfulfilled child for a second time: " + getNodeErrorInfo(this));
     }
     unfulfilledNodeIndex = int(getChildren().size());
     CompositeNode::addChild(child);
@@ -470,7 +614,53 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnU
 
 BehaviorTree::CompositeNode *BehaviorTree::ComponentObserverNode::addChild(BehaviorTree::Node *child)
 {
-    throw gu_err("Do not call addChild on this node.");
+    throw gu_err("Do not call addChild on this node: " + getNodeErrorInfo(this));
+}
+
+const char *BehaviorTree::ComponentObserverNode::getName() const
+{
+    return "ComponentObserver";
+}
+
+void BehaviorTree::ComponentObserverNode::drawDebugInfo() const
+{
+    Node::drawDebugInfo();
+    // TODO/WARNING: this debug info relies heavily on the implementation details.
+
+    for (int i = 0; i < observerHandles.size() / 2; i++)
+    {
+        if (i > 0)
+        {
+            ImGui::TextDisabled(" | ");
+            ImGui::SameLine();
+        }
+        const ObserverHandle& observerHandle = observerHandles[i * 2];
+        const entt::entity entity = observerHandle.handle.getEntity();
+
+        if (!observerHandle.engine->entities.valid(entity))
+        {
+            ImGui::Text("Invalid entity #%d", int(entity));
+            continue;
+        }
+        const bool bCurrentValue = conditions[i];
+
+        bool bTmpValue = bCurrentValue;
+        ImGui::Checkbox("", &bTmpValue);
+        ImGui::SameLine();
+
+        const bool bHasComponent = observerHandle.componentUtils->entityHasComponent(entity,
+            observerHandle.engine->entities);
+
+        if (const char *entityName = observerHandle.engine->getName(entity))
+        {
+            ImGui::Text("#%d %s ", int(entity), entityName);
+            ImGui::SameLine();
+        }
+        ImGui::TextDisabled(bCurrentValue == bHasComponent ? "has " : "excludes ");
+        ImGui::SameLine();
+        ImGui::Text("%s", observerHandle.componentUtils->structInfo->name);
+        ImGui::SameLine();
+    }
 }
 
 void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
@@ -498,11 +688,11 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
 #ifndef NDEBUG
     if (engine == nullptr)
     {
-        throw gu_err("No EntityEngine was given");
+        throw gu_err("No EntityEngine was given: " + getNodeErrorInfo(this));
     }
     if (!engine->entities.valid(entity))
     {
-        throw gu_err("Invalid entity was given");
+        throw gu_err("Invalid entity was given: " + getNodeErrorInfo(this));
     }
 #endif
     // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
@@ -608,7 +798,7 @@ void BehaviorTree::LuaLeafNode::enter()
 
         if (!result.valid())
         {
-            std::cerr << "LuaLeafNode::enter failed:\n" << result.get<sol::error>().what() << std::endl;
+            std::cerr << "LuaLeafNode::enter failed for: " << getNodeErrorInfo(this) << "\n" << result.get<sol::error>().what() << std::endl;
 
             if (isEntered())
             {
@@ -618,7 +808,7 @@ void BehaviorTree::LuaLeafNode::enter()
     }
     else
     {
-        std::cerr << "LuaLeafNode::enter failed because no enter function was set!" << std::endl;
+        std::cerr << "LuaLeafNode::enter failed because no enter function was set! " << getNodeErrorInfo(this) << std::endl;
         finish(Node::Result::FAILURE);
     }
 }
@@ -632,7 +822,7 @@ void BehaviorTree::LuaLeafNode::abort()
 
         if (!result.valid())
         {
-            std::cerr << "LuaLeafNode::abort failed:\n" << result.get<sol::error>().what() << std::endl;
+            std::cerr << "LuaLeafNode::abort failed for: " << getNodeErrorInfo(this) << "\n" << result.get<sol::error>().what() << std::endl;
 
             if (isAborted())
             {
@@ -644,6 +834,11 @@ void BehaviorTree::LuaLeafNode::abort()
     {
         finish(Node::Result::ABORTED);
     }
+}
+
+const char *BehaviorTree::LuaLeafNode::getName() const
+{
+    return "LuaLeaf";
 }
 
 BehaviorTree::FunctionalLeafNode *
@@ -684,6 +879,11 @@ void BehaviorTree::FunctionalLeafNode::abort()
     {
         finish(BehaviorTree::Node::Result::ABORTED);
     }
+}
+
+const char *BehaviorTree::FunctionalLeafNode::getName() const
+{
+    return "FunctionalLeaf";
 }
 
 BehaviorTree::BehaviorTree() :

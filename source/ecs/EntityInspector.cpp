@@ -4,11 +4,14 @@
 #include "entity_templates/LuaEntityTemplate.h"
 #include "systems/EntitySystem.h"
 
+#include "../ai/behavior_trees/BehaviorTreeInspector.h"
+
 #include "../game/dibidab.h"
 
 #include "../generated/LuaScripted.hpp"
 #include "../generated/Inspecting.hpp"
 #include "../generated/Children.hpp"
+#include "../generated/Brain.hpp"
 
 #include <gu/profiler.h>
 #include <input/mouse_input.h>
@@ -101,6 +104,21 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
+
+    engine.entities.view<InspectingBrain>(entt::exclude<BehaviorTreeInspector>).each([&] (entt::entity entity, auto)
+    {
+        engine.entities.assign<BehaviorTreeInspector>(entity, engine, entity);
+    });
+
+    engine.entities.view<BehaviorTreeInspector>().each([&] (entt::entity entity, BehaviorTreeInspector &inspector)
+    {
+        engine.entities.get_or_assign<InspectingBrain>(entity);
+        if (!inspector.drawGUI())
+        {
+            engine.entities.remove<BehaviorTreeInspector>(entity);
+            engine.entities.remove<InspectingBrain>(entity);
+        }
+    });
 }
 
 void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
@@ -150,6 +168,14 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("This will:\n- Destroy this entity\n- Create a new entity using the '%s' template\n- Copy the position from this entity", luaScripted->usedTemplate->name.c_str());
+        }
+    }
+    if (reg.has<Brain>(e))
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Inspect brain") && !reg.has<BehaviorTreeInspector>(e))
+        {
+            reg.assign<BehaviorTreeInspector>(e, engine, e);
         }
     }
     {

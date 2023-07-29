@@ -29,3 +29,5 @@ Inspecting:
     - InspectPathState &getState()
       { std::string pathKey; for (auto &s:currentPath) pathKey += "--->" + s; return state[pathKey]; }
 
+InspectingBrain:
+  oui

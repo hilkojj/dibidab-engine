@@ -38,6 +38,8 @@ namespace luau
         }
     }
 
+    lua_Debug getDebugInfo(sol::function func);
+
     struct Script
     {
         Script(const std::string &path);

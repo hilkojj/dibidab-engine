@@ -38,6 +38,8 @@ struct ComponentUtils
 
     std::function<EntityObserver *(entt::registry &)> getEntityObserver;
 
+    const SerializableStructInfo *structInfo = nullptr;
+
     template <class Component>
     const static ComponentUtils *create()
     {
@@ -50,6 +52,7 @@ struct ComponentUtils
             return getFor(Component::COMPONENT_NAME);
 
         ComponentUtils *u = new ComponentUtils();
+        u->structInfo = &Component::STRUCT_INFO;
 
         (*utils)[Component::COMPONENT_NAME] = u;
         (*utilsByType)[typeid(Component).hash_code()] = u;

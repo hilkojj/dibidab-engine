@@ -3,6 +3,11 @@
 
 #include <utils/gu_error.h>
 
+entt::entity EntityObserver::Handle::getEntity() const
+{
+    return entity;
+}
+
 EntityObserver::Handle::Handle(
     const std::shared_ptr<EntityObserver::Callback> &callback,
     bool bOnConstruct,

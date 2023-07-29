@@ -41,6 +41,20 @@ class BehaviorTree
 
         bool isAborted() const;
 
+        bool hasLuaDebugInfo() const;
+
+        const lua_Debug &getLuaDebugInfo() const;
+
+        virtual const char *getName() const = 0;
+
+        virtual void drawDebugInfo() const {};
+
+#ifndef NDEBUG
+        bool hasFinishedAtLeastOnce() const;
+
+        Result getLastResult() const;
+#endif
+
         virtual ~Node() = default;
 
       protected:
@@ -53,6 +67,15 @@ class BehaviorTree
         Node *parent;
         bool bEntered;
         bool bAborted;
+
+        lua_Debug luaDebugInfo;
+        bool bHasLuaDebugInfo;
+
+#ifndef NDEBUG
+        Result lastResult;
+        bool bFinishedAtLeastOnce = false;
+#endif
+        friend class BehaviorTreeInspector;
     };
 
     struct CompositeNode : public Node
@@ -97,6 +120,8 @@ class BehaviorTree
 
         void finish(Result result) override;
 
+        const char *getName() const override;
+
       protected:
         void onChildFinished(Node *child, Result result) override;
 
@@ -114,6 +139,8 @@ class BehaviorTree
 
         void finish(Result result) override;
 
+        const char *getName() const override;
+
       protected:
         void onChildFinished(Node *child, Result result) override;
 
@@ -125,6 +152,8 @@ class BehaviorTree
     {
         void enter() override;
 
+        const char *getName() const override;
+
       protected:
         void onChildFinished(Node *child, Result result) override;
     };
@@ -132,6 +161,8 @@ class BehaviorTree
     struct SucceederNode : public DecoratorNode
     {
         void enter() override;
+
+        const char *getName() const override;
 
       protected:
         void onChildFinished(Node *child, Result result) override;
@@ -141,11 +172,19 @@ class BehaviorTree
     {
         void enter() override;
 
+        const char *getName() const override;
+
+        void drawDebugInfo() const override;
+
       protected:
         void onChildFinished(Node *child, Result result) override;
 
       private:
         void enterChild();
+
+#ifndef NDEBUG
+        int timesRepeated = 0;
+#endif
     };
 
     struct WaitNode : public LeafNode
@@ -157,6 +196,10 @@ class BehaviorTree
         void abort() override;
 
         void finish(Result result) override;
+
+        const char *getName() const override;
+
+        void drawDebugInfo() const override;
 
       private:
         /**
@@ -171,6 +214,10 @@ class BehaviorTree
         EntityEngine *engine = nullptr;
 
         delegate_method onWaitFinished;
+
+#ifndef NDEBUG
+        float timeStarted = 0.0f;
+#endif
     };
 
     // ------------------------ Event-based Node classes: -------------------------- //
@@ -210,6 +257,10 @@ class BehaviorTree
         // Do not use:
         CompositeNode *addChild(Node *child) override;
 
+        const char *getName() const override;
+
+        void drawDebugInfo() const override;
+
         ~ComponentObserverNode() override;
 
       protected:
@@ -239,6 +290,8 @@ class BehaviorTree
         int unfulfilledNodeIndex;
         bool bFulFilled;
         int currentNodeIndex;
+
+        friend class BehaviorTreeInspector;
     };
 
     // ------------------------ Customization Node classes: -------------------------- //
@@ -248,6 +301,8 @@ class BehaviorTree
         void enter() override;
 
         void abort() override;
+
+        const char *getName() const override;
 
         sol::function luaEnterFunction;
         sol::function luaAbortFunction;
@@ -262,6 +317,8 @@ class BehaviorTree
         void enter() override;
 
         void abort() override;
+
+        const char *getName() const override;
 
       private:
 
