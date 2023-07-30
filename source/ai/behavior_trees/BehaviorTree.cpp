@@ -556,7 +556,7 @@ BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
 void BehaviorTree::ComponentObserverNode::enter()
 {
     BehaviorTree::CompositeNode::enter();
-    onConditionsChanged(true);
+    enterChild();
 }
 
 void BehaviorTree::ComponentObserverNode::abort()
@@ -574,18 +574,19 @@ void BehaviorTree::ComponentObserverNode::abort()
 
 void BehaviorTree::ComponentObserverNode::finish(BehaviorTree::Node::Result result)
 {
-    Node::finish(result);
     currentNodeIndex = INVALID_CHILD_INDEX;
+    fulfilledSwitchTimeout.reset();
+    Node::finish(result);
 }
 
 void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
-                                              const ComponentUtils *componentUtils)
+    const ComponentUtils *componentUtils)
 {
     observe(engine, entity, componentUtils, true, false);
 }
 
 void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::entity entity,
-                                                  const ComponentUtils *componentUtils)
+    const ComponentUtils *componentUtils)
 {
     observe(engine, entity, componentUtils, false, true);
 }
@@ -670,6 +671,7 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
     {
         if (isAborted())
         {
+            // Observer was aborted.
             finish(Node::Result::ABORTED);
             return;
         }
@@ -679,12 +681,28 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
             return;
         }
     }
-    finish(result);
+    else
+    {
+        if (fulfilledSwitchTimeout.isSet())
+        {
+            // We will enter a child shortly.
+            currentNodeIndex = INVALID_CHILD_INDEX;
+        }
+        else
+        {
+            // Child just decided to exit.
+            finish(result);
+        }
+    }
 }
 
 void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
     const ComponentUtils *componentUtils, const bool presentValue, const bool absentValue)
 {
+    if (isEntered())
+    {
+        throw gu_err("Cannot edit while entered: " + getNodeErrorInfo(this));
+    }
 #ifndef NDEBUG
     if (engine == nullptr)
     {
@@ -698,13 +716,17 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
     EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
     const int conditionIndex = int(conditions.size());
-    EntityObserver::Handle onConstructHandle = observer->onConstruct(entity, [this, conditionIndex, presentValue] () {
+    EntityObserver::Handle onConstructHandle = observer->onConstruct(entity,
+        [this, engine, entity, conditionIndex, presentValue] ()
+    {
         conditions[conditionIndex] = presentValue;
-        onConditionsChanged();
+        onConditionsChanged(engine, entity);
     });
-    EntityObserver::Handle onDestroyHandle = observer->onDestroy(entity, [this, conditionIndex, absentValue] () {
+    EntityObserver::Handle onDestroyHandle = observer->onDestroy(entity,
+        [this, engine, entity, conditionIndex, absentValue] ()
+    {
         conditions[conditionIndex] = absentValue;
-        onConditionsChanged();
+        onConditionsChanged(engine, entity);
     });
     observerHandles.push_back(ObserverHandle {
         engine, componentUtils, onConstructHandle
@@ -713,44 +735,47 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
         engine, componentUtils, onDestroyHandle
     });
     conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities) ? presentValue : absentValue);
+    bFulFilled = allConditionsFulfilled();
 }
 
-void BehaviorTree::ComponentObserverNode::onConditionsChanged(const bool bForceEnter)
+bool BehaviorTree::ComponentObserverNode::allConditionsFulfilled() const
 {
-    bool newFulfilled = true;
     for (const bool condition : conditions)
     {
         if (!condition)
         {
-            newFulfilled = false;
-            break;
+            return false;
         }
     }
-    if (newFulfilled != bFulFilled || bForceEnter)
+    return true;
+}
+void BehaviorTree::ComponentObserverNode::onConditionsChanged(EntityEngine *engine, entt::entity entity)
+{
+    bool bNewFulfilled = allConditionsFulfilled();
+
+    if (bNewFulfilled != bFulFilled)
     {
-        bFulFilled = newFulfilled;
+        bFulFilled = bNewFulfilled;
 
         if (isEntered())
         {
-            if (currentNodeIndex == INVALID_CHILD_INDEX)
+            fulfilledSwitchTimeout = engine->getTimeOuts()->callAfter(0.0f, entity, [this]
             {
-                enterChild();
-            }
-            else
-            {
-                Node *toAbort = getChildren().at(currentNodeIndex);
-                if (!toAbort->isAborted())
+                fulfilledSwitchTimeout.reset();
+                if (currentNodeIndex != INVALID_CHILD_INDEX)
                 {
-                    toAbort->abort();
+                    Node *toAbort = getChildren().at(currentNodeIndex);
+                    if (!toAbort->isAborted())
+                    {
+                        toAbort->abort();
+                    }
                 }
-            }
+                else
+                {
+                    enterChild();
+                }
+            });
         }
-#ifndef NDEBUG
-        else
-        {
-            assert(!bForceEnter);
-        }
-#endif
     }
 }
 

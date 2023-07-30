@@ -271,7 +271,9 @@ class BehaviorTree
         void observe(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils, bool presentValue,
             bool absentValue);
 
-        void onConditionsChanged(bool bForceEnter = false);
+        bool allConditionsFulfilled() const;
+
+        void onConditionsChanged(EntityEngine *engine, entt::entity entity);
 
         int getChildIndexToEnter() const;
 
@@ -286,6 +288,7 @@ class BehaviorTree
 
         std::vector<ObserverHandle> observerHandles;
         std::vector<bool> conditions;
+        delegate_method fulfilledSwitchTimeout;
         int fulfilledNodeIndex;
         int unfulfilledNodeIndex;
         bool bFulFilled;

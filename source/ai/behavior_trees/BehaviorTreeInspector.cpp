@@ -14,7 +14,6 @@ BehaviorTreeInspector::BehaviorTreeInspector(EntityEngine &engine, entt::entity 
 
 bool BehaviorTreeInspector::drawGUI()
 {
-    ImGui::ShowDemoWindow();
     if (!engine->entities.valid(entity) || !engine->entities.has<Brain>(entity))
     {
         return false;
@@ -82,7 +81,7 @@ void BehaviorTreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
         if (BehaviorTree::ComponentObserverNode *observerParent = dynamic_cast<BehaviorTree::ComponentObserverNode *>(node->parent))
         {
             bool bNodeIsFulfilledBranch = false;
-            if (observerParent->fulfilledNodeIndex > 0)
+            if (observerParent->fulfilledNodeIndex >= 0)
             {
                 bNodeIsFulfilledBranch = observerParent->getChildren()[observerParent->fulfilledNodeIndex] == node;
             }
