@@ -117,7 +117,7 @@ void to_json(json &j, const Level &lvl)
     for (auto room : lvl.rooms)
     {
         json &roomJ = j["rooms"].emplace_back();
-        room->toJson(roomJ);
+        room->exportJsonData(roomJ);
     }
 }
 
@@ -133,7 +133,7 @@ void from_json(const json &j, Level &lvl)
         else
         {
             Room *r = new Room;
-            r->fromJson(rJ);
+            r->loadJsonData(rJ);
             lvl.addRoom(r);
         }
     }
@@ -153,15 +153,26 @@ void Level::deleteRoom(int i)
     rooms.pop_back();
 }
 
+typedef uint64 level_data_length_type;
+
 void Level::save(const char *path) const
 {
-//    std::vector<unsigned char> data;
+    std::vector<unsigned char> data(sizeof(level_data_length_type), 0u);
 
-    auto data = json(*this).dump();
+    json::to_cbor(*this, data);
+    *((level_data_length_type *) &data[0]) = data.size() - sizeof(level_data_length_type);
 
-//    json::to_cbor(*this, data);
+    for (Room *room : rooms)
+    {
+        data.resize(data.size() + sizeof(level_data_length_type));
+        const level_data_length_type dataSizeBeforeRoom = data.size();
+        room->exportBinaryData(data);
 
-    std::vector<uint8> compressedData(12 + data.size() * 1.1);
+        const level_data_length_type roomDataSize = data.size() - dataSizeBeforeRoom;
+        *((level_data_length_type *) (&data[dataSizeBeforeRoom - sizeof(level_data_length_type)])) = roomDataSize;
+    }
+
+    std::vector<uint8> compressedData(long(double(12 + data.size()) * 1.1));
     unsigned long compressedDataSize = compressedData.size();
 
     int zResult = compress(&compressedData[0], &compressedDataSize, (const uint8 *) &data[0], data.size());
@@ -198,13 +209,50 @@ Level::Level(const char *filePath) : loadedFromFile(filePath)
         int zResult = uncompress(&uncompressedData[0], &originalDataSize, &compressedData[0], compressedDataSize);
 
         if (originalDataSize != originalDataSize_)
+        {
             throw gu_err("Length of uncompressed data does not match length of original data");
+        }
 
         if (zResult != Z_OK)
+        {
             throw gu_err("Error while UNcompressing");
+        }
 
-        json j = json::parse(uncompressedData.begin(), uncompressedData.end()); //json::from_cbor(uncompressedData.begin(), uncompressedData.end());
+        if (uncompressedData.size() <= sizeof(level_data_length_type))
+        {
+            throw gu_err("Level file does barely contain any data!");
+        }
+        const level_data_length_type jsonDataLength = *((level_data_length_type *) &uncompressedData[0]);
+
+        const level_data_length_type binaryBegin = sizeof(level_data_length_type) + jsonDataLength;
+
+        if (binaryBegin > uncompressedData.size())
+        {
+            throw gu_err("Level file does not contain as much json data as described!");
+        }
+
+        json j = json::from_cbor(
+            &uncompressedData[sizeof(level_data_length_type)],
+            &uncompressedData[binaryBegin]
+        );
         from_json(j, *this);
+
+        level_data_length_type nextRoomBinaryBegin = binaryBegin;
+        for (Room *room : rooms)
+        {
+            if (nextRoomBinaryBegin + sizeof(level_data_length_type) >= uncompressedData.size())
+            {
+                break;
+            }
+            const level_data_length_type roomBinaryBegin = nextRoomBinaryBegin;
+            const level_data_length_type roomBinaryDataLength = *((level_data_length_type *) &uncompressedData[roomBinaryBegin]);
+            nextRoomBinaryBegin += roomBinaryDataLength + sizeof(level_data_length_type);
+            if (nextRoomBinaryBegin > uncompressedData.size())
+            {
+                throw gu_err("Level file does not contain as much binary room data as described for room #" + std::to_string(room->roomI));
+            }
+            room->loadBinaryData(&uncompressedData[roomBinaryBegin + sizeof(level_data_length_type)], roomBinaryDataLength);
+        }
     }
     catch (std::exception &e)
     {

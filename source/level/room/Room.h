@@ -43,9 +43,13 @@ class Room : public EntityEngine
 
     bool isLoadingPersistentEntities() const;
 
-    virtual void toJson(json &);
+    virtual void exportJsonData(json &);
 
-    virtual void fromJson(const json &);
+    virtual void loadJsonData(const json &);
+
+    virtual void exportBinaryData(std::vector<unsigned char> &dataOut) {};
+
+    virtual void loadBinaryData(const unsigned char *data, uint64 dataLength) {};
 
   private:
 

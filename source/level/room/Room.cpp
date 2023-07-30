@@ -134,7 +134,7 @@ void Room::tryToSaveRevivableEntity(entt::registry &, entt::entity entity)
     persistentEntityToJson(entity, p, revivableEntitiesToSave.back());
 }
 
-void Room::toJson(json &j)
+void Room::exportJsonData(json &j)
 {
     events.emit(0, "BeforeSave");
     j = json{
@@ -149,7 +149,7 @@ void Room::toJson(json &j)
     });
 }
 
-void Room::fromJson(const json &j)
+void Room::loadJsonData(const json &j)
 {
     name = j.at("name");
     persistentEntitiesToLoad = j.at("entities");
