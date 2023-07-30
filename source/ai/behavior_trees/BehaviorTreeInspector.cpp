@@ -37,10 +37,12 @@ bool BehaviorTreeInspector::drawGUI()
             {
                 if (BehaviorTree::Node *root = tree.getRootNode())
                 {
+                    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.back()); // small default font
                     ImGui::Columns(3);
                     ImGui::SetColumnWidth(1, 96.0f);
                     drawNode(root, 0u);
                     ImGui::Columns(1);
+                    ImGui::PopFont();
                 }
                 else
                 {

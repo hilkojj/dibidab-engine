@@ -80,6 +80,8 @@ class BehaviorTree
 
     struct CompositeNode : public Node
     {
+        void finish(Result result) override;
+
         // TODO: calling this in a running tree.
         virtual CompositeNode *addChild(Node *child);
 
@@ -94,6 +96,8 @@ class BehaviorTree
     struct DecoratorNode : public Node
     {
         void abort() override;
+
+        void finish(Result result) override;
 
         virtual DecoratorNode *setChild(Node *child);
 
@@ -288,7 +292,6 @@ class BehaviorTree
 
         std::vector<ObserverHandle> observerHandles;
         std::vector<bool> conditions;
-        delegate_method fulfilledSwitchTimeout;
         int fulfilledNodeIndex;
         int unfulfilledNodeIndex;
         bool bFulFilled;
@@ -305,10 +308,17 @@ class BehaviorTree
 
         void abort() override;
 
+        void finish(Result result) override;
+
         const char *getName() const override;
 
         sol::function luaEnterFunction;
         sol::function luaAbortFunction;
+
+      private:
+        void finishAborted();
+
+        bool bInEnterFunction = false;
     };
 
     struct FunctionalLeafNode : public LeafNode
@@ -321,12 +331,17 @@ class BehaviorTree
 
         void abort() override;
 
+        void finish(Result result) override;
+
         const char *getName() const override;
 
       private:
+        void finishAborted();
 
         std::function<void(FunctionalLeafNode &node)> onEnter;
         std::function<void(FunctionalLeafNode &node)> onAbort;
+
+        bool bInEnterFunction = false;
     };
 
     BehaviorTree();

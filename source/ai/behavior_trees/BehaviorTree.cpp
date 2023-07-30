@@ -132,6 +132,20 @@ void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
     child->parent = this;
 }
 
+void BehaviorTree::CompositeNode::finish(BehaviorTree::Node::Result result)
+{
+#ifndef NDEBUG
+    for (Node *child : children)
+    {
+        if (child->isEntered())
+        {
+            throw gu_err(getNodeErrorInfo(this) + " wants to finish, but child " + getNodeErrorInfo(child) + " is entered!");
+        }
+    }
+#endif
+    Node::finish(result);
+}
+
 BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(BehaviorTree::Node *child)
 {
     if (child == nullptr)
@@ -168,6 +182,15 @@ void BehaviorTree::DecoratorNode::abort()
     {
         finish(Node::Result::ABORTED);
     }
+}
+
+void BehaviorTree::DecoratorNode::finish(BehaviorTree::Node::Result result)
+{
+    if (child != nullptr && child->isEntered())
+    {
+        throw gu_err(getNodeErrorInfo(this) + " wants to finish, but child " + getNodeErrorInfo(child) + " is entered!");
+    }
+    Node::finish(result);
 }
 
 BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(BehaviorTree::Node *inChild)
@@ -236,7 +259,7 @@ void BehaviorTree::SequenceNode::abort()
 void BehaviorTree::SequenceNode::finish(BehaviorTree::Node::Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
-    BehaviorTree::Node::finish(result);
+    BehaviorTree::CompositeNode::finish(result);
 }
 
 const char *BehaviorTree::SequenceNode::getName() const
@@ -244,18 +267,35 @@ const char *BehaviorTree::SequenceNode::getName() const
     return "Sequence";
 }
 
+void checkCorrectChildFinished(BehaviorTree::Node *parent, const std::vector<BehaviorTree::Node *> &children,
+    int currentChildIndex, BehaviorTree::Node *finishedChild)
+{
+    if (currentChildIndex == INVALID_CHILD_INDEX || !parent->isEntered())
+    {
+        if (!parent->isEntered())
+        {
+            throw gu_err("Child (" + getNodeErrorInfo(finishedChild) + ") finished, but parent (" + getNodeErrorInfo(parent) + ") was not entered!");
+        }
+        else
+        {
+            throw gu_err("Child (" + getNodeErrorInfo(finishedChild) + ") finished, but parent (" + getNodeErrorInfo(parent) + ") thinks no child was entered!");
+        }
+    }
+    if (finishedChild != children[currentChildIndex])
+    {
+        throw gu_err("Child that finished is not the current child that was entered!\nFinished child: " + getNodeErrorInfo(finishedChild)
+            + "\nEntered child: " + getNodeErrorInfo(children[currentChildIndex]) + "\nParent: " + getNodeErrorInfo(parent));
+    }
+
+}
+
 void BehaviorTree::SequenceNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
 {
-    Node::onChildFinished(child, result);
+    BehaviorTree::CompositeNode::onChildFinished(child, result);
 
     const std::vector<Node *> &children = getChildren();
 
-    assert(currentChildIndex < children.size());
-
-    if (child != children[currentChildIndex])
-    {
-        throw gu_err("Child that finished is not the current child that was entered:" + getNodeErrorInfo(child));
-    }
+    checkCorrectChildFinished(this, children, currentChildIndex, child);
 
     if (result == Node::Result::ABORTED)
     {
@@ -315,7 +355,7 @@ void BehaviorTree::SelectorNode::abort()
 void BehaviorTree::SelectorNode::finish(BehaviorTree::Node::Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
-    Node::finish(result);
+    BehaviorTree::CompositeNode::finish(result);
 }
 
 const char *BehaviorTree::SelectorNode::getName() const
@@ -329,12 +369,7 @@ void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, Beha
 
     const std::vector<Node *> &children = getChildren();
 
-    assert(currentChildIndex < children.size());
-
-    if (child != children[currentChildIndex])
-    {
-        throw gu_err("Child that finished is not the current child that was entered: " + getNodeErrorInfo(this));
-    }
+    checkCorrectChildFinished(this, children, currentChildIndex, child);
 
     if (result == Node::Result::ABORTED)
     {
@@ -575,7 +610,6 @@ void BehaviorTree::ComponentObserverNode::abort()
 void BehaviorTree::ComponentObserverNode::finish(BehaviorTree::Node::Result result)
 {
     currentNodeIndex = INVALID_CHILD_INDEX;
-    fulfilledSwitchTimeout.reset();
     Node::finish(result);
 }
 
@@ -683,16 +717,8 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
     }
     else
     {
-        if (fulfilledSwitchTimeout.isSet())
-        {
-            // We will enter a child shortly.
-            currentNodeIndex = INVALID_CHILD_INDEX;
-        }
-        else
-        {
-            // Child just decided to exit.
-            finish(result);
-        }
+        checkCorrectChildFinished(this, getChildren(), currentNodeIndex, child);
+        finish(result);
     }
 }
 
@@ -759,22 +785,18 @@ void BehaviorTree::ComponentObserverNode::onConditionsChanged(EntityEngine *engi
 
         if (isEntered())
         {
-            fulfilledSwitchTimeout = engine->getTimeOuts()->callAfter(0.0f, entity, [this]
+            if (currentNodeIndex != INVALID_CHILD_INDEX)
             {
-                fulfilledSwitchTimeout.reset();
-                if (currentNodeIndex != INVALID_CHILD_INDEX)
+                Node *toAbort = getChildren().at(currentNodeIndex);
+                if (!toAbort->isAborted())
                 {
-                    Node *toAbort = getChildren().at(currentNodeIndex);
-                    if (!toAbort->isAborted())
-                    {
-                        toAbort->abort();
-                    }
+                    toAbort->abort();
                 }
-                else
-                {
-                    enterChild();
-                }
-            });
+            }
+            else
+            {
+                enterChild();
+            }
         }
     }
 }
@@ -819,6 +841,7 @@ void BehaviorTree::LuaLeafNode::enter()
     BehaviorTree::Node::enter();
     if (luaEnterFunction.valid())
     {
+        bInEnterFunction = true;
         sol::protected_function_result result = luaEnterFunction(this);
 
         if (!result.valid())
@@ -827,8 +850,16 @@ void BehaviorTree::LuaLeafNode::enter()
 
             if (isEntered())
             {
+                // note: will be ignored in case we're aborted and because bInEnterFunction is still true!
                 finish(Node::Result::FAILURE);
             }
+        }
+
+        bInEnterFunction = false;
+
+        if (isAborted())
+        {
+            finishAborted();
         }
     }
     else
@@ -841,6 +872,29 @@ void BehaviorTree::LuaLeafNode::enter()
 void BehaviorTree::LuaLeafNode::abort()
 {
     BehaviorTree::Node::abort();
+    if (!bInEnterFunction)
+    {
+        finishAborted();
+    }
+}
+
+void BehaviorTree::LuaLeafNode::finish(BehaviorTree::Node::Result result)
+{
+    if (bInEnterFunction && isAborted())
+    {
+        // ignore this result. We'll abort after the enter function is done ;)
+        return;
+    }
+    Node::finish(result);
+}
+
+const char *BehaviorTree::LuaLeafNode::getName() const
+{
+    return "LuaLeaf";
+}
+
+void BehaviorTree::LuaLeafNode::finishAborted()
+{
     if (luaAbortFunction.valid())
     {
         sol::protected_function_result result = luaAbortFunction(this);
@@ -859,11 +913,6 @@ void BehaviorTree::LuaLeafNode::abort()
     {
         finish(Node::Result::ABORTED);
     }
-}
-
-const char *BehaviorTree::LuaLeafNode::getName() const
-{
-    return "LuaLeaf";
 }
 
 BehaviorTree::FunctionalLeafNode *
@@ -885,7 +934,13 @@ void BehaviorTree::FunctionalLeafNode::enter()
     Node::enter();
     if (onEnter)
     {
+        bInEnterFunction = true;
         onEnter(*this);
+        bInEnterFunction = false;
+        if (isAborted())
+        {
+            finishAborted();
+        }
     }
     else
     {
@@ -896,6 +951,29 @@ void BehaviorTree::FunctionalLeafNode::enter()
 void BehaviorTree::FunctionalLeafNode::abort()
 {
     Node::abort();
+    if (!bInEnterFunction)
+    {
+        finishAborted();
+    }
+}
+
+void BehaviorTree::FunctionalLeafNode::finish(BehaviorTree::Node::Result result)
+{
+    if (bInEnterFunction && isAborted())
+    {
+        // ignore this result. We'll abort after the enter function is done ;)
+        return;
+    }
+    Node::finish(result);
+}
+
+const char *BehaviorTree::FunctionalLeafNode::getName() const
+{
+    return "FunctionalLeaf";
+}
+
+void BehaviorTree::FunctionalLeafNode::finishAborted()
+{
     if (onAbort)
     {
         onAbort(*this);
@@ -904,11 +982,6 @@ void BehaviorTree::FunctionalLeafNode::abort()
     {
         finish(BehaviorTree::Node::Result::ABORTED);
     }
-}
-
-const char *BehaviorTree::FunctionalLeafNode::getName() const
-{
-    return "FunctionalLeaf";
 }
 
 BehaviorTree::BehaviorTree() :
