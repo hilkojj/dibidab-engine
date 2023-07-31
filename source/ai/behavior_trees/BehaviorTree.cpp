@@ -26,6 +26,7 @@ BehaviorTree::Node::Node() :
     parent(nullptr),
     bEntered(false),
     bAborted(false),
+    luaDebugInfo(),
     bHasLuaDebugInfo(false)
 {
     lua_State *luaState = luau::getLuaState().lua_state();
@@ -495,6 +496,16 @@ void BehaviorTree::RepeaterNode::drawDebugInfo() const
 #endif
 }
 
+BehaviorTree::WaitNode::WaitNode() :
+    seconds(-1.0f),
+    waitingEntity(entt::null),
+    engine(nullptr)
+#ifndef NDEBUG
+    ,
+    timeStarted(0.0f)
+#endif
+{}
+
 BehaviorTree::WaitNode *BehaviorTree::WaitNode::finishAfter(const float inSeconds, const entt::entity inWaitingEntity,
     EntityEngine *inEngine)
 {
@@ -836,6 +847,10 @@ BehaviorTree::ComponentObserverNode::~ComponentObserverNode()
     }
 }
 
+BehaviorTree::LuaLeafNode::LuaLeafNode() :
+    bInEnterFunction(false)
+{}
+
 void BehaviorTree::LuaLeafNode::enter()
 {
     BehaviorTree::Node::enter();
@@ -914,6 +929,10 @@ void BehaviorTree::LuaLeafNode::finishAborted()
         finish(Node::Result::ABORTED);
     }
 }
+
+BehaviorTree::FunctionalLeafNode::FunctionalLeafNode() :
+    bInEnterFunction(false)
+{}
 
 BehaviorTree::FunctionalLeafNode *
 BehaviorTree::FunctionalLeafNode::setOnEnter(std::function<void(FunctionalLeafNode &)> function)

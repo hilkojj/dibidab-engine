@@ -193,6 +193,8 @@ class BehaviorTree
 
     struct WaitNode : public LeafNode
     {
+        WaitNode();
+
         WaitNode* finishAfter(float seconds, entt::entity waitingEntity, EntityEngine *engine);
 
         void enter() override;
@@ -210,17 +212,17 @@ class BehaviorTree
          * If set to >= 0, will abort in n frames (where n could be 0, in case `seconds` <= deltaTime).
          * Else, will only abort if parent aborts.
          */
-        float seconds = -1.0f;
+        float seconds;
         /**
          * Can be any entity. If the entity gets destroyed while waiting, abort() will only be called if the parent aborts.
          */
-        entt::entity waitingEntity = entt::null;
-        EntityEngine *engine = nullptr;
+        entt::entity waitingEntity;
+        EntityEngine *engine;
 
         delegate_method onWaitFinished;
 
 #ifndef NDEBUG
-        float timeStarted = 0.0f;
+        float timeStarted;
 #endif
     };
 
@@ -304,6 +306,8 @@ class BehaviorTree
 
     struct LuaLeafNode : public LeafNode
     {
+        LuaLeafNode();
+
         void enter() override;
 
         void abort() override;
@@ -318,11 +322,13 @@ class BehaviorTree
       private:
         void finishAborted();
 
-        bool bInEnterFunction = false;
+        bool bInEnterFunction;
     };
 
     struct FunctionalLeafNode : public LeafNode
     {
+        FunctionalLeafNode();
+
         FunctionalLeafNode *setOnEnter(std::function<void(FunctionalLeafNode &node)> function);
 
         FunctionalLeafNode *setOnAbort(std::function<void(FunctionalLeafNode &node)> function);
@@ -341,7 +347,7 @@ class BehaviorTree
         std::function<void(FunctionalLeafNode &node)> onEnter;
         std::function<void(FunctionalLeafNode &node)> onAbort;
 
-        bool bInEnterFunction = false;
+        bool bInEnterFunction;
     };
 
     BehaviorTree();
