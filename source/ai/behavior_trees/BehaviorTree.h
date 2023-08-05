@@ -191,11 +191,45 @@ class BehaviorTree
 #endif
     };
 
+    struct ComponentDecoratorNode : public DecoratorNode
+    {
+        template<class Component>
+        ComponentDecoratorNode *addWhileEntered(EntityEngine *engine, entt::entity entity)
+        {
+            addWhileEntered(engine, entity, ComponentUtils::getFor<Component>());
+            return this;
+        }
+
+        void addWhileEntered(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+
+        void enter() override;
+
+        void finish(Result result) override;
+
+        const char *getName() const override;
+
+        void drawDebugInfo() const override;
+
+      protected:
+        void onChildFinished(Node *child, Result result) override;
+
+      private:
+
+        struct EntityComponent
+        {
+            EntityEngine *engine = nullptr;
+            entt::entity entity = entt::null;
+            const ComponentUtils *componentUtils = nullptr;
+        };
+
+        std::vector<EntityComponent> toAddWhileEntered;
+    };
+
     struct WaitNode : public LeafNode
     {
         WaitNode();
 
-        WaitNode* finishAfter(float seconds, entt::entity waitingEntity, EntityEngine *engine);
+        WaitNode *finishAfter(float seconds, entt::entity waitingEntity, EntityEngine *engine);
 
         void enter() override;
 

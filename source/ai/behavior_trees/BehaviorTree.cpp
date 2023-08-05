@@ -496,6 +496,107 @@ void BehaviorTree::RepeaterNode::drawDebugInfo() const
 #endif
 }
 
+void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine, entt::entity entity,
+    const ComponentUtils *componentUtils)
+{
+    if (engine == nullptr)
+    {
+        throw gu_err("Engine is a nullptr! " + getNodeErrorInfo(this));
+    }
+    if (!engine->entities.valid(entity))
+    {
+        throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
+    }
+    if (componentUtils == nullptr)
+    {
+        throw gu_err("ComponentUtils is a nullptr! " + getNodeErrorInfo(this));
+    }
+    toAddWhileEntered.push_back({engine, entity, componentUtils});
+}
+
+void BehaviorTree::ComponentDecoratorNode::enter()
+{
+    Node *child = getChild();
+    if (child == nullptr)
+    {
+        throw gu_err("ComponentDecoratorNode has no child: " + getNodeErrorInfo(this));
+    }
+    Node::enter();
+
+    for (const EntityComponent entityComponent : toAddWhileEntered)
+    {
+        if (!entityComponent.engine->entities.valid(entityComponent.entity))
+        {
+            throw gu_err("Cannot add " + std::string(entityComponent.componentUtils->structInfo->name) +
+                " to an invalid entity while entering: " + getNodeErrorInfo(this));
+        }
+        entityComponent.componentUtils->addComponent(entityComponent.entity, entityComponent.engine->entities);
+    }
+
+    child->enter();
+}
+
+void BehaviorTree::ComponentDecoratorNode::finish(BehaviorTree::Node::Result result)
+{
+    for (const EntityComponent entityComponent : toAddWhileEntered)
+    {
+        if (!entityComponent.engine->entities.valid(entityComponent.entity))
+        {
+            continue; // Ignore.
+        }
+        entityComponent.componentUtils->removeComponent(entityComponent.entity, entityComponent.engine->entities);
+    }
+    DecoratorNode::finish(result);
+}
+
+const char *BehaviorTree::ComponentDecoratorNode::getName() const
+{
+    return "ComponentDecorator";
+}
+
+void BehaviorTree::ComponentDecoratorNode::drawDebugInfo() const
+{
+    Node::drawDebugInfo();
+    for (int i = 0; i < toAddWhileEntered.size(); i++)
+    {
+        if (i > 0)
+        {
+            ImGui::TextDisabled(" | ");
+            ImGui::SameLine();
+        }
+        const EntityComponent &entityComponent = toAddWhileEntered[i];
+
+        ImGui::TextDisabled("Add ");
+        ImGui::SameLine();
+        ImGui::Text("%s", entityComponent.componentUtils->structInfo->name);
+        ImGui::SameLine();
+        ImGui::TextDisabled(" to ");
+        ImGui::SameLine();
+
+        if (!entityComponent.engine->entities.valid(entityComponent.entity))
+        {
+            ImGui::Text("Invalid entity #%d", int(entityComponent.entity));
+            ImGui::SameLine();
+        }
+        else if (const char *entityName = entityComponent.engine->getName(entityComponent.entity))
+        {
+            ImGui::Text("#%d %s", int(entityComponent.entity), entityName);
+            ImGui::SameLine();
+        }
+        else
+        {
+            ImGui::Text("#%d", int(entityComponent.entity));
+            ImGui::SameLine();
+        }
+    }
+}
+
+void BehaviorTree::ComponentDecoratorNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+{
+    Node::onChildFinished(child, result);
+    finish(result);
+}
+
 BehaviorTree::WaitNode::WaitNode() :
     seconds(-1.0f),
     waitingEntity(entt::null),
@@ -1106,6 +1207,25 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         }),
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
+    );
+
+    sol::usertype<BehaviorTree::ComponentDecoratorNode> componentDecoratorNodeType = lua->new_usertype<BehaviorTree::ComponentDecoratorNode>(
+        "BTComponentDecoratorNode",
+        sol::factories([] ()
+        {
+            return new BehaviorTree::ComponentDecoratorNode();
+        }),
+        sol::base_classes,
+        sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>(),
+
+        "addWhileEntered", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+            const sol::this_environment &currentEnv)
+        -> BehaviorTree::ComponentDecoratorNode &
+        {
+            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
+            node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            return node;
+        }
     );
 
     sol::usertype<BehaviorTree::WaitNode> waitNodeType = lua->new_usertype<BehaviorTree::WaitNode>(
