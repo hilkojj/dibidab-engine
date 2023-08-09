@@ -11,71 +11,59 @@ void LuaScriptsSystem::init(EntityEngine *room)
 
 void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
 {
-    room->entities.view<LuaScripted>().each([&](auto e, LuaScripted &scripted) {
+    std::vector<std::tuple<double, entt::entity, sol::safe_function>> updatesToCall;
+    std::vector<std::pair<entt::entity, sol::safe_function>> timeoutsToCall;
 
-        auto scriptedPtr = &scripted;
-
-        if (scripted.updateFrequency <= 0)
-            callUpdateFunc(e, scripted, deltaTime);
-        else
+    room->entities.view<LuaScripted>().each([&](auto e, LuaScripted &scripted)
+    {
+        if (scripted.updateFunc.lua_state() && scripted.updateFunc.valid() && !scripted.updateFunc.is<sol::nil_t>())
         {
-            scripted.updateAccumulator += deltaTime;
-            while (scriptedPtr != NULL && scriptedPtr->updateAccumulator > scriptedPtr->updateFrequency)
+            if (scripted.updateFrequency <= 0)
             {
-                scriptedPtr->updateAccumulator -= scriptedPtr->updateFrequency;
-                callUpdateFunc(e, *scriptedPtr, scriptedPtr->updateFrequency);
-                if (!room->entities.valid(e))
-                    return;
-                else
-                    scriptedPtr = room->entities.try_get<LuaScripted>(e); // ptr might have been moved by EnTT/lua script
+                updatesToCall.emplace_back(deltaTime, e, scripted.updateFunc);
+            }
+            else
+            {
+                scripted.updateAccumulator += deltaTime;
+                if (scripted.updateAccumulator >= scripted.updateFrequency)
+                {
+                    scripted.updateAccumulator -= scripted.updateFrequency;
+                    updatesToCall.emplace_back(scripted.updateFrequency, e, scripted.updateFunc);
+                    // NOTE: removed support for being called multiple times per frame
+                    // because the update function might change during one update, invalidating the updatesToCall list.
+                    // Also removed passing the saveData.
+                }
             }
         }
 
-        // ONLY USE scriptedPtr NOW!!!!
-
-        std::vector<sol::safe_function> call;
-
-        auto it = scriptedPtr->timeoutFuncs.begin();
-        while (it != scriptedPtr->timeoutFuncs.end())
+        auto it = scripted.timeoutFuncs.begin();
+        while (it != scripted.timeoutFuncs.end())
         {
             auto &f = *it;
             f.timer -= deltaTime;
 
             if (f.timer < 0)
             {
-                call.push_back(f.func);
-                it = scriptedPtr->timeoutFuncs.erase(it);
+                timeoutsToCall.emplace_back(e, f.func);
+                it = scripted.timeoutFuncs.erase(it);
             }
             else ++it;
         }
-
-        for (auto &func : call)
-        {
-            luau::tryCallFunction(func, e);
-            if (!room->entities.valid(e))
-                return;
-        }
     });
-}
 
-void LuaScriptsSystem::callUpdateFunc(entt::entity e, LuaScripted &scripted, float deltaTime)
-{
-    if (!scripted.updateFunc.lua_state() || !scripted.updateFunc.valid() || scripted.updateFunc.is<sol::nil_t>())
-        return;
-
-    try
+    for (auto &[updateTimeDelta, entity, function] : updatesToCall)
     {
-        sol::safe_function cpy = scripted.updateFunc;
-        sol::table saveData = scripted.saveData;
-        // cpy and saveData are copied because EnTT might move them if the lua script causes a `LuaScripted` component to be created
-
-        luau::callFunction(cpy, deltaTime, e, saveData);
+        if (room->entities.valid(entity))
+        {
+            luau::tryCallFunction(function, updateTimeDelta, entity);
+        }
     }
-    catch (std::exception &exc)
+    for (auto &[entity, function] : timeoutsToCall)
     {
-        assert(scripted.updateFuncScript.isSet());  // todo, `scripted` might be an invalid reference at this point
-        std::cerr << "Error while calling Lua update function for entity#" << int(e) << " (" << scripted.updateFuncScript.getLoadedAsset().fullPath << "):" << std::endl;
-        std::cerr << exc.what() << std::endl;
+        if (room->entities.valid(entity))
+        {
+            luau::tryCallFunction(function, entity);
+        }
     }
 }
 
