@@ -28,6 +28,8 @@ class EntityTemplate
 
   public:
 
+    virtual const std::string &getDescription();
+
     entt::entity create(bool persistent=false);
 
     entt::entity createNetworked(int networkID=rand(), bool serverSide=true, bool persistent=false);

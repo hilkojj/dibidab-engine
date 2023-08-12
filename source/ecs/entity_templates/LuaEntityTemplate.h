@@ -27,7 +27,7 @@ public:
 
     LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *);
 
-    const std::string &getDescription();
+    const std::string &getDescription() override;
 
     json getDefaultArgs();
 
