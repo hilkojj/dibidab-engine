@@ -5,6 +5,9 @@
 
 #include "../../../external/entt/src/entt/entity/registry.hpp"
 
+#include <string>
+
+
 class EntityEngine;
 class Networked;
 
