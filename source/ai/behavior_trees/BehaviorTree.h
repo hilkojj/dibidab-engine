@@ -202,6 +202,15 @@ class BehaviorTree
 
         void addWhileEntered(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
 
+        template<class Component>
+        ComponentDecoratorNode *removeOnFinish(EntityEngine *engine, entt::entity entity)
+        {
+            removeOnFinish(engine, entity, ComponentUtils::getFor<Component>());
+            return this;
+        }
+
+        void removeOnFinish(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+
         void enter() override;
 
         void finish(Result result) override;
@@ -223,6 +232,7 @@ class BehaviorTree
         };
 
         std::vector<EntityComponent> toAddWhileEntered;
+        std::vector<EntityComponent> toRemoveOnFinish;
     };
 
     struct WaitNode : public LeafNode
@@ -271,6 +281,8 @@ class BehaviorTree
         void abort() override;
 
         void finish(Result result) override;
+
+        ComponentObserverNode *withSafetyDelay();
 
         template<class Component>
         ComponentObserverNode *has(EntityEngine *engine, entt::entity entity)
@@ -324,10 +336,12 @@ class BehaviorTree
             EntityEngine *engine = nullptr;
             const ComponentUtils *componentUtils = nullptr;
             EntityObserver::Handle handle;
+            delegate_method latestConditionChangedDelay;
         };
 
         std::vector<ObserverHandle> observerHandles;
         std::vector<bool> conditions;
+        bool bUseSafetyDelay;
         int fulfilledNodeIndex;
         int unfulfilledNodeIndex;
         bool bFulFilled;

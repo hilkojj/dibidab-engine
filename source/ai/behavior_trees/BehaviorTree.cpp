@@ -514,6 +514,24 @@ void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine,
     toAddWhileEntered.push_back({engine, entity, componentUtils});
 }
 
+void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, entt::entity entity,
+    const ComponentUtils *componentUtils)
+{
+    if (engine == nullptr)
+    {
+        throw gu_err("Engine is a nullptr! " + getNodeErrorInfo(this));
+    }
+    if (!engine->entities.valid(entity))
+    {
+        throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
+    }
+    if (componentUtils == nullptr)
+    {
+        throw gu_err("ComponentUtils is a nullptr! " + getNodeErrorInfo(this));
+    }
+    toRemoveOnFinish.push_back({engine, entity, componentUtils});
+}
+
 void BehaviorTree::ComponentDecoratorNode::enter()
 {
     Node *child = getChild();
@@ -538,13 +556,16 @@ void BehaviorTree::ComponentDecoratorNode::enter()
 
 void BehaviorTree::ComponentDecoratorNode::finish(BehaviorTree::Node::Result result)
 {
-    for (const EntityComponent entityComponent : toAddWhileEntered)
+    for (const std::vector<EntityComponent> &entityComponentsToRemove : { toAddWhileEntered, toRemoveOnFinish })
     {
-        if (!entityComponent.engine->entities.valid(entityComponent.entity))
+        for (const EntityComponent entityComponent : entityComponentsToRemove)
         {
-            continue; // Ignore.
+            if (!entityComponent.engine->entities.valid(entityComponent.entity))
+            {
+                continue; // Ignore.
+            }
+            entityComponent.componentUtils->removeComponent(entityComponent.entity, entityComponent.engine->entities);
         }
-        entityComponent.componentUtils->removeComponent(entityComponent.entity, entityComponent.engine->entities);
     }
     DecoratorNode::finish(result);
 }
@@ -621,7 +642,7 @@ void BehaviorTree::WaitNode::enter()
     Node::enter();
     if (seconds >= 0.0f && engine != nullptr)
     {
-        onWaitFinished = engine->getTimeOuts()->callAfter(seconds, waitingEntity, [&] ()
+        onWaitFinished = engine->getTimeOuts()->unsafeCallAfter(seconds, waitingEntity, [&]()
         {
             finish(Node::Result::SUCCESS);
         });
@@ -693,6 +714,7 @@ void BehaviorTree::WaitNode::drawDebugInfo() const
 }
 
 BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
+    bUseSafetyDelay(false),
     fulfilledNodeIndex(INVALID_CHILD_INDEX),
     unfulfilledNodeIndex(INVALID_CHILD_INDEX),
     bFulFilled(false),
@@ -723,6 +745,16 @@ void BehaviorTree::ComponentObserverNode::finish(BehaviorTree::Node::Result resu
 {
     currentNodeIndex = INVALID_CHILD_INDEX;
     Node::finish(result);
+}
+
+BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withSafetyDelay()
+{
+    if (!observerHandles.empty())
+    {
+        throw gu_err("Safety delay should be enabled before further configuration: " + getNodeErrorInfo(this));
+    }
+    bUseSafetyDelay = true;
+    return this;
 }
 
 void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
@@ -854,22 +886,43 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
     EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
     const int conditionIndex = int(conditions.size());
-    EntityObserver::Handle onConstructHandle = observer->onConstruct(entity,
-        [this, engine, entity, conditionIndex, presentValue] ()
+
+    std::function<void()> onConstructCallback = [this, engine, entity, conditionIndex, presentValue]
     {
         conditions[conditionIndex] = presentValue;
         onConditionsChanged(engine, entity);
-    });
-    EntityObserver::Handle onDestroyHandle = observer->onDestroy(entity,
-        [this, engine, entity, conditionIndex, absentValue] ()
+    };
+
+    EntityObserver::Handle onConstructHandle = observer->onConstruct(entity,
+        bUseSafetyDelay ? [this, engine, onConstructCallback, conditionIndex]
+        {
+            observerHandles[conditionIndex * 2ul].latestConditionChangedDelay =
+                engine->getTimeOuts()->nextUpdate += onConstructCallback;
+        }
+        :
+        onConstructCallback
+    );
+
+    std::function<void()> onDestroyCallback = [this, engine, entity, conditionIndex, absentValue]
     {
         conditions[conditionIndex] = absentValue;
         onConditionsChanged(engine, entity);
-    });
-    observerHandles.push_back(ObserverHandle {
+    };
+
+    EntityObserver::Handle onDestroyHandle = observer->onDestroy(entity,
+        bUseSafetyDelay ? [this, engine, onDestroyCallback, conditionIndex]
+        {
+            observerHandles[conditionIndex * 2ul + 1ul].latestConditionChangedDelay =
+                engine->getTimeOuts()->nextUpdate += onDestroyCallback;
+        }
+        :
+        onDestroyCallback
+    );
+
+    observerHandles.push_back({
         engine, componentUtils, onConstructHandle
     });
-    observerHandles.push_back(ObserverHandle {
+    observerHandles.push_back({
         engine, componentUtils, onDestroyHandle
     });
     conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities) ? presentValue : absentValue);
@@ -1256,6 +1309,8 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         }),
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>(),
+
+        "withSafetyDelay", &BehaviorTree::ComponentObserverNode::withSafetyDelay,
 
         "has", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)

@@ -13,7 +13,16 @@ class TimeOutSystem : public EntitySystem
     using EntitySystem::EntitySystem;
 
   public:
-    delegate_method callAfter(float seconds, entt::entity waitingEntity, const std::function<void()> &callback);
+
+    /**
+     * 'Unsafe' as in: This function will assign the TimeOuts component if not present. Which is behavior that
+     * can cause crashes if this function is called from somewhere where assigning Components is not allowed:
+     *  - Entity is being destroyed.
+     *  - ???
+     */
+    delegate_method unsafeCallAfter(float seconds, entt::entity waitingEntity, const std::function<void()> &callback);
+
+    delegate<void()> nextUpdate;
 
   protected:
     void init(EntityEngine *engine) override;

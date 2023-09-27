@@ -6,7 +6,7 @@ struct TimeOuts
     std::list<std::pair<float, delegate<void()>>> timeOutList;
 };
 
-delegate_method TimeOutSystem::callAfter(float seconds, entt::entity waitingEntity,
+delegate_method TimeOutSystem::unsafeCallAfter(float seconds, entt::entity waitingEntity,
     const std::function<void()> &callback)
 {
     if (!engine)
@@ -30,6 +30,14 @@ void TimeOutSystem::init(EntityEngine *inEngine)
 
 void TimeOutSystem::update(double deltaTimeDouble, EntityEngine *)
 {
+    nextUpdate();
+    nextUpdate = delegate<void()>();
+
+    /*
+     * NOTE: it is important that we call callbacks in order of adding them, in case they both need to be called in the same frame.
+     * So no swap and pop here for example!
+     */
+
     float deltaTime = float(deltaTimeDouble);
     std::list<std::pair<entt::entity, delegate<void()>>> toCall;
     engine->entities.view<TimeOuts>().each([&] (entt::entity e, TimeOuts &timeOuts)
