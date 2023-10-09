@@ -11,6 +11,11 @@
 
 std::function<Room *(const json &)> Level::customRoomLoader;
 
+void Level::setPaused(bool bInPaused)
+{
+    bPaused = bInPaused;
+}
+
 void Level::initialize()
 {
     int i = 0;
@@ -24,6 +29,10 @@ void Level::initialize()
 
 void Level::update(double deltaTime)
 {
+    if (bPaused)
+    {
+        return;
+    }
     gu::profiler::Zone levelUpdateZone("level update");
     updating = true;
 

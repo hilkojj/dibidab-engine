@@ -28,6 +28,10 @@ struct PersistentEntityRef
 
     bool tryResolve(const entt::registry &, entt::entity &) const;
 
+    bool operator==(const PersistentEntityRef &other) const;
+
+    bool operator<(const PersistentEntityRef &other) const;
+
   private:
     mutable bool resolved;
     mutable entt::entity entity;
@@ -36,10 +40,24 @@ struct PersistentEntityRef
     friend void to_json(json &j, const PersistentEntityRef &v);
 
     friend void from_json(const json &j, PersistentEntityRef &v);
+
+    friend std::hash<PersistentEntityRef>;
 };
 
 void to_json(json &j, const PersistentEntityRef &v);
 
 void from_json(const json &j, PersistentEntityRef &v);
+
+namespace std
+{
+    template<>
+    struct hash<PersistentEntityRef>
+    {
+        inline size_t operator()(const PersistentEntityRef &ref) const
+        {
+            return ref.persistentEntityId;
+        }
+    };
+}
 
 #endif //GAME_PERSISTENTENTITYREF_H

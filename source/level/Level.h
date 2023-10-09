@@ -10,6 +10,7 @@
 class Level
 {
     double time = 0;
+    bool bPaused = false;
     std::vector<Room *> rooms;
 
     bool updating = false, initialized = false;
@@ -61,6 +62,10 @@ class Level
     void addRoom(Room *);
 
     double getTime() const { return time; }
+
+    bool isPaused() const { return bPaused; }
+
+    void setPaused(bool bPaused);
 
     bool isUpdating() const { return updating; }
 

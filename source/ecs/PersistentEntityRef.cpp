@@ -65,6 +65,16 @@ bool PersistentEntityRef::tryResolve(const entt::registry &reg, entt::entity &ou
     return false;
 }
 
+bool PersistentEntityRef::operator==(const PersistentEntityRef &other) const
+{
+    return persistentEntityId == other.persistentEntityId;
+}
+
+bool PersistentEntityRef::operator<(const PersistentEntityRef &other) const
+{
+    return persistentEntityId < other.persistentEntityId;
+}
+
 void to_json(json &j, const PersistentEntityRef &v)
 {
     j = v.persistentEntityId;
