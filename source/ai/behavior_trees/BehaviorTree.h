@@ -282,7 +282,7 @@ class BehaviorTree
 
         void finish(Result result) override;
 
-        ComponentObserverNode *withSafetyDelay();
+        ComponentObserverNode *withoutSafetyDelay();
 
         template<class Component>
         ComponentObserverNode *has(EntityEngine *engine, entt::entity entity)

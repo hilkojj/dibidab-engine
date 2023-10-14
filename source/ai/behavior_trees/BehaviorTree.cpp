@@ -714,7 +714,7 @@ void BehaviorTree::WaitNode::drawDebugInfo() const
 }
 
 BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
-    bUseSafetyDelay(false),
+    bUseSafetyDelay(true),
     fulfilledNodeIndex(INVALID_CHILD_INDEX),
     unfulfilledNodeIndex(INVALID_CHILD_INDEX),
     bFulFilled(false),
@@ -747,13 +747,13 @@ void BehaviorTree::ComponentObserverNode::finish(BehaviorTree::Node::Result resu
     Node::finish(result);
 }
 
-BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withSafetyDelay()
+BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withoutSafetyDelay()
 {
     if (!observerHandles.empty())
     {
-        throw gu_err("Safety delay should be enabled before further configuration: " + getNodeErrorInfo(this));
+        throw gu_err("Safety delay can only be disabled before observers are added: " + getNodeErrorInfo(this));
     }
-    bUseSafetyDelay = true;
+    bUseSafetyDelay = false;
     return this;
 }
 
@@ -1310,7 +1310,7 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>(),
 
-        "withSafetyDelay", &BehaviorTree::ComponentObserverNode::withSafetyDelay,
+        "withoutSafetyDelay", &BehaviorTree::ComponentObserverNode::withoutSafetyDelay,
 
         "has", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
