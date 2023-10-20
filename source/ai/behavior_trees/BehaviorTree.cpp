@@ -634,6 +634,16 @@ BehaviorTree::WaitNode *BehaviorTree::WaitNode::finishAfter(const float inSecond
     seconds = inSeconds;
     waitingEntity = inWaitingEntity;
     engine = inEngine;
+#ifndef NDEBUG
+    if (inEngine == nullptr)
+    {
+        throw gu_err("Engine is a nullptr!\n" + getNodeErrorInfo(this));
+    }
+    if (!inEngine->entities.valid(inWaitingEntity))
+    {
+        throw gu_err("Entity is not valid!\n" + getNodeErrorInfo(this));
+    }
+#endif
     return this;
 }
 
@@ -642,6 +652,10 @@ void BehaviorTree::WaitNode::enter()
     Node::enter();
     if (seconds >= 0.0f && engine != nullptr)
     {
+        if (!engine->entities.valid(waitingEntity))
+        {
+            throw gu_err("Entity #" + std::to_string(int(waitingEntity)) + " is not valid!\n" + getNodeErrorInfo(this));
+        }
         onWaitFinished = engine->getTimeOuts()->unsafeCallAfter(seconds, waitingEntity, [&]()
         {
             finish(Node::Result::SUCCESS);
