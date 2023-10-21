@@ -29,7 +29,7 @@ set_property(TARGET dibidab PROPERTY CXX_STANDARD 17)
 set_property(TARGET dibidab PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS  "/Ox /EHsc /bigobj")
+    set(CMAKE_CXX_FLAGS  "/Ox /EHsc /bigobj /D NDEBUG")
 endif()
 
 # gameutils repo:
