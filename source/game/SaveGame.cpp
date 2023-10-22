@@ -3,6 +3,8 @@
 #include "../macro_magic/lua_converters.h"
 #include "dibidab.h"
 
+#ifndef DIBIDAB_NO_SAVE_GAME
+
 SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
 {
     luaTable = sol::table::create(luau::getLuaState().lua_state());
@@ -51,3 +53,5 @@ sol::table SaveGame::getSaveDataForEntity(const std::string &entitySaveGameID, b
 
     return saveGameLuaTable[SAVE_GAME_ENTITIES_TABLE_NAME].get_or_create<sol::table>()[entitySaveGameID].get_or_create<sol::table>();
 }
+
+#endif

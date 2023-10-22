@@ -5,6 +5,8 @@
 #include <json.hpp>
 #include "../luau.h"
 
+#ifndef DIBIDAB_NO_SAVE_GAME
+
 struct SaveGame
 {
     SaveGame(const char *path);
@@ -18,5 +20,6 @@ struct SaveGame
   private:
     std::string loadedFromPath;
 };
+#endif
 
 #endif

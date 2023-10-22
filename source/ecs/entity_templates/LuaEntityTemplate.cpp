@@ -121,19 +121,23 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
         LuaScripted& luaScripted = engine->entities.get_or_assign<LuaScripted>(e);
         luaScripted.usedTemplate = this;
 
+#ifndef DIBIDAB_NO_SAVE_GAME
         std::string id;
         if (!luaScripted.saveData.valid())
         {
             id = arguments.value()["saveGameEntityID"].get_or<std::string, std::string>(getUniqueID());
             luaScripted.saveData = SaveGame::getSaveDataForEntity(id, !persistent);
         }
+#endif
 
         if (persistent)
         {
             PersistentEntityID persistentEntityID;
+            std::string previousAppliedTemplate;
             if (const Persistent *pOld = engine->entities.try_get<Persistent>(e))
             {
                 persistentEntityID = pOld->persistentId;
+                previousAppliedTemplate = pOld->applyTemplateOnLoad;
             }
             else
             {
@@ -142,16 +146,30 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
             engine->entities.ctx_or_set<PersistentEntities>().persistentEntityIdMap[persistentEntityID] = e;
 
             auto &p = engine->entities.assign_or_replace<Persistent>(e, persistency);
+            if (!previousAppliedTemplate.empty())
+            {
+                p.applyTemplateOnLoad = previousAppliedTemplate;
+            }
             p.persistentId = persistentEntityID;
             if (persistentArgs && arguments.has_value() && arguments.value().valid())
                 jsonFromLuaTable(arguments.value(), p.data);
 
             assert(p.data.is_object());
+#ifndef DIBIDAB_NO_SAVE_GAME
             if (!id.empty())
                 p.data["saveGameEntityID"] = id;
+#endif
         }
 
-        sol::protected_function_result result = createFunc(e, arguments, luaScripted.saveData);
+        sol::protected_function_result result = createFunc(
+            e,
+            arguments,
+            persistent
+#ifndef DIBIDAB_NO_SAVE_GAME
+            ,
+            luaScripted.saveData
+#endif
+        );
         if (!result.valid())
             throw gu_err(result.get<sol::error>().what());
         // NOTE!!: ALL REFERENCES TO COMPONENTS MIGHT BE BROKEN AFTER CALLING createFunc. (EnTT might resize containers)

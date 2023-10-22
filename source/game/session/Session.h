@@ -17,7 +17,9 @@ class Session
 
   public:
 
+#ifndef DIBIDAB_NO_SAVE_GAME
     SaveGame saveGame;
+#endif
 
     Session(const char *saveGamePath);
 

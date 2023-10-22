@@ -36,8 +36,10 @@ void dibidab::setCurrentSession(Session *s)
     delete currSession;
     currSession = s;
 
+#ifndef DIBIDAB_NO_SAVE_GAME
     if (s)
         luau::getLuaState()["saveGame"] = s->saveGame.luaTable;
+#endif
 
     onSessionChange();
 }
@@ -50,9 +52,10 @@ void showDeveloperOptionsMenuBar()
     if (ImGui::BeginMenu("Game"))
     {
         ImGui::MenuItem(
-                "Show developer options",
-                KeyInput::getKeyName(dibidab::settings.keyInput.toggleDeveloperOptions),
-                &dibidab::settings.showDeveloperOptions);
+            "Show developer options",
+            KeyInput::getKeyName(dibidab::settings.keyInput.toggleDeveloperOptions),
+            &dibidab::settings.showDeveloperOptions
+        );
 
         ImGui::SetNextItemWidth(120);
         ImGui::SliderFloat("Master volume", &dibidab::settings.audio.masterVolume, 0.0f, 10.0f);

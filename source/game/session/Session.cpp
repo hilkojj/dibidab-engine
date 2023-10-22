@@ -43,7 +43,10 @@ Player_ptr Session::getPlayer(int id) const
     return NULL;
 }
 
-Session::Session(const char *saveGamePath) : saveGame(saveGamePath)
+Session::Session(const char *saveGamePath)
+#ifndef DIBIDAB_NO_SAVE_GAME
+    : saveGame(saveGamePath)
+#endif
 {
 
 }
@@ -90,5 +93,7 @@ void Session::removePlayerEntities(int playerId)
 Session::~Session()
 {
     delete level;
+#ifndef DIBIDAB_NO_SAVE_GAME
     saveGame.save();
+#endif
 }
