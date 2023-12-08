@@ -5,6 +5,27 @@
 #include "luau.h"
 #include "game/dibidab.h"
 
+luau::Script::Script(const std::string &path) : path(path)
+{}
+
+const sol::bytecode &luau::Script::getByteCode()
+{
+    if (!bytecode.empty())
+    {
+        return bytecode;
+    }
+
+    sol::load_result lr = luau::getLuaState().load_file(path);
+    if (!lr.valid())
+    {
+        throw gu_err("Lua code invalid!:\n" + std::string(lr.get<sol::error>().what()));
+    }
+
+    bytecode = sol::protected_function(lr).dump();
+    return bytecode;
+}
+
+
 template<typename type, typename vecType>
 void populateVecUserType(sol::usertype<vecType> &vus)
 {
@@ -206,6 +227,19 @@ sol::state &luau::getLuaState()
     return *lua;
 }
 
+sol::environment luau::environmentFromScript(luau::Script &script)
+{
+    sol::environment env(getLuaState(), sol::create, getLuaState().globals());
+
+    sol::protected_function_result result = luau::getLuaState().safe_script(script.getByteCode().as_string_view(), env);
+    if (!result.valid())
+    {
+        throw gu_err(result.get<sol::error>().what());
+    }
+
+    return env;
+}
+
 lua_Debug luau::getDebugInfo(sol::function func)
 {
     func.push();
@@ -215,20 +249,4 @@ lua_Debug luau::getDebugInfo(sol::function func)
         throw gu_err("Failed to get debug info");
     }
     return dbgInfo;
-}
-
-luau::Script::Script(const std::string &path) : path(path)
-{}
-
-const sol::bytecode &luau::Script::getByteCode()
-{
-    if (!bytecode.empty())
-        return bytecode;
-
-    sol::load_result lr = luau::getLuaState().load_file(path);
-    if (!lr.valid())
-        throw gu_err("Lua code invalid!:\n" + std::string(lr.get<sol::error>().what()));
-
-    bytecode = sol::protected_function(lr).dump();
-    return bytecode;
 }

@@ -14,6 +14,17 @@ extern "C" {
 
 namespace luau
 {
+    struct Script
+    {
+        Script(const std::string &path);
+
+        const sol::bytecode &getByteCode();
+
+      private:
+        std::string path;
+        sol::bytecode bytecode;
+    };
+
     sol::state &getLuaState();
 
     template <typename ...Args>
@@ -38,18 +49,9 @@ namespace luau
         }
     }
 
+    sol::environment environmentFromScript(Script &script);
+
     lua_Debug getDebugInfo(sol::function func);
-
-    struct Script
-    {
-        Script(const std::string &path);
-
-        const sol::bytecode &getByteCode();
-
-      private:
-        std::string path;
-        sol::bytecode bytecode;
-    };
 
 }
 
