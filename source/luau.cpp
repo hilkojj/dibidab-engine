@@ -227,9 +227,10 @@ sol::state &luau::getLuaState()
     return *lua;
 }
 
-sol::environment luau::environmentFromScript(luau::Script &script)
+sol::environment luau::environmentFromScript(luau::Script &script, sol::environment *parent)
 {
-    sol::environment env(getLuaState(), sol::create, getLuaState().globals());
+    sol::environment env = parent ? sol::environment(getLuaState(), sol::create, *parent)
+        : sol::environment(getLuaState(), sol::create, getLuaState().globals());
 
     sol::protected_function_result result = luau::getLuaState().safe_script(script.getByteCode().as_string_view(), env);
     if (!result.valid())

@@ -25,6 +25,7 @@ bool BehaviorTreeInspector::drawGUI()
 
     if (ImGui::Begin("Behavior Tree Inspector"))
     {
+        // TODO: something is broken here (if more than 1 tab is opened):
         if (ImGui::BeginTabBar("Entities"))
         {
             std::string tabName = "#" + std::to_string(int(entity));
