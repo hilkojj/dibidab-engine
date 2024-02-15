@@ -54,7 +54,7 @@ void showDeveloperOptionsMenuBar()
         ImGui::MenuItem(
             "Show developer options",
             KeyInput::getKeyName(dibidab::settings.keyInput.toggleDeveloperOptions),
-            &dibidab::settings.showDeveloperOptions
+            &dibidab::settings.bShowDeveloperOptions
         );
 
         ImGui::SetNextItemWidth(120);
@@ -216,7 +216,7 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
         if (currSession)
             currSession->update(deltaTime);
 
-        if (KeyInput::justPressed(dibidab::settings.keyInput.reloadAssets) && dibidab::settings.showDeveloperOptions)
+        if (KeyInput::justPressed(dibidab::settings.keyInput.reloadAssets) && dibidab::settings.bShowDeveloperOptions)
             AssetManager::load("assets", true);
 
         {
@@ -233,14 +233,14 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
         }
 
         if (KeyInput::justPressed(dibidab::settings.keyInput.toggleDeveloperOptions))
-            dibidab::settings.showDeveloperOptions ^= 1;
+            dibidab::settings.bShowDeveloperOptions ^= 1;
 
         if (KeyInput::justPressed(dibidab::settings.keyInput.toggleFullscreen))
             gu::fullscreen = !gu::fullscreen;
 
-        if (dibidab::settings.showDeveloperOptions)
+        if (dibidab::settings.bShowDeveloperOptions)
             showDeveloperOptionsMenuBar();
-        gu::profiler::showGUI = dibidab::settings.showDeveloperOptions;
+        gu::profiler::showGUI = dibidab::settings.bShowDeveloperOptions;
     };
 
 }

@@ -57,5 +57,5 @@ EngineSettings:
   audio: AudioSettings
   keyInput: KeyInputSettings
 
-  showDeveloperOptions: [ bool, true ]
-  limitUpdatesPerSec: [ bool, false ]
+  bShowDeveloperOptions: [ bool, true ]
+  bLimitUpdatesPerSec: [ bool, false ]

@@ -60,7 +60,7 @@ void Level::update(double deltaTime)
         }
     };
 
-    if (dibidab::settings.limitUpdatesPerSec)
+    if (dibidab::settings.bLimitUpdatesPerSec)
     {
 
         updateAccumulator += deltaTime;
