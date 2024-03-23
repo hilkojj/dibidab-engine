@@ -37,6 +37,8 @@ public:
 
     void createComponentsWithLuaArguments(entt::entity, sol::optional<sol::table> arguments, bool persistent);
 
+    sol::environment &getTemplateEnvironment();
+
 protected:
 
     void runScript();

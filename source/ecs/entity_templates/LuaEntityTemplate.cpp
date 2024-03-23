@@ -215,3 +215,8 @@ std::string LuaEntityTemplate::getUniqueID()
 {
     return name + "_" + randomString(24);
 }
+
+sol::environment &LuaEntityTemplate::getTemplateEnvironment()
+{
+    return env;
+}
