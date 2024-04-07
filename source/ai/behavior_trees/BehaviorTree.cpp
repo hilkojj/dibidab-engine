@@ -1292,6 +1292,14 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
             node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
             return node;
+        },
+        "removeOnFinish", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+            const sol::this_environment &currentEnv)
+        -> BehaviorTree::ComponentDecoratorNode &
+        {
+            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
+            node.removeOnFinish(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            return node;
         }
     );
 
