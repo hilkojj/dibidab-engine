@@ -390,6 +390,54 @@ void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, Beha
     }
 }
 
+BehaviorTree::ParallelNode::ParallelNode() :
+    numChildrenFinished(0)
+{
+
+}
+
+void BehaviorTree::ParallelNode::enter()
+{
+    CompositeNode::enter();
+    if (getChildren().empty())
+    {
+        finish(Node::Result::SUCCESS);
+        return;
+    }
+    numChildrenFinished = 0;
+    for (Node *child : getChildren())
+    {
+        child->enter();
+    }
+}
+
+void BehaviorTree::ParallelNode::abort()
+{
+    CompositeNode::abort();
+    // Abort all entered children.
+    for (Node *child : getChildren())
+    {
+        if (child->isEntered())
+        {
+            child->abort();
+        }
+    }
+}
+
+const char *BehaviorTree::ParallelNode::getName() const
+{
+    return "Parallel";
+}
+
+void BehaviorTree::ParallelNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+{
+    // Finish if all children are finished.
+    if (++numChildrenFinished == getChildren().size())
+    {
+        CompositeNode::finish(isAborted() ? Node::Result::ABORTED : Node::Result::SUCCESS);
+    }
+}
+
 void BehaviorTree::InverterNode::enter()
 {
     Node *child = getChild();
@@ -408,7 +456,6 @@ const char *BehaviorTree::InverterNode::getName() const
 
 void BehaviorTree::InverterNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
 {
-    Node::onChildFinished(child, result);
     if (result == Node::Result::ABORTED)
     {
         finish(Node::Result::ABORTED);
@@ -1241,6 +1288,16 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         sol::factories([] ()
         {
             return new BehaviorTree::SelectorNode();
+        }),
+        sol::base_classes,
+        sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>()
+    );
+
+    sol::usertype<BehaviorTree::ParallelNode> parallelNodeType = lua->new_usertype<BehaviorTree::ParallelNode>(
+        "BTParallelNode",
+        sol::factories([] ()
+        {
+            return new BehaviorTree::ParallelNode();
         }),
         sol::base_classes,
         sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>()

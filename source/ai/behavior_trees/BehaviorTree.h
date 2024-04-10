@@ -152,6 +152,28 @@ class BehaviorTree
         int currentChildIndex;
     };
 
+    /**
+     * Simple node that executes all children at the same time.
+     * Finished when all children are finished. (TODO: add more options)
+     * Will always return SUCCESS unless ABORTED, regardless of children results.
+     */
+    struct ParallelNode : public CompositeNode
+    {
+        ParallelNode();
+
+        void enter() override;
+
+        void abort() override;
+
+        const char *getName() const override;
+
+      protected:
+        void onChildFinished(Node *child, Result result) override;
+
+      private:
+        int numChildrenFinished;
+    };
+
     struct InverterNode : public DecoratorNode
     {
         void enter() override;
