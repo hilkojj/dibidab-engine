@@ -63,9 +63,20 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
             ImGui::EndPopup();
         }
     }
+
+    entt::entity addInspectingTo = entt::null;
     reg.view<Inspecting>().each([&](auto e, Inspecting &ins) {
         drawEntityInspectorGUI(e, ins);
+        if (reg.has<Inspecting>(e) && ins.addInspectingTo != entt::null)
+        {
+            addInspectingTo = ins.addInspectingTo;
+            ins.addInspectingTo = entt::null;
+        }
     });
+    if (engine.entities.valid(addInspectingTo))
+    {
+        engine.entities.get_or_assign<Inspecting>(addInspectingTo);
+    }
 
     if (creatingTempl)
         templateArgsGUI();
@@ -438,15 +449,16 @@ bool drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool read
 }
 
 bool drawFieldsTree(
-        json &valuesArray, const SerializableStructInfo *info, Inspecting &ins,
-        bool readOnly=false, bool forceEditReadOnly=false
+    EntityEngine &engine,
+    json &valuesArray, const SerializableStructInfo *info, Inspecting &ins,
+    bool readOnly=false, bool forceEditReadOnly=false
 )
 {
     bool changed = false;
     for (int i = 0; i < info->nrOfFields; i++)
     {
         auto fieldName = info->fieldNames[i];
-        auto fieldTypeName = info->fieldTypeNames[i];
+        const std::string fieldTypeName = info->fieldTypeNames[i];
 
         ImGui::PushID(fieldName);                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
         ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
@@ -463,27 +475,62 @@ bool drawFieldsTree(
             );
 
         ImGui::SameLine();
-        ImGui::Text("%s", fieldTypeName);
+        ImGui::Text("%s", fieldTypeName.c_str());
 
         ImGui::NextColumn();
         ImGui::AlignTextToFramePadding();
 
-        auto subInfo = SerializableStructInfo::getFor(fieldTypeName);
+        auto subInfo = SerializableStructInfo::getFor(fieldTypeName.c_str());
 
         static std::string finalTypeBegin = "final<";
         bool subReadOnly = !forceEditReadOnly
                             && (readOnly
-                                || std::string(fieldTypeName).compare(0, finalTypeBegin.length(), finalTypeBegin) == 0
+                                || fieldTypeName.compare(0, finalTypeBegin.length(), finalTypeBegin) == 0
                             );
 
-        changed |= drawJsonValue(value, ins, !subInfo, subReadOnly);
+        if (fieldTypeName == "PersistentEntityRef")
+        {
+            PersistentEntityRef ref;
+            ref = value;
+            entt::entity resolvedEntity = entt::null;
+            bool bResolved = ref.tryResolve(engine.entities, resolvedEntity);
+
+            if (!bResolved)
+            {
+                ImGui::ButtonEx("Unresolved!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+            }
+            else if (resolvedEntity == entt::null)
+            {
+                ImGui::ButtonEx("entt::null", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+            }
+            else if (!engine.entities.valid(resolvedEntity))
+            {
+                ImGui::ButtonEx("Invalid!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+            }
+            else
+            {
+                std::string btnTxt = "#" + std::to_string(int(resolvedEntity));
+                if (ImGui::Button(btnTxt.c_str()))
+                {
+                    ins.addInspectingTo = resolvedEntity;
+                }
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Persistent Id: %d", ref.getId());
+            }
+        }
+        else
+        {
+            changed |= drawJsonValue(value, ins, !subInfo, subReadOnly);
+        }
 
         ImGui::NextColumn();
         if (field_open)
         {
             ins.currentPath.emplace_back(fieldName);
             if (subInfo)
-                changed |= drawFieldsTree(value, subInfo, ins, subReadOnly);
+                changed |= drawFieldsTree(engine, value, subInfo, ins, subReadOnly);
             else changed |= drawJsonTree(
                     value, ins,
                     !info->structFieldIsFixedSize[i] && !subReadOnly,
@@ -505,7 +552,7 @@ void EntityInspector::drawComponentFieldsTree(entt::entity e, Inspecting &ins, c
 
     assert(ins.currentPath.empty());
     ins.currentPath.emplace_back(componentName);
-    if (drawFieldsTree(valuesArray, info, ins))
+    if (drawFieldsTree(engine, valuesArray, info, ins))
     {
         try {
             componentUtils->setJsonComponent(valuesArray, e, reg);
@@ -551,7 +598,7 @@ void EntityInspector::drawAddComponent(entt::entity e, Inspecting &ins, const ch
     ImGui::Columns(2);
     ImGui::Separator();
 
-    drawFieldsTree(ins.addingComponentJson, SerializableStructInfo::getFor(ins.addingComponentTypeName.c_str()), ins, false);
+    drawFieldsTree(engine, ins.addingComponentJson, SerializableStructInfo::getFor(ins.addingComponentTypeName.c_str()), ins, false);
 
     ImGui::Columns(1);
     ImGui::Separator();

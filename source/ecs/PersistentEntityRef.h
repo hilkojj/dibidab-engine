@@ -28,6 +28,8 @@ struct PersistentEntityRef
 
     bool tryResolve(const entt::registry &, entt::entity &) const;
 
+    PersistentEntityID getId() const;
+
     bool operator==(const PersistentEntityRef &other) const;
 
     bool operator<(const PersistentEntityRef &other) const;

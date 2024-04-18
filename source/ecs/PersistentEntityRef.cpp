@@ -65,6 +65,11 @@ bool PersistentEntityRef::tryResolve(const entt::registry &reg, entt::entity &ou
     return false;
 }
 
+PersistentEntityID PersistentEntityRef::getId() const
+{
+    return persistentEntityId;
+}
+
 bool PersistentEntityRef::operator==(const PersistentEntityRef &other) const
 {
     return persistentEntityId == other.persistentEntityId;

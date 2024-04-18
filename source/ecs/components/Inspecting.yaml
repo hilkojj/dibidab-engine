@@ -25,6 +25,8 @@ Inspecting:
 
     windowPos: [ImVec2, "ImVec2(-1, -1)"]
 
+    addInspectingTo: [entt::entity, entt::null]
+
   _methods:
     - InspectPathState &getState()
       { std::string pathKey; for (auto &s:currentPath) pathKey += "--->" + s; return state[pathKey]; }
