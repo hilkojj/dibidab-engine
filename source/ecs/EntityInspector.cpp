@@ -67,7 +67,7 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
     entt::entity addInspectingTo = entt::null;
     reg.view<Inspecting>().each([&](auto e, Inspecting &ins) {
         drawEntityInspectorGUI(e, ins);
-        if (reg.has<Inspecting>(e) && ins.addInspectingTo != entt::null)
+        if (reg.valid(e) && reg.has<Inspecting>(e) && ins.addInspectingTo != entt::null)
         {
             addInspectingTo = ins.addInspectingTo;
             ins.addInspectingTo = entt::null;
