@@ -4,6 +4,8 @@
 #include <utils/gu_error.h>
 #include <cstring>
 #include <zlib.h>
+#include <level/room/Room.h>
+
 
 #include "Level.h"
 #include "../generated/PlayerControlled.hpp"
@@ -125,6 +127,10 @@ void to_json(json &j, const Level &lvl)
     j = json::object({{"spawnRoom", lvl.spawnRoom}, {"rooms", json::array()}});
     for (auto room : lvl.rooms)
     {
+        if (!room->isPersistent())
+        {
+            continue;
+        }
         json &roomJ = j["rooms"].emplace_back();
         room->exportJsonData(roomJ);
     }
@@ -173,6 +179,10 @@ void Level::save(const char *path) const
 
     for (Room *room : rooms)
     {
+        if (!room->isPersistent())
+        {
+            continue;
+        }
         data.resize(data.size() + sizeof(level_data_length_type));
         const level_data_length_type dataSizeBeforeRoom = data.size();
         room->exportBinaryData(data);

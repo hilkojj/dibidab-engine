@@ -39,6 +39,16 @@ bool Room::isLoadingPersistentEntities() const
     return bLoadingPersistentEntities;
 }
 
+void Room::setPersistent(bool bInPersistent)
+{
+    bIsPersistent = bInPersistent;
+}
+
+bool Room::isPersistent() const
+{
+    return bIsPersistent;
+}
+
 void Room::loadPersistentEntities()
 {
     bLoadingPersistentEntities = true;
