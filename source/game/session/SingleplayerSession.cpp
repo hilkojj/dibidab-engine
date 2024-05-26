@@ -14,7 +14,7 @@ void SingleplayerSession::join(std::string username)
     assert(players.empty()); // splitscreen not yet supported
 
     localPlayer = std::make_shared<Player>();
-    localPlayer->id = 69420;
+    localPlayer->id = 1999;
     localPlayer->name = username;
     players.push_back(localPlayer);
 }
