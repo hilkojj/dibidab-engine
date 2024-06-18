@@ -225,6 +225,15 @@ class BehaviorTree
         void addWhileEntered(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
 
         template<class Component>
+        ComponentDecoratorNode *addOnEnter(EntityEngine *engine, entt::entity entity)
+        {
+            addOnEnter(engine, entity, ComponentUtils::getFor<Component>());
+            return this;
+        }
+
+        void addOnEnter(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+
+        template<class Component>
         ComponentDecoratorNode *removeOnFinish(EntityEngine *engine, entt::entity entity)
         {
             removeOnFinish(engine, entity, ComponentUtils::getFor<Component>());
@@ -254,6 +263,7 @@ class BehaviorTree
         };
 
         std::vector<EntityComponent> toAddWhileEntered;
+        std::vector<EntityComponent> toAddOnEnter;
         std::vector<EntityComponent> toRemoveOnFinish;
     };
 

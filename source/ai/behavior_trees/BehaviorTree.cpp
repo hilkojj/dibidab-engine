@@ -561,6 +561,24 @@ void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine,
     toAddWhileEntered.push_back({engine, entity, componentUtils});
 }
 
+void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt::entity entity,
+    const ComponentUtils *componentUtils)
+{
+    if (engine == nullptr)
+    {
+        throw gu_err("Engine is a nullptr! " + getNodeErrorInfo(this));
+    }
+    if (!engine->entities.valid(entity))
+    {
+        throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
+    }
+    if (componentUtils == nullptr)
+    {
+        throw gu_err("ComponentUtils is a nullptr! " + getNodeErrorInfo(this));
+    }
+    toAddOnEnter.push_back({engine, entity, componentUtils});
+}
+
 void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, entt::entity entity,
     const ComponentUtils *componentUtils)
 {
@@ -588,14 +606,17 @@ void BehaviorTree::ComponentDecoratorNode::enter()
     }
     Node::enter();
 
-    for (const EntityComponent entityComponent : toAddWhileEntered)
+    for (const std::vector<EntityComponent> &toAddVector : { toAddWhileEntered, toAddOnEnter })
     {
-        if (!entityComponent.engine->entities.valid(entityComponent.entity))
+        for (const EntityComponent entityComponent : toAddVector)
         {
-            throw gu_err("Cannot add " + std::string(entityComponent.componentUtils->structInfo->name) +
-                " to an invalid entity while entering: " + getNodeErrorInfo(this));
+            if (!entityComponent.engine->entities.valid(entityComponent.entity))
+            {
+                throw gu_err("Cannot add " + std::string(entityComponent.componentUtils->structInfo->name) +
+                    " to an invalid entity while entering: " + getNodeErrorInfo(this));
+            }
+            entityComponent.componentUtils->addComponent(entityComponent.entity, entityComponent.engine->entities);
         }
-        entityComponent.componentUtils->addComponent(entityComponent.entity, entityComponent.engine->entities);
     }
 
     child->enter();
@@ -1348,6 +1369,14 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
         {
             const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
             node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            return node;
+        },
+        "addOnEnter", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+            const sol::this_environment &currentEnv)
+        -> BehaviorTree::ComponentDecoratorNode &
+        {
+            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
+            node.addOnEnter(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
             return node;
         },
         "removeOnFinish", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,

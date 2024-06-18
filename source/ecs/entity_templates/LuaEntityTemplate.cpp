@@ -119,7 +119,10 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
         } else arguments = defaultArgs;
 
         LuaScripted& luaScripted = engine->entities.get_or_assign<LuaScripted>(e);
-        luaScripted.usedTemplate = this;
+        if (luaScripted.usedTemplate == nullptr)
+        {
+            luaScripted.usedTemplate = this;
+        }
 
 #ifndef DIBIDAB_NO_SAVE_GAME
         std::string id;
