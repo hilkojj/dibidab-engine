@@ -102,6 +102,22 @@ bool BehaviorTree::Node::isAborted() const
     return bAborted;
 }
 
+bool BehaviorTree::Node::getEnteredDescription(std::vector<const char *> &descriptions) const
+{
+    if (!isEntered() || description.empty())
+    {
+        return false;
+    }
+    descriptions.push_back(description.c_str());
+    return true;
+}
+
+BehaviorTree::Node *BehaviorTree::Node::setDescription(const char *inDescription)
+{
+    description = inDescription;
+    return this;
+}
+
 bool BehaviorTree::Node::hasLuaDebugInfo() const
 {
     return bHasLuaDebugInfo;
@@ -172,6 +188,27 @@ BehaviorTree::CompositeNode::~CompositeNode()
     children.clear();
 }
 
+bool BehaviorTree::CompositeNode::getEnteredDescription(std::vector<const char *> &descriptions) const
+{
+    if (!isEntered())
+    {
+        return false;
+    }
+    bool bHasAnyChildDescription = false;
+    for (const Node *child : children)
+    {
+        if (child->getEnteredDescription(descriptions))
+        {
+            bHasAnyChildDescription = true;
+        }
+    }
+    if (!bHasAnyChildDescription)
+    {
+        return Node::getEnteredDescription(descriptions);
+    }
+    return bHasAnyChildDescription;
+}
+
 void BehaviorTree::DecoratorNode::abort()
 {
     Node::abort();
@@ -212,6 +249,19 @@ BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(BehaviorTree:
 BehaviorTree::Node *BehaviorTree::DecoratorNode::getChild() const
 {
     return child;
+}
+
+bool BehaviorTree::DecoratorNode::getEnteredDescription(std::vector<const char *> &descriptions) const
+{
+    if (!isEntered())
+    {
+        return false;
+    }
+    if (child != nullptr && child->getEnteredDescription(descriptions))
+    {
+        return true;
+    }
+    return Node::getEnteredDescription(descriptions);
 }
 
 BehaviorTree::DecoratorNode::~DecoratorNode()
@@ -1273,7 +1323,8 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
     sol::usertype<BehaviorTree::Node> nodeType = lua->new_usertype<BehaviorTree::Node>(
         "BTNode",
 
-        "finish", &BehaviorTree::Node::finish
+        "finish", &BehaviorTree::Node::finish,
+        "setDescription", &BehaviorTree::Node::setDescription
     );
 
     sol::usertype<BehaviorTree::CompositeNode> compositeNodeType = lua->new_usertype<BehaviorTree::CompositeNode>(

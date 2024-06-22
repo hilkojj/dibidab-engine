@@ -41,6 +41,10 @@ class BehaviorTree
 
         bool isAborted() const;
 
+        virtual bool getEnteredDescription(std::vector<const char *> &descriptions) const;
+
+        Node *setDescription(const char *description);
+
         bool hasLuaDebugInfo() const;
 
         const lua_Debug &getLuaDebugInfo() const;
@@ -68,6 +72,8 @@ class BehaviorTree
         bool bEntered;
         bool bAborted;
 
+        std::string description;
+
         lua_Debug luaDebugInfo;
         bool bHasLuaDebugInfo;
 
@@ -87,6 +93,8 @@ class BehaviorTree
 
         const std::vector<Node *> &getChildren() const;
 
+        bool getEnteredDescription(std::vector<const char *> &descriptions) const override;
+
         ~CompositeNode() override;
 
       private:
@@ -102,6 +110,8 @@ class BehaviorTree
         virtual DecoratorNode *setChild(Node *child);
 
         Node *getChild() const;
+
+        bool getEnteredDescription(std::vector<const char *> &descriptions) const override;
 
         ~DecoratorNode() override;
 
