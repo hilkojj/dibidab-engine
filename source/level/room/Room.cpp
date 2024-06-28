@@ -13,6 +13,13 @@ void Room::initialize(Level *lvl)
 
     level = lvl;
 
+    preLoadInitialize();
+    loadPersistentEntities();
+    postLoadInitialize();
+}
+
+void Room::preLoadInitialize()
+{
     addSystem(new PlayerControlSystem("player control"));
     addSystem(new AudioSystem("audio"));
 
@@ -22,8 +29,10 @@ void Room::initialize(Level *lvl)
 
     // THIS on_destroy() SHOULD STAY HERE (after EntityEngine::initialize()) OTHERWISE CALLBACK WILL BE CALLED AFTER `Named`-component (or other components) ARE ALREADY REMOVED!
     entities.on_destroy<Persistent>().connect<&Room::tryToSaveRevivableEntity>(this);
+}
 
-    loadPersistentEntities();
+void Room::postLoadInitialize()
+{
     afterLoad();
 }
 

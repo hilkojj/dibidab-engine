@@ -26,8 +26,14 @@ class Room : public EntityEngine
 
     void loadPersistentEntities();
 
+  private:
+    void initialize(Level *lvl);
+
   protected:
-    virtual void initialize(Level *lvl);
+
+    virtual void preLoadInitialize();
+
+    virtual void postLoadInitialize();
 
   public:
 
