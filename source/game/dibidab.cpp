@@ -176,17 +176,7 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
     std::cout << " - GL_RENDERER: " << glGetString(GL_RENDERER) << "\n";
 
     // audio:
-    {
-        std::vector<std::string> audioDevices;
-        if (!au::getAvailableDevices(audioDevices, NULL))
-            throw gu_err("could not get audio devices");
-
-        std::cout << "Available audio devices:\n";
-        for (auto &dev : audioDevices)
-            std::cout << " - " << dev << std::endl;
-
-        au::init();
-    }
+    au::init();
 
     setImGuiStyleAndConfig();
 
