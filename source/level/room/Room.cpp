@@ -1,11 +1,14 @@
 
-#include <gu/profiler.h>
 #include "Room.h"
 
 #include "../../ecs/systems/PlayerControlSystem.h"
 #include "../../ecs/systems/AudioSystem.h"
 #include "../../ecs/systems/SpawningSystem.h"
 #include "../../ecs/systems/LuaScriptsSystem.h"
+
+#include "../../generated/Saving.hpp"
+
+#include <gu/profiler.h>
 
 void Room::initialize(Level *lvl)
 {
@@ -34,6 +37,27 @@ void Room::preLoadInitialize()
 void Room::postLoadInitialize()
 {
     afterLoad();
+}
+
+std::list<EntitySystem *> Room::getSystemsToUpdate() const
+{
+    std::list<EntitySystem *> toUpdate = EntityEngine::getSystemsToUpdate();
+    if (level != nullptr && level->isPaused())
+    {
+        auto it = toUpdate.begin();
+        while (it != toUpdate.end())
+        {
+            if (systemsToUpdateDuringPause.find(*it) == systemsToUpdateDuringPause.end())
+            {
+                it = toUpdate.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+    return toUpdate;
 }
 
 void Room::update(double deltaTime)
@@ -112,7 +136,7 @@ void Room::loadPersistentEntities()
     luaEnvironment[tryResolveFuncName] = originalTryResolvePersistentRef;
 }
 
-int Room::nrOfPersistentEntities() const
+int Room::getNumPersistentEntities() const
 {
     return persistentEntitiesToLoad.is_array() ? persistentEntitiesToLoad.size() : 0;
 }

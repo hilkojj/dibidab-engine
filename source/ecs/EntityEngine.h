@@ -60,7 +60,7 @@ class EntityEngine
             }
         );
         if (it == systems.end())
-            return NULL;
+            return nullptr;
         return (EntitySystem_ *) *it;
     }
 
@@ -103,7 +103,7 @@ class EntityEngine
     void setParent(entt::entity child, entt::entity parent, const char *childName="");
 
     // returns false if name is already in use
-    bool setName(entt::entity, const char *name=NULL);
+    bool setName(entt::entity, const char *name=nullptr);
 
     entt::entity getByName(const char *name) const;
 
@@ -112,7 +112,7 @@ class EntityEngine
     const std::unordered_map<std::string, entt::entity> &getNamedEntities() const { return namedEntities; };
 
     template<typename type>
-    void emitEntityEvent(entt::entity e, const type &event, const char *customEventName=NULL)
+    void emitEntityEvent(entt::entity e, const type &event, const char *customEventName=nullptr)
     {
         if (auto *emitter = entities.try_get<EventEmitter>(e))
             emitter->emit(event, customEventName);
@@ -131,6 +131,8 @@ class EntityEngine
     virtual void setPosition(entt::entity, const vec3 &);
 
   protected:
+
+    virtual std::list<EntitySystem *> getSystemsToUpdate() const;
 
     template <class EntityTemplate>
     void registerEntityTemplate()
@@ -152,7 +154,7 @@ class EntityEngine
 
     std::unordered_map<std::string, entt::entity> namedEntities;
 
-    void onEnitiyDenaming(entt::registry &, entt::entity);
+    void onEntityDenaming(entt::registry &, entt::entity);
 
 };
 

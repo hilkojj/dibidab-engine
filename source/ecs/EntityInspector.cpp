@@ -107,7 +107,7 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
         if (ImGui::BeginMenu("Systems"))
         {
             for (auto sys : engine.getSystems())
-                ImGui::MenuItem(sys->name.c_str(), NULL, &sys->enabled);
+                ImGui::MenuItem(sys->name.c_str(), NULL, &sys->bUpdatesEnabled);
 
             ImGui::EndMenu();
         }

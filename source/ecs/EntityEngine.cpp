@@ -72,7 +72,7 @@ void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
 {
     int hash = hashStringCrossPlatform(name);
 
-    bool replace = entityTemplates[hash] != NULL;
+    bool replace = entityTemplates[hash] != nullptr;
 
     delete entityTemplates[hash];
     auto et = entityTemplates[hash] = t;
@@ -115,7 +115,7 @@ void EntityEngine::initialize()
 
     entities.on_destroy<Parent>().connect<&EntityEngine::onParentDeletion>(this);
 
-    entities.on_destroy<Named>().connect<&EntityEngine::onEnitiyDenaming>(this);
+    entities.on_destroy<Named>().connect<&EntityEngine::onEntityDenaming>(this);
 
     initializeLuaEnvironment();
 
@@ -167,7 +167,7 @@ void EntityEngine::initializeLuaEnvironment()
 
     env["setName"] = [&](entt::entity e, sol::optional<const char *> name)
     {
-        return setName(e, name.has_value() ? name.value() : NULL);
+        return setName(e, name.has_value() ? name.value() : nullptr);
     };
     env["getName"] = [&](entt::entity e) -> sol::optional<std::string>
     {
@@ -307,15 +307,14 @@ void EntityEngine::update(double deltaTime)
 
     bUpdating = true;
 
-    for (auto sys : systems)
+    for (auto sys : getSystemsToUpdate())
     {
-        if (!sys->enabled) continue;
         gu::profiler::Zone sysZone(sys->name);
 
         if (sys->updateFrequency == .0) sys->update(deltaTime, this);
         else
         {
-            float customDeltaTime = 1. / sys->updateFrequency;
+            float customDeltaTime = 1.0f / sys->updateFrequency;
             sys->updateAccumulator += deltaTime;
             while (sys->updateAccumulator > customDeltaTime)
             {
@@ -400,7 +399,7 @@ bool EntityEngine::setName(entt::entity e, const char *name)
     if (name)
     {
         if (strcmp(name, "") == 0)
-            throw gu_err("Tried to set name of entity#" + std::to_string(int(e)) + " to empty string! Pass NULL or nil instead to remove the name.");
+            throw gu_err("Tried to set name of entity#" + std::to_string(int(e)) + " to empty string! Pass nullptr or nil instead to remove the name.");
 
         auto claimedBy = getByName(name);
         if (claimedBy == e)
@@ -421,7 +420,7 @@ bool EntityEngine::setName(entt::entity e, const char *name)
     }
 }
 
-void EntityEngine::onEnitiyDenaming(entt::registry &, entt::entity e)
+void EntityEngine::onEntityDenaming(entt::registry &, entt::entity e)
 {
     namedEntities.erase(entities.get<Named>(e).name_dont_change);
 }
@@ -430,5 +429,18 @@ const char *EntityEngine::getName(entt::entity e) const
 {
     if (const Named *named = entities.try_get<Named>(e))
         return named->name_dont_change.c_str();
-    else return NULL;
+    else return nullptr;
+}
+
+std::list<EntitySystem *> EntityEngine::getSystemsToUpdate() const
+{
+    std::list<EntitySystem *> systemsToUpdate;
+    for (EntitySystem *sys : systems)
+    {
+        if (sys->bUpdatesEnabled)
+        {
+            systemsToUpdate.push_back(sys);
+        }
+    }
+    return systemsToUpdate;
 }

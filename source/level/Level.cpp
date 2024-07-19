@@ -31,10 +31,6 @@ void Level::initialize()
 
 void Level::update(double deltaTime)
 {
-    if (bPaused)
-    {
-        return;
-    }
     gu::profiler::Zone levelUpdateZone("level update");
     updating = true;
 

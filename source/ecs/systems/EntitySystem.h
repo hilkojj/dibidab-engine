@@ -16,11 +16,12 @@ class EntitySystem
   public:
     const std::string name;
 
-    bool enabled = true;
+    bool bUpdatesEnabled = true;
 
     EntitySystem(std::string name) : name(std::move(name)) {}
 
   protected:
+    friend EntityEngine;
 
     int updateFrequency = 0; // update this system n times per second. if n = 0 then update(deltaTime) is called, else update(1/n)
     float updateAccumulator = 0;
@@ -28,8 +29,6 @@ class EntitySystem
     virtual void init(EntityEngine *) {};
 
     virtual void update(double deltaTime, EntityEngine *) = 0;
-
-    friend EntityEngine;
 
     virtual ~EntitySystem() = default;
 
