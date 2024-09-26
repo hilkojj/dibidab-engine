@@ -107,23 +107,6 @@ sol::state &luau::getLuaState()
 
         auto &env = lua->globals();
 
-        // math utils lol: todo: make this work with vec types instead
-        env["rotate2d"] = [&](float x, float y, float degrees) -> sol::table {
-            auto table = sol::table::create(env.lua_state());
-
-            auto result = rotate(vec2(x, y), degrees * mu::DEGREES_TO_RAD);
-            table[1] = result.x;
-            table[2] = result.y;
-            return table;
-        };
-
-        env["printTableAsJson"] = [&] (const sol::table &table, sol::optional<int> indent) // todo: this doest work properly
-        {
-            json j;
-            jsonFromLuaTable(table, j);
-            std::cout << j.dump(indent.has_value() ? indent.value() : -1) << std::endl;
-        };
-
         env["getGameStartupArgs"] = [] {
             return &dibidab::startupArgs;
         };
