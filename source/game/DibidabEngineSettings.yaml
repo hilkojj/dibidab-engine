@@ -26,14 +26,6 @@ GraphicsSettings:
   _cpp_only:
     imGuiFontConfig: [struct ImFontConfig *, nullptr]
 
-AudioSettings:
-  _flags:
-    - not_a_component
-    - json_with_keys
-
-  masterVolume: [ float, 1. ]
-# todo:  categoryVolume: std::map<std::string, float>
-
 KeyInputSettings:
   _flags:
     - not_a_component
@@ -54,7 +46,6 @@ EngineSettings:
     - json_with_keys
 
   graphics: GraphicsSettings
-  audio: AudioSettings
   keyInput: KeyInputSettings
 
   bShowDeveloperOptions: [ bool, true ]

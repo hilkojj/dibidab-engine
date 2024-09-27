@@ -60,7 +60,7 @@ void AudioSystem::update(double deltaTime, EntityEngine *room)
                         speaker.source->play();
                 }
 
-                speaker.source->setVolume(speaker.volume * dibidab::settings.audio.masterVolume);
+                speaker.source->setVolume(speaker.volume);
                 speaker.source->setLooping(speaker.looping);
                 speaker.source->setPitch(speaker.pitch);
             }

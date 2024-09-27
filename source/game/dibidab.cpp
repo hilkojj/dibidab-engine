@@ -57,9 +57,6 @@ void showDeveloperOptionsMenuBar()
             &dibidab::settings.bShowDeveloperOptions
         );
 
-        ImGui::SetNextItemWidth(120);
-        ImGui::SliderFloat("Master volume", &dibidab::settings.audio.masterVolume, 0.0f, 10.0f);
-
         if (ImGui::BeginMenu("Graphics"))
         {
             static bool vsync = gu::config.vsync;
