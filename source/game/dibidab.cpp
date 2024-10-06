@@ -18,6 +18,8 @@
 #include <code_editor/CodeEditor.h>
 #include <utils/startup_args.h>
 
+#include <mutex>
+
 dibidab::EngineSettings dibidab::settings;
 
 std::map<std::string, std::string> dibidab::startupArgs;
@@ -25,13 +27,13 @@ std::map<std::string, std::string> dibidab::startupArgs;
 Session &dibidab::getCurrentSession()
 {
     auto *s = tryGetCurrentSession();
-    if (s == NULL)
+    if (s == nullptr)
         throw gu_err("There's no Session active at the moment");
     return *s;
 }
 
 delegate<void()> dibidab::onSessionChange;
-Session *currSession = NULL;
+Session *currSession = nullptr;
 
 Session *dibidab::tryGetCurrentSession()
 {
@@ -100,15 +102,15 @@ void showDeveloperOptionsMenuBar()
             }
             ImGui::Separator();
 
-            ImGui::MenuItem(reinterpret_cast<const char *>(glGetString(GL_VERSION)), NULL, false, false);
-            ImGui::MenuItem(reinterpret_cast<const char *>(glGetString(GL_RENDERER)), NULL, false, false);
+            ImGui::MenuItem(reinterpret_cast<const char *>(glGetString(GL_VERSION)), nullptr, false, false);
+            ImGui::MenuItem(reinterpret_cast<const char *>(glGetString(GL_RENDERER)), nullptr, false, false);
             ImGui::EndMenu();
         }
 
         ImGui::Separator();
 
         std::string luamem = "Lua memory: " + std::to_string(luau::getLuaState().memory_used() / (1024.f*1024.f)) + "MB";
-        ImGui::MenuItem(luamem.c_str(), NULL, false, false);
+        ImGui::MenuItem(luamem.c_str(), nullptr, false, false);
 
         ImGui::EndMenu();
     }

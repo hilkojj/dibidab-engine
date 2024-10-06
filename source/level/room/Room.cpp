@@ -12,7 +12,7 @@
 
 void Room::initialize(Level *lvl)
 {
-    assert(lvl != NULL);
+    assert(lvl != nullptr);
 
     level = lvl;
 

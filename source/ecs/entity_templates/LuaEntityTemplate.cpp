@@ -98,7 +98,7 @@ void LuaEntityTemplate::runScript()
 
 void LuaEntityTemplate::createComponents(entt::entity e, bool persistent)
 {
-    auto *p = persistent ? engine->entities.try_get<Persistent>(e) : NULL;
+    auto *p = persistent ? engine->entities.try_get<Persistent>(e) : nullptr;
     if (p)
         createComponentsWithJsonArguments(e, p->data, true);
     else

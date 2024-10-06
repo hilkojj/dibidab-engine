@@ -15,7 +15,7 @@ class PlayerControlSystem : public EntitySystem
     using EntitySystem::EntitySystem;
   protected:
 
-    Room *room = NULL;
+    Room *room = nullptr;
 
     void init(EntityEngine *r) override
     {

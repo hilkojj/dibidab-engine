@@ -111,7 +111,7 @@ void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer
         if (ImGui::BeginMenu("Systems"))
         {
             for (auto sys : engine.getSystems())
-                ImGui::MenuItem(sys->name.c_str(), NULL, &sys->bUpdatesEnabled);
+                ImGui::MenuItem(sys->name.c_str(), nullptr, &sys->bUpdatesEnabled);
 
             ImGui::EndMenu();
         }
@@ -162,14 +162,14 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
     }
     if (auto *luaScripted = reg.try_get<LuaScripted>(e))
     {
-        if (luaScripted->usedTemplate != NULL)
+        if (luaScripted->usedTemplate != nullptr)
         {
             ImGui::SameLine();
             if (ImGui::Button("Regenerate"))
             {
                 vec3 pos = engine.getPosition(e);
 
-                bool persistent = reg.try_get<Persistent>(e) != NULL;
+                bool persistent = reg.try_get<Persistent>(e) != nullptr;
 
                 auto newE = luaScripted->usedTemplate->create(persistent);
 
@@ -204,7 +204,7 @@ void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
         ImGui::SetNextItemWidth(120);
         if (ImGui::InputText("Name", ptr, currName.length() + extraBuffer))
             if (ImGui::IsItemDeactivatedAfterEdit())
-                if (!engine.setName(e, ptr[0] == '\0' ? NULL : ptr))
+                if (!engine.setName(e, ptr[0] == '\0' ? nullptr : ptr))
                     std::cerr << "Name '" << ptr << "' already in use!" << std::endl;
         delete[] ptr;
     }
@@ -646,7 +646,7 @@ void EntityInspector::createEntityGUI()
         reg.assign<Inspecting>(reg.create());
 
     ImGui::Separator();
-    ImGui::MenuItem("From template:", NULL, false, false);
+    ImGui::MenuItem("From template:", nullptr, false, false);
 
     static bool _ = false;
     if (_)
@@ -668,7 +668,7 @@ void EntityInspector::createEntityGUI()
             continue;
 
         auto name = templateName;
-        const char *description = NULL;
+        const char *description = nullptr;
 
         auto templ = &engine.getTemplate(templateName);
         auto luaTempl = dynamic_cast<LuaEntityTemplate *>(templ);
@@ -700,13 +700,13 @@ void EntityInspector::createEntityGUI()
 
         if (show)
         {
-            ImGui::Columns(2, NULL, false);
+            ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, 120);
             ImGui::SetColumnWidth(1, 120);
 
             bool create = false;
 
-            if (ImGui::MenuItem(dirSplitted.back().c_str(), NULL) || HOVERED_AND_PRESSED_ENTER)
+            if (ImGui::MenuItem(dirSplitted.back().c_str(), nullptr) || HOVERED_AND_PRESSED_ENTER)
             {
                 create = true;
                 createPersistent = false;
@@ -812,7 +812,7 @@ void EntityInspector::templateArgsGUI()
     ImGui::End();
     if (!open)
     {
-        creatingTempl = NULL;
+        creatingTempl = nullptr;
         creatingTemplArgs.clear();
     }
 }
@@ -906,7 +906,7 @@ void EntityInspector::drawNamedEntitiesTree(const Camera *cam, DebugLineRenderer
             engine.entities.assign_or_replace<Inspecting>(entt::entity(inspectByID));
     }
 
-    ImGui::Columns(2, NULL, false);
+    ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, 400);
     ImGui::Separator();
 

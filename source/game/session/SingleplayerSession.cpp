@@ -37,5 +37,5 @@ void SingleplayerSession::setLevel(Level *newLevel)
         onNewLevel(level);
         spawnPlayerEntities();
     }
-    else onNewLevel(NULL);
+    else onNewLevel(nullptr);
 }

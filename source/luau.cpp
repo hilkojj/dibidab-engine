@@ -101,9 +101,9 @@ void registerVecUserType(const std::string &name, sol::state &lua)
 
 sol::state &luau::getLuaState()
 {
-    static sol::state *lua = NULL;
+    static sol::state *lua = nullptr;
 
-    if (lua == NULL)
+    if (lua == nullptr)
     {
         lua = new sol::state;
         lua->open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table);
@@ -118,7 +118,7 @@ sol::state &luau::getLuaState()
         };
 
         env["endCurrentSession"] = [] {
-            dibidab::setCurrentSession(NULL);
+            dibidab::setCurrentSession(nullptr);
         };
 
         env["startSinglePlayerSession"] = [] (const sol::optional<std::string> &saveGamePath) {
@@ -144,7 +144,7 @@ sol::state &luau::getLuaState()
             auto &session = dibidab::getCurrentSession();
             auto singleplayerSession = dynamic_cast<SingleplayerSession *>(&session);
             if (singleplayerSession)
-                singleplayerSession->setLevel(path.has_value() ? new Level(path.value().c_str()) : NULL);
+                singleplayerSession->setLevel(path.has_value() ? new Level(path.value().c_str()) : nullptr);
         };
 
         env["include"] = [&] (const char *scriptPath, const sol::this_environment &currentEnv) -> sol::environment {

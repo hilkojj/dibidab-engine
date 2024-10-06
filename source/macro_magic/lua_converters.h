@@ -70,9 +70,9 @@ struct sol::usertype_container<json> : public container_detail::usertype_contain
     {
         json &j = *sol::stack::unqualified_check_get<json *>(lua, 1).value();
 
-        json *jOut = NULL;
+        json *jOut = nullptr;
 
-        const char *keyStr = sol::stack::unqualified_check_get<const char *>(lua, 2).value_or((const char *) NULL);
+        const char *keyStr = sol::stack::unqualified_check_get<const char *>(lua, 2).value_or((const char *) nullptr);
         if (keyStr)
             jOut = &j[keyStr];
 
@@ -123,7 +123,7 @@ struct sol::usertype_container<json> : public container_detail::usertype_contain
                 break;
         }
 
-        const char *keyStr = sol::stack::unqualified_check_get<const char *>(lua, 2).value_or((const char *) NULL);
+        const char *keyStr = sol::stack::unqualified_check_get<const char *>(lua, 2).value_or((const char *) nullptr);
         if (keyStr)
             j[keyStr] = jsonVal;
 

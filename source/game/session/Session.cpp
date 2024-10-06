@@ -40,7 +40,7 @@ Player_ptr Session::deletePlayer(int pId, std::list<Player_ptr> &players)
 Player_ptr Session::getPlayer(int id) const
 {
     for (auto &p : players) if (p->id == id) return p;
-    return NULL;
+    return nullptr;
 }
 
 Session::Session(const char *saveGamePath)
@@ -51,14 +51,14 @@ Session::Session(const char *saveGamePath)
 
 }
 
-void Session::spawnPlayerEntities(bool networked)
+void Session::spawnPlayerEntities()
 {
-    assert(level != NULL);
+    assert(level != nullptr);
     for (auto &player : players)
-        spawnPlayerEntity(player, networked);
+        spawnPlayerEntity(player);
 }
 
-void Session::spawnPlayerEntity(Player_ptr &p, bool networked)
+void Session::spawnPlayerEntity(Player_ptr &p)
 {
     if (level->getNrOfRooms() >= 1)
     {
@@ -67,7 +67,7 @@ void Session::spawnPlayerEntity(Player_ptr &p, bool networked)
             spawnRoom = &level->getRoom(0);
 
         auto &templ = spawnRoom->getTemplate("Player");
-        auto e = networked ? templ.createNetworked() : templ.create();
+        auto e = templ.create();
         PlayerControlled pc;
         pc.playerId = p->id;
         spawnRoom->entities.assign<PlayerControlled>(e, pc);

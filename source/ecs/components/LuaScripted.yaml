@@ -14,7 +14,7 @@ LuaScripted:
   updateFrequency: [float, 0]
 
   _cpp_only:
-    usedTemplate: [LuaEntityTemplate*, NULL]
+    usedTemplate: [LuaEntityTemplate*, nullptr]
 
     updateFunc: sol::safe_function
     onDestroyFunc: sol::safe_function

@@ -281,7 +281,7 @@ Room *Level::getRoomByName(const char *n)
     for (auto &r : rooms)
         if (r->name == n)
             return r;
-    return NULL;
+    return nullptr;
 }
 
 const Room *Level::getRoomByName(const char *n) const
@@ -291,7 +291,7 @@ const Room *Level::getRoomByName(const char *n) const
 
 void Level::addRoom(Room *r)
 {
-    assert(r->level == NULL);
+    assert(r->level == nullptr);
 
     rooms.push_back(r);
 

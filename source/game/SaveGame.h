@@ -13,7 +13,7 @@ struct SaveGame
 
     sol::table luaTable;
 
-    void save(const char *path=NULL); // if path == NULL then same path from constructor is used.
+    void save(const char *path=nullptr); // if path == nullptr then same path from constructor is used.
 
     static sol::table getSaveDataForEntity(const std::string &entitySaveGameID, bool temporary);
 

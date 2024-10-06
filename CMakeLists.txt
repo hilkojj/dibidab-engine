@@ -30,23 +30,13 @@ set_property(TARGET dibidab PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
     set(CMAKE_CXX_FLAGS  "/Ox /EHsc /bigobj /D NDEBUG")
+else()
+    set(CMAKE_CXX_FLAGS  "-B /usr/libexec/mold")
 endif()
 
-# gameutils repo:
+# ---GU Game Utilities Library---:
 add_subdirectory(external/gu/library ./bin/gu)
 target_link_libraries(dibidab gameutils)
-
-
-# ---WEBSOCKETPP---
-include_directories(external/websocketpp)
-target_include_directories(dibidab PUBLIC external/websocketpp)
-
-
-# ---ASIO---
-add_definitions(-D_WEBSOCKETPP_CPP11_STL_)
-include_directories(external/asio/asio/include)
-target_include_directories(dibidab PUBLIC external/asio/asio/include)
-
 
 # ---LUA---
 add_subdirectory(external/lua ./bin/lua)
@@ -58,10 +48,10 @@ target_link_libraries(dibidab sol2_single)
 
 # ---Generate structs with LUA SERDE---
 add_custom_target(
-        generate_structs ALL
-        COMMAND ${LUA_SERDE_COMMAND}
-        COMMENT "Generating structs from yaml"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    generate_structs ALL
+    COMMAND ${LUA_SERDE_COMMAND}
+    COMMENT "Generating structs from yaml"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 )
 
 add_dependencies(dibidab generate_structs)

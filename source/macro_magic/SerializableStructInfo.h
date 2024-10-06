@@ -41,9 +41,9 @@ struct SerializableStructInfo
               nrOfFields(fieldNames.size()),
               luaUserTypeGenerator(luaUserTypeGenerator)
     {
-        if (infos == NULL)
+        if (infos == nullptr)
             infos = new std::map<std::string, SerializableStructInfo *>();
-        if (infosByType == NULL)
+        if (infosByType == nullptr)
             infosByType = new std::map<std::size_t, SerializableStructInfo *>();
 
         infos->operator[](name) = this;

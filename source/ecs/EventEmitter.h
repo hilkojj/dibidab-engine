@@ -19,7 +19,7 @@ class EventEmitter
   public:
 
     template<typename type>
-    void emit(const type &event, const char *customEventName=NULL)
+    void emit(const type &event, const char *customEventName=nullptr)
     {
         static hash_type typeHash = 0;
         if (typeHash == 0)

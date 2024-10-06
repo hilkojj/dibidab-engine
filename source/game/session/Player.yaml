@@ -10,7 +10,7 @@ Player:
   name: std::string
 
   _cpp_only:
-    io: [ MultiplayerIO*, NULL ]
+    io: [ MultiplayerIO*, nullptr ]
 
   _methods:
     - "Player(const Player &other): id(other.id), name(other.name) {}"

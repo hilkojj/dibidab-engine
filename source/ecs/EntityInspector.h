@@ -17,7 +17,7 @@ class EntityInspector
 {
     std::string inspectorName;
 
-    LuaEntityTemplate *creatingTempl = NULL;
+    LuaEntityTemplate *creatingTempl = nullptr;
     json creatingTemplArgs;
 
   public:

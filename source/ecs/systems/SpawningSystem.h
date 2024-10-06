@@ -11,7 +11,7 @@ class SpawningSystem : public EntitySystem
 {
     using EntitySystem::EntitySystem;
 
-    EntityEngine *room = NULL;
+    EntityEngine *room = nullptr;
 
   protected:
     void update(double deltaTime, EntityEngine *room) override;

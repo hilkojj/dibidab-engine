@@ -10,7 +10,7 @@
 class Session
 {
   protected:
-    Level *level = NULL;
+    Level *level = nullptr;
 
     std::list<Player_ptr> players;
     Player_ptr localPlayer;
@@ -58,9 +58,9 @@ class Session
 
     Player_ptr deletePlayer(int id) { return deletePlayer(id, players); }
 
-    void spawnPlayerEntities(bool networked=false);
+    void spawnPlayerEntities();
 
-    void spawnPlayerEntity(Player_ptr &, bool networked);
+    void spawnPlayerEntity(Player_ptr &);
 
     void removePlayerEntities(int playerId);
 };

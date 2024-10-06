@@ -45,7 +45,7 @@ void SaveGame::save(const char *path)
 
     std::vector<uint8> data;
     json::to_cbor(j, data);
-    fu::writeBinary(path == NULL ? loadedFromPath.c_str() : path, (char *) data.data(), data.size());
+    fu::writeBinary(path == nullptr ? loadedFromPath.c_str() : path, (char *) data.data(), data.size());
 }
 
 sol::table SaveGame::getSaveDataForEntity(const std::string &entitySaveGameID, bool temporary)
