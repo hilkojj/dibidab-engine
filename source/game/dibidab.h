@@ -20,9 +20,7 @@ namespace dibidab
     extern delegate<void()> onSessionChange;
 
     Session &getCurrentSession();
-
     Session *tryGetCurrentSession();
-
     void setCurrentSession(Session *);
 
     void addDefaultAssetLoaders();

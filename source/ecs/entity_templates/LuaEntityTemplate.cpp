@@ -9,21 +9,21 @@
 
 LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *engine_)
     : script(assetName), name(name),
-      env(engine_->luaEnvironment.lua_state(), sol::create, engine_->luaEnvironment)
+      luaEnvironment(engine_->luaEnvironment.lua_state(), sol::create, engine_->luaEnvironment)
 {
     this->engine = engine_; // DONT RENAME engine_ to engine!!!, lambdas should use this->engine.
-    env["TEMPLATE_NAME"] = name;
-    env["TEMPLATE_PTR"] = this;
+    luaEnvironment["TEMPLATE_NAME"] = name;
+    luaEnvironment["TEMPLATE_PTR"] = this;
 
-    defaultArgs = sol::table::create(env.lua_state());
+    defaultArgs = sol::table::create(luaEnvironment.lua_state());
 
     int
-        TEMPLATE = env["TEMPLATE"] = 1 << 0,
-        ARGS = env["ARGS"] = 1 << 1,
-        FINAL_POS = env["FINAL_POS"] = 1 << 2,
-        SPAWN_POS = env["SPAWN_POS"] = 1 << 3,
-        ALL_COMPONENTS = env["ALL_COMPONENTS"] = 1 << 4,
-        REVIVE = env["REVIVE"] = 1 << 5;
+        TEMPLATE = luaEnvironment["TEMPLATE"] = 1 << 0,
+        ARGS = luaEnvironment["ARGS"] = 1 << 1,
+        FINAL_POS = luaEnvironment["FINAL_POS"] = 1 << 2,
+        SPAWN_POS = luaEnvironment["SPAWN_POS"] = 1 << 3,
+        ALL_COMPONENTS = luaEnvironment["ALL_COMPONENTS"] = 1 << 4,
+        REVIVE = luaEnvironment["REVIVE"] = 1 << 5;
 
     auto setPersistentMode = [&](int mode, sol::optional<std::vector<std::string>> componentsToSave) {
 
@@ -31,7 +31,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
         if (mode & TEMPLATE)
             persistency.applyTemplateOnLoad = this->name;   // 'name' is a pointer and thus can break. 'this->name' is a string :)
 
-        persistentArgs = mode & ARGS;
+        bPersistentArgs = mode & ARGS;
         persistency.saveFinalPosition = mode & FINAL_POS;
         persistency.saveSpawnPosition = mode & SPAWN_POS;
         persistency.saveAllComponents = mode & ALL_COMPONENTS;
@@ -43,16 +43,16 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
                 engine->componentUtils(c);  // will throw error if that type of component does not exist.
         }
     };
-    env["persistenceMode"] = setPersistentMode;
+    luaEnvironment["persistenceMode"] = setPersistentMode;
     setPersistentMode(TEMPLATE | ARGS | FINAL_POS, sol::optional<std::vector<std::string>>());
 
-    env["defaultArgs"] = [&](const sol::table &table) {
+    luaEnvironment["defaultArgs"] = [&](const sol::table &table) {
         defaultArgs = table;
     };
-    env["description"] = [&](const char *d) {
+    luaEnvironment["description"] = [&](const char *d) {
         description = d;
     };
-    env["setUpdateFunction"] = [&](entt::entity entity, float updateFrequency, const sol::safe_function &func, sol::optional<bool> randomAcummulationDelay) {
+    luaEnvironment["setUpdateFunction"] = [&](entt::entity entity, float updateFrequency, const sol::safe_function &func, sol::optional<bool> randomAcummulationDelay) {
 
         LuaScripted &scripted = engine->entities.get_or_assign<LuaScripted>(entity);
         scripted.updateFrequency = updateFrequency;
@@ -65,7 +65,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
         scripted.updateFunc = func;
         scripted.updateFuncScript = script;
     };
-    env["setOnDestroyCallback"] = [&](entt::entity entity, const sol::safe_function &func) {
+    luaEnvironment["setOnDestroyCallback"] = [&](entt::entity entity, const sol::safe_function &func) {
 
         LuaScripted &scripted = engine->entities.get_or_assign<LuaScripted>(entity);
         scripted.onDestroyFunc = func;
@@ -81,12 +81,12 @@ void LuaEntityTemplate::runScript()
     {
         // todo: use same lua_state as 'env' is in
 
-        sol::protected_function_result result = luau::getLuaState().safe_script(script->getByteCode().as_string_view(), env);
+        sol::protected_function_result result = luau::getLuaState().safe_script(script->getByteCode().as_string_view(), luaEnvironment);
         if (!result.valid())
             throw gu_err(result.get<sol::error>().what());
 
-        createFunc = env["create"];
-        if (!createFunc.valid())
+        luaCreateComponents = luaEnvironment["create"];
+        if (!luaCreateComponents.valid())
             throw gu_err("No create() function found!");
     }
     catch (std::exception &e)
@@ -157,7 +157,7 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
                 p.applyTemplateOnLoad = previousAppliedTemplate;
             }
             p.persistentId = persistentEntityID;
-            if (persistentArgs && arguments.has_value() && arguments.value().valid())
+            if (bPersistentArgs && arguments.has_value() && arguments.value().valid())
                 jsonFromLuaTable(arguments.value(), p.data);
 
             assert(p.data.is_object());
@@ -167,7 +167,7 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
 #endif
         }
 
-        sol::protected_function_result result = createFunc(
+        sol::protected_function_result result = luaCreateComponents(
             e,
             arguments,
             persistent
@@ -211,7 +211,7 @@ json LuaEntityTemplate::getDefaultArgs()
 
 void LuaEntityTemplate::createComponentsWithJsonArguments(entt::entity e, const json &arguments, bool persistent)
 {
-    auto table = sol::table::create(env.lua_state());
+    auto table = sol::table::create(luaEnvironment.lua_state());
     if (arguments.is_structured())
         jsonToLuaTable(table, arguments);
     createComponentsWithLuaArguments(e, table, persistent);
@@ -224,5 +224,5 @@ std::string LuaEntityTemplate::getUniqueID()
 
 sol::environment &LuaEntityTemplate::getTemplateEnvironment()
 {
-    return env;
+    return luaEnvironment;
 }
