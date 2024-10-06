@@ -6,6 +6,8 @@
 
 #include "../../luau.h"
 
+#include <utils/delegate.h>
+
 #include <vector>
 
 /**

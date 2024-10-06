@@ -1,15 +1,22 @@
+#include "dibidab.h"
 
-#include <utils/startup_args.h>
-#include <files/FileWatcher.h>
-#include <audio/audio.h>
-#include <graphics/texture.h>
-#include <audio/WavLoader.h>
-#include <audio/OggLoader.h>
-#include <utils/code_editor/CodeEditor.h>
-#include <graphics/cube_map.h>
 #include "../ecs/EntityInspector.h"
 #include "../rendering/ImGuiStyle.h"
-#include "dibidab.h"
+
+#include <graphics/textures/texture.h>
+#include <audio/audio.h>
+#include <audio/WavLoader.h>
+#include <audio/OggLoader.h>
+#include <asset_manager/AssetManager.h>
+
+#include <gu/game_utils.h>
+#include <gu/game_config.h>
+#include <gu/profiler.h>
+
+#include <files/file_utils.h>
+#include <files/FileWatcher.h>
+#include <code_editor/CodeEditor.h>
+#include <utils/startup_args.h>
 
 dibidab::EngineSettings dibidab::settings;
 
@@ -59,17 +66,17 @@ void showDeveloperOptionsMenuBar()
 
         if (ImGui::BeginMenu("Graphics"))
         {
-            static bool vsync = gu::config.vsync;
-            ImGui::MenuItem("VSync", "", &vsync);
-            gu::setVSync(vsync);
+            static bool bVSync = gu::getVSync();
+            ImGui::MenuItem("VSync", "", &bVSync);
+            gu::setVSync(bVSync);
 
-            ImGui::MenuItem("Fullscreen", KeyInput::getKeyName(dibidab::settings.keyInput.toggleFullscreen), &gu::fullscreen);
+            ImGui::MenuItem("Fullscreen", KeyInput::getKeyName(dibidab::settings.keyInput.toggleFullscreen), &gu::bFullscreen);
 
             if (ImGui::BeginMenu("Edit shader"))
             {
-                for (auto &[name, asset] : AssetManager::getLoadedAssetsForType<std::string>())
+                for (auto &[name, asset] : AssetManager::getAssetsForType<std::string>())
                 {
-                    if (!stringEndsWith(name, ".frag") && !stringEndsWith(name, ".vert") && !stringEndsWith(name, ".glsl"))
+                    if (!su::endsWith(name, ".frag") && !su::endsWith(name, ".vert") && !su::endsWith(name, ".glsl"))
                         continue;
                     if (ImGui::MenuItem(name.c_str()))
                     {
@@ -80,12 +87,12 @@ void showDeveloperOptionsMenuBar()
                         tab.languageDefinition = TextEditor::LanguageDefinition::C();
                         tab.save = [] (auto &tab) {
 
-                            File::writeBinary(tab.title.c_str(), tab.code);
+                            fu::writeBinary(tab.title.c_str(), tab.code.data(), tab.code.length());
 
                             AssetManager::loadFile(tab.title, "assets/");
                         };
                         tab.revert = [] (auto &tab) {
-                            tab.code = File::readString(tab.title.c_str());
+                            tab.code = fu::readString(tab.title.c_str());
                         };
                     }
                 }
@@ -111,7 +118,7 @@ void showDeveloperOptionsMenuBar()
     ImGui::EndMainMenuBar();
 
     CodeEditor::drawGUI(
-            ImGui::GetIO().Fonts->Fonts.back()  // default monospace font (added by setImGuiStyle())
+        ImGui::GetIO().Fonts->Fonts.back()  // default monospace font (added by setImGuiStyle())
     );
 }
 
@@ -123,27 +130,27 @@ void dibidab::addDefaultAssetLoaders()
         return new Texture(Texture::fromImageFile(path.c_str()));
     });
 #endif
-    AssetManager::addAssetLoader<std::string>(".frag|.vert|.glsl", [](auto path) {
+    AssetManager::addAssetLoader<std::string>({ ".frag", ".vert", ".glsl" }, [](auto path) {
 
-        return new std::string(File::readString(path.c_str()));
+        return new std::string(fu::readString(path.c_str()));
     });
-    AssetManager::addAssetLoader<json>(".json", [](auto path) {
+    AssetManager::addAssetLoader<json>({ ".json" }, [](auto path) {
 
-        return new json(json::parse(File::readString(path.c_str())));
+        return new json(json::parse(fu::readString(path.c_str())));
     });
-    AssetManager::addAssetLoader<au::Sound>(".wav", [](auto path) {
+    AssetManager::addAssetLoader<au::Sound>({ ".wav" }, [](auto path) {
 
         auto sound = new au::Sound;
         au::WavLoader(path.c_str(), *sound);
         return sound;
     });
-    AssetManager::addAssetLoader<au::Sound>(".ogg", [](auto path) {
+    AssetManager::addAssetLoader<au::Sound>({ ".ogg" }, [](auto path) {
 
         auto sound = new au::Sound;
         au::OggLoader::load(path.c_str(), *sound);
         return sound;
     });
-    AssetManager::addAssetLoader<luau::Script>(".lua", [](auto path) {
+    AssetManager::addAssetLoader<luau::Script>({ ".lua" }, [](auto path) {
 
         return new luau::Script(path);
     });
@@ -159,13 +166,13 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
 
     config.width = dibidab::settings.graphics.windowSize.x;
     config.height = dibidab::settings.graphics.windowSize.y;
-    config.vsync = dibidab::settings.graphics.vsync;
+    config.bVSync = dibidab::settings.graphics.vsync;
     config.samples = 0;
-    config.printOpenGLMessages = dibidab::settings.graphics.printOpenGLMessages;
-    config.printOpenGLErrors = dibidab::settings.graphics.printOpenGLErrors;
+    config.bPrintOpenGLMessages = dibidab::settings.graphics.printOpenGLMessages;
+    config.bPrintOpenGLErrors = dibidab::settings.graphics.printOpenGLErrors;
     config.openGLMajorVersion = dibidab::settings.graphics.openGLMajorVersion;
     config.openGLMinorVersion = dibidab::settings.graphics.openGLMinorVersion;
-    gu::fullscreen = dibidab::settings.graphics.fullscreen; // dont ask me why this is not in config
+    gu::bFullscreen = dibidab::settings.graphics.fullscreen; // dont ask me why this is not in config
     if (!gu::init(config))
         throw gu_err("Error while initializing gu");
 
@@ -189,22 +196,22 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
     assetWatcher.startWatchingAsync();
     #endif
 
-    AssetManager::load("assets");
+    AssetManager::loadDirectory("assets");
 
     // save window size in settings:
-    static auto _ = gu::onResize += [] {
-        if (!gu::fullscreen) // dont save fullscreen-resolution
+    static auto onResize = gu::onResize += [] {
+        if (!gu::bFullscreen) // dont save fullscreen-resolution
             dibidab::settings.graphics.windowSize = ivec2(
-                    gu::width, gu::height
+                gu::virtualWidth, gu::virtualHeight
             );
     };
 
-    gu::beforeRender = [&](double deltaTime) {
+    static auto beforeRender = gu::beforeRender += [&](double deltaTime) {
         if (currSession)
             currSession->update(deltaTime);
 
         if (KeyInput::justPressed(dibidab::settings.keyInput.reloadAssets) && dibidab::settings.bShowDeveloperOptions)
-            AssetManager::load("assets", true);
+            AssetManager::loadDirectory("assets", true);
 
         {
             assetToReloadMutex.lock();
@@ -215,15 +222,15 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
         }
 
         {
-            dibidab::settings.graphics.vsync = gu::config.vsync;
-            dibidab::settings.graphics.fullscreen = gu::fullscreen;
+            dibidab::settings.graphics.vsync = gu::getVSync();
+            dibidab::settings.graphics.fullscreen = gu::bFullscreen;
         }
 
         if (KeyInput::justPressed(dibidab::settings.keyInput.toggleDeveloperOptions))
             dibidab::settings.bShowDeveloperOptions ^= 1;
 
         if (KeyInput::justPressed(dibidab::settings.keyInput.toggleFullscreen))
-            gu::fullscreen = !gu::fullscreen;
+            gu::bFullscreen = !gu::bFullscreen;
 
         if (dibidab::settings.bShowDeveloperOptions)
             showDeveloperOptionsMenuBar();
@@ -235,6 +242,6 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
 void dibidab::run()
 {
     gu::run();
-    dibidab::setCurrentSession(NULL);
+    dibidab::setCurrentSession(nullptr);
     au::terminate();
 }

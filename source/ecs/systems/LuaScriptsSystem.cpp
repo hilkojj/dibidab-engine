@@ -1,6 +1,8 @@
 
 #include "LuaScriptsSystem.h"
 
+#include <asset_manager/AssetManager.h>
+
 // https://github.com/skypjack/entt/issues/17
 
 void LuaScriptsSystem::init(EntityEngine *room)
@@ -84,7 +86,7 @@ void LuaScriptsSystem::onDestroyed(entt::registry &reg, entt::entity e)
     catch (std::exception &exc)
     {
         assert(scripted.onDestroyFuncScript.isSet());
-        std::cerr << "Error while calling Lua onDestroy callback for entity#" << int(e) << " (" << scripted.onDestroyFuncScript.getLoadedAsset().fullPath << "):" << std::endl;
+        std::cerr << "Error while calling Lua onDestroy callback for entity#" << int(e) << " (" << scripted.onDestroyFuncScript.getLoadedAsset()->fullPath << "):" << std::endl;
         std::cerr << exc.what() << std::endl;
     }
 }

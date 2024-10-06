@@ -8,6 +8,7 @@
 #include "serializable.h"
 #include <ecs/components/Animation.h>
 #include <utils/hashing.h>
+#include <math/interpolation.h>
 
 struct ComponentUtils
 {

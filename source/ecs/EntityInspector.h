@@ -2,13 +2,14 @@
 #ifndef GAME_ENTITYINSPECTOR_H
 #define GAME_ENTITYINSPECTOR_H
 
-#include <imgui.h>
-#include <graphics/camera.h>
-#include <graphics/3d/debug_line_renderer.h>
 #include "../../external/entt/src/entt/entity/registry.hpp"
 #include "../macro_magic/component.h"
 #include "../level/room/Room.h"
 #include "entity_templates/LuaEntityTemplate.h"
+
+#include <graphics/camera/camera.h>
+#include <graphics/3d/renderers/debug_line_renderer.h>
+#include <imgui.h>
 
 struct Inspecting;
 

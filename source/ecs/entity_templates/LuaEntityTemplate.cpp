@@ -3,6 +3,9 @@
 #include "LuaEntityTemplate.h"
 #include "../../generated/LuaScripted.hpp"
 
+#include <asset_manager/AssetManager.h>
+#include <utils/string_utils.h>
+
 
 LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *engine_)
     : script(assetName), name(name),
@@ -88,7 +91,7 @@ void LuaEntityTemplate::runScript()
     }
     catch (std::exception &e)
     {
-        std::cerr << "Error while running template script " << script.getLoadedAsset().fullPath << ":" << std::endl;
+        std::cerr << "Error while running template script " << script.getLoadedAsset()->fullPath << ":" << std::endl;
         std::cerr << e.what() << std::endl;
     }
 }
@@ -185,7 +188,7 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
     }
     catch (std::exception &e)
     {
-        std::cerr << "Error while creating entity using " << script.getLoadedAsset().fullPath << ":" << std::endl;
+        std::cerr << "Error while creating entity using " << script.getLoadedAsset()->fullPath << ":" << std::endl;
         std::cerr << e.what() << std::endl;
     }
 }
@@ -216,7 +219,7 @@ void LuaEntityTemplate::createComponentsWithJsonArguments(entt::entity e, const 
 
 std::string LuaEntityTemplate::getUniqueID()
 {
-    return name + "_" + randomString(24);
+    return name + "_" + su::randomAlphanumeric(24);
 }
 
 sol::environment &LuaEntityTemplate::getTemplateEnvironment()

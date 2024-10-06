@@ -10,6 +10,9 @@
 #include "../generated/Position3d.hpp"
 #include "../generated/LuaScripted.hpp"
 
+#include <gu/profiler.h>
+#include <utils/string_utils.h>
+
 void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
 {
     assert(!bInitialized);
@@ -61,8 +64,8 @@ entt::entity EntityEngine::getChildByName(entt::entity parent, const char *child
 
 void EntityEngine::registerLuaEntityTemplate(const char *assetPath)
 {
-    auto name = splitString(assetPath, "/").back();
-    if (stringStartsWith(name, "_"))
+    auto name = su::split(assetPath, "/").back();
+    if (su::startsWith(name, "_"))
         return;
 
     addEntityTemplate(name, new LuaEntityTemplate(assetPath, name.c_str(), this));
@@ -121,13 +124,13 @@ void EntityEngine::initialize()
 
     std::map<std::string, bool> registered;
 
-    for (auto &el : AssetManager::getLoadedAssetsForType<luau::Script>())
+    for (auto &el : AssetManager::getAssetsForType<luau::Script>())
     {
         auto shortPath = el.second->shortPath.c_str();
         if (registered[shortPath])
             continue;
 
-        if (stringStartsWith(el.first, templateFolder))
+        if (su::startsWith(el.first, templateFolder))
         {
             registerLuaEntityTemplate(shortPath);
             registered[shortPath] = true;

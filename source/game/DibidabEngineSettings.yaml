@@ -1,5 +1,9 @@
 config:
   namespace: dibidab
+  fwd_decl:
+    - ImFontConfig
+  hpp_incl:
+    - input/key_input.h
 
 GraphicsSettings:
   _flags:
@@ -24,7 +28,7 @@ GraphicsSettings:
   imGuiFontSize: [ float, 16.0f ]
 
   _cpp_only:
-    imGuiFontConfig: [struct ImFontConfig *, nullptr]
+    imGuiFontConfig: [ImFontConfig *, nullptr]
 
 KeyInputSettings:
   _flags:

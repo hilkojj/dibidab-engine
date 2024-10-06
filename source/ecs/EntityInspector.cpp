@@ -16,7 +16,11 @@
 #include <gu/profiler.h>
 #include <input/mouse_input.h>
 #include <input/key_input.h>
-#include <utils/code_editor/CodeEditor.h>
+#include <code_editor/CodeEditor.h>
+#include <utils/string_utils.h>
+#include <asset_manager/asset.h>
+#include <asset_manager/AssetManager.h>
+#include <files/file_utils.h>
 
 #include <imgui_internal.h>
 
@@ -670,14 +674,14 @@ void EntityInspector::createEntityGUI()
         auto luaTempl = dynamic_cast<LuaEntityTemplate *>(templ);
         if (luaTempl)
         {
-            name = splitString(luaTempl->script.getLoadedAsset().shortPath, "scripts/entities/").back();
+            name = su::split(luaTempl->script.getLoadedAsset()->shortPath, "scripts/entities/").back();
             if (!luaTempl->getDescription().empty())
                 description = luaTempl->getDescription().c_str();
         }
 
         bool show = true;
 
-        auto dirSplitted = splitString(name, "/");
+        auto dirSplitted = su::split(name, "/");
 
         int subMenusOpened = 0;
         if (filter.Filters.empty()) for (int i = 0; i < dirSplitted.size() - 1; i++)
@@ -774,7 +778,7 @@ void EntityInspector::templateArgsGUI()
     ImGui::SetNextWindowPos(ImVec2(MouseInput::mouseX - 200, MouseInput::mouseY - 15), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
 
-    const std::string &name = creatingTempl->script.getLoadedAsset().shortPath;
+    const std::string &name = creatingTempl->script.getLoadedAsset()->shortPath;
     std::string title = "Creating " + name;
     bool open = !ImGui::IsKeyPressed(GLFW_KEY_ESCAPE);
     ImGui::Begin(title.c_str(), &open, ImGuiWindowFlags_NoSavedSettings);
@@ -817,21 +821,21 @@ void EntityInspector::editLuaScript(LuaEntityTemplate *luaTemplate)
 {
     auto script = luaTemplate->script;
     for (auto &t : CodeEditor::tabs)
-        if (t.title == script.getLoadedAsset().fullPath)
+        if (t.title == script.getLoadedAsset()->fullPath)
             return;
 
     auto &tab = CodeEditor::tabs.emplace_back();
-    tab.title = script.getLoadedAsset().fullPath;
-    tab.code = File::readString(script.getLoadedAsset().fullPath.c_str());
+    tab.title = script.getLoadedAsset()->fullPath;
+    tab.code = fu::readString(script.getLoadedAsset()->fullPath.c_str());
     tab.languageDefinition = TextEditor::LanguageDefinition::C(); // the lua definition is pretty broken
     tab.save = [script] (auto &tab) {
 
-        File::writeBinary(script.getLoadedAsset().fullPath.c_str(), tab.code); // todo: why is this called writeBINARY? lol
+        fu::writeBinary(script.getLoadedAsset()->fullPath.c_str(), tab.code.data(), tab.code.length()); // todo: why is this called writeBINARY? lol
 
-        AssetManager::loadFile(script.getLoadedAsset().fullPath, "assets/");
+        AssetManager::loadFile(script.getLoadedAsset()->fullPath, "assets/");
     };
     tab.revert = [script] (auto &tab) {
-        tab.code = File::readString(script.getLoadedAsset().fullPath.c_str());
+        tab.code = fu::readString(script.getLoadedAsset()->fullPath.c_str());
     };
 }
 

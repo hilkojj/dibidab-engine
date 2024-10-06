@@ -5,6 +5,9 @@
 #include "luau.h"
 #include "game/dibidab.h"
 
+#include <input/gamepad_input.h>
+#include <gu/game_utils.h>
+
 luau::Script::Script(const std::string &path) : path(path)
 {}
 

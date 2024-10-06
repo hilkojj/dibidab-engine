@@ -11,7 +11,7 @@
 #include "../../external/entt/src/entt/entity/registry.hpp"
 
 #include <utils/type_name.h>
-#include <utils/math_utils.h>
+#include <math/math_utils.h>
 
 #include <map>
 #include <list>
@@ -69,7 +69,7 @@ class EntityEngine
     template <class EntityTemplate_>
     EntityTemplate &getTemplate()
     {
-        return getTemplate(getTypeName<EntityTemplate_>());
+        return getTemplate(typename_utils::getTypeName<EntityTemplate_>());
     }
 
     EntityTemplate &getTemplate(std::string name);
@@ -137,7 +137,7 @@ class EntityEngine
     template <class EntityTemplate>
     void registerEntityTemplate()
     {
-        auto name = getTypeName<EntityTemplate>();
+        auto name = typename_utils::getTypeName<EntityTemplate>();
         addEntityTemplate(name, new EntityTemplate());
     }
 

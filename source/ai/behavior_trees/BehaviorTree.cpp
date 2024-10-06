@@ -5,6 +5,8 @@
 #include "../../level/room/Room.h"
 #include "../../level/Level.h"
 
+#include <utils/string_utils.h>
+
 #include <imgui.h>
 
 std::string getNodeErrorInfo(BehaviorTree::Node *node)
@@ -13,7 +15,7 @@ std::string getNodeErrorInfo(BehaviorTree::Node *node)
     if (node->hasLuaDebugInfo())
     {
         const lua_Debug &debugInfo = node->getLuaDebugInfo();
-        std::vector<std::string> pathSplitted = splitString(debugInfo.source, "/");
+        std::vector<std::string> pathSplitted = su::split(debugInfo.source, "/");
         if (!pathSplitted.empty())
         {
             info += "@" + pathSplitted.back() + ":" + std::to_string(debugInfo.currentline);

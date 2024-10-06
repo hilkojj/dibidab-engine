@@ -5,6 +5,11 @@
 #include "session/Session.h"
 #include "../generated/DibidabEngineSettings.hpp"
 
+namespace gu
+{
+    struct Config;
+}
+
 namespace dibidab
 {
 

@@ -1,7 +1,11 @@
 
 #include "SaveGame.h"
-#include "../macro_magic/lua_converters.h"
+
 #include "dibidab.h"
+
+#include "../macro_magic/lua_converters.h"
+
+#include <files/file_utils.h>
 
 #ifndef DIBIDAB_NO_SAVE_GAME
 
@@ -9,9 +13,9 @@ SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
 {
     luaTable = sol::table::create(luau::getLuaState().lua_state());
 
-    if (!loadedFromPath.empty() && File::exists(path))
+    if (!loadedFromPath.empty() && fu::exists(path))
     {
-        auto data = File::readBinary(path);
+        auto data = fu::readBinary(path);
         json jsonData = json::from_cbor(data.begin(), data.end());
         jsonToLuaTable(luaTable, jsonData.at("luaTable"));
     }
@@ -41,7 +45,7 @@ void SaveGame::save(const char *path)
 
     std::vector<uint8> data;
     json::to_cbor(j, data);
-    File::writeBinary(path == NULL ? loadedFromPath.c_str() : path, data);
+    fu::writeBinary(path == NULL ? loadedFromPath.c_str() : path, (char *) data.data(), data.size());
 }
 
 sol::table SaveGame::getSaveDataForEntity(const std::string &entitySaveGameID, bool temporary)

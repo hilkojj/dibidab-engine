@@ -4,7 +4,7 @@
 
 #include "../../external/entt/src/entt/entity/registry.hpp"
 
-#include <utils/math_utils.h>
+#include <math/math_utils.h>
 
 #include <json.hpp>
 

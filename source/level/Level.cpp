@@ -1,6 +1,7 @@
 
-#include <files/file.h>
+#include <files/file_utils.h>
 #include <gu/game_utils.h>
+#include <gu/profiler.h>
 #include <utils/gu_error.h>
 #include <cstring>
 #include <zlib.h>
@@ -200,19 +201,19 @@ void Level::save(const char *path) const
     int *originalDataSize = (int *) &compressedData[compressedDataSize];
     *originalDataSize = int(data.size());
 
-    File::writeBinary(path ? path : loadedFromFile.c_str(), compressedData);
+    fu::writeBinary(path ? path : loadedFromFile.c_str(), (char *) compressedData.data(), compressedData.size());
 }
 
 Level::Level(const char *filePath) : loadedFromFile(filePath)
 {
-    if (!File::exists(filePath))
+    if (!fu::exists(filePath))
     {
         std::cout << "No level file found at " << filePath << ", creating empty Level...\n";
         return;
     }
     try // Todo: create a loadCompressed() and saveCompressed() function in gu
     {
-        auto compressedData = File::readBinary(filePath);
+        auto compressedData = fu::readBinary(filePath);
 
         unsigned long compressedDataSize = compressedData.size() - sizeof(int);
 

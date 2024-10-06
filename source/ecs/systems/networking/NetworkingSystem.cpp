@@ -3,6 +3,8 @@
 #include "../../../generated/PlayerControlled.hpp"
 #include "../../../generated/Networked.hpp"
 
+#include <gu/profiler.h>
+
 void NetworkingSystem::init(EntityEngine *room_)
 {
     room = (Room *) room_;

@@ -2,8 +2,9 @@
 #ifndef GAME_JSON_CONVERTERS_H
 #define GAME_JSON_CONVERTERS_H
 
-#include <utils/math_utils.h>
+#include <math/math_utils.h>
 #include <asset_manager/asset.h>
+#include <asset_manager/AssetManager.h>
 #include <json.hpp>
 
 namespace nlohmann {
@@ -38,7 +39,7 @@ namespace nlohmann {
     struct adl_serializer<asset<type>> {
         static void to_json(json& j, const asset<type>& v) {
             if (v.isSet())
-                j = v.getLoadedAsset().shortPath;
+                j = v.getLoadedAsset()->shortPath;
             else j = "";
         }
 
@@ -51,7 +52,7 @@ namespace nlohmann {
                 if (path.empty())
                     v = asset<type>();
                 else
-                    v.set(path);
+                    v.set(path.c_str());
             }
         }
     };

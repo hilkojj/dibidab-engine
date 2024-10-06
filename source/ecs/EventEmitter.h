@@ -23,7 +23,7 @@ class EventEmitter
     {
         static hash_type typeHash = 0;
         if (typeHash == 0)
-            typeHash = entt::hashed_string { getTypeName<type>().c_str() }.value();
+            typeHash = entt::hashed_string { typename_utils::getTypeName<type>().c_str() }.value();
 
         auto &listeners = eventListeners[customEventName ? entt::hashed_string { customEventName }.value() : typeHash];
         auto it = listeners.begin();

@@ -2,7 +2,7 @@
 #ifndef GAME_MULTIPLAYERIO_H
 #define GAME_MULTIPLAYERIO_H
 
-#include <utils/math_utils.h>
+#include <math/math_utils.h>
 #include <map>
 #include <mutex>
 #include <utils/hashing.h>
@@ -52,7 +52,7 @@ typedef uint32 PacketTypeHash;
 template <class Type>
 inline PacketTypeHash typeHashCrossPlatform()
 {
-    return hashStringCrossPlatform(getTypeName<Type>()) ;
+    return hashStringCrossPlatform(typename_utils::getTypeName<Type>()) ;
 }
 
 
@@ -209,7 +209,7 @@ class MultiplayerIO
     void registerName()
     {
         PacketTypeHash hash = typeHashCrossPlatform<Type>();
-        packetTypeNames[hash] = getTypeName<Type>();
+        packetTypeNames[hash] = typename_utils::getTypeName<Type>();
     }
 
     void handlePacket(PacketTypeHash typeHash, void *packet);

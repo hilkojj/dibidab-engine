@@ -4,6 +4,7 @@
 
 #include "../../ecs/EntityEngine.h"
 
+#include <utils/delegate.h>
 #include <json.hpp>
 
 #include <set>

@@ -4,7 +4,7 @@
 
 #include <unordered_map>
 #include <functional>
-#include <utils/math/interpolation.h>
+#include <math/interpolation.h>
 
 struct Animated
 {

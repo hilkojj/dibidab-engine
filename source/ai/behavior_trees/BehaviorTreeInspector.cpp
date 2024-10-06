@@ -3,6 +3,8 @@
 
 #include "../../generated/Brain.hpp"
 
+#include <utils/string_utils.h>
+
 #include <imgui.h>
 
 BehaviorTreeInspector::BehaviorTreeInspector(EntityEngine &engine, entt::entity entity) :
@@ -97,7 +99,7 @@ void BehaviorTreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
     if (node->hasLuaDebugInfo())
     {
         const lua_Debug &debugInfo = node->getLuaDebugInfo();
-        std::vector<std::string> pathSplitted = splitString(debugInfo.source, "/");
+        std::vector<std::string> pathSplitted = su::split(debugInfo.source, "/");
         if (!pathSplitted.empty())
         {
             ImGui::SameLine();

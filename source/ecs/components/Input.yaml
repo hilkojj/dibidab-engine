@@ -1,3 +1,7 @@
+config:
+  hpp_incl:
+    - input/key_input.h
+    - input/gamepad_input.h
 
 KeyListener:
   _cpp_only:

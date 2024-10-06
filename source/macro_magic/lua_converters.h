@@ -6,6 +6,7 @@
 #include "../../external/entt/src/entt/entity/registry.hpp"
 
 #include <asset_manager/asset.h>
+#include <json.hpp>
 
 /////////// asset<>
 
