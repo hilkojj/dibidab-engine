@@ -1,10 +1,6 @@
-
-#ifndef GAME_ANIMATIONSYSTEM_H
-#define GAME_ANIMATIONSYSTEM_H
-
+#pragma once
 #include "EntitySystem.h"
 #include "../components/Animation.h"
-
 
 class AnimationSystem : public EntitySystem
 {
@@ -16,6 +12,3 @@ class AnimationSystem : public EntitySystem
     void update(double deltaTime, EntityEngine *engine) override;
 
 };
-
-
-#endif

@@ -1,9 +1,6 @@
+#pragma once
 
-#ifndef GAME_ENTITYTEMPLATE_H
-#define GAME_ENTITYTEMPLATE_H
-
-
-#include "../../../external/entt/src/entt/entity/registry.hpp"
+#include <entt/entity/registry.hpp>
 
 #include <string>
 
@@ -37,6 +34,3 @@ class EntityTemplate
     virtual ~EntityTemplate() = default;
 
 };
-
-
-#endif

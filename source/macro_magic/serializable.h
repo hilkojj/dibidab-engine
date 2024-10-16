@@ -1,18 +1,14 @@
-
-#ifndef GAME_SERIALIZABLE_H
-#define GAME_SERIALIZABLE_H
-
+#pragma once
 #include "SerializableStructInfo.h"
-#include "lua_converters.h"
-#include "json_converters.h"
+#include "dibidab/converters/lua_converters.h"
+#include "dibidab/converters/json_converters.h"
 #include <json.hpp>
 
 
 template <class FieldType>
 bool isFieldTypePrimitive()
 {
-    json j = FieldType();
-    return !j.is_structured();
+    return false;
 }
 
 /**
@@ -23,8 +19,5 @@ bool isFieldTypePrimitive()
 template <class FieldType>
 bool isStructFieldFixedSize()
 {
-    json j = FieldType();
-    return j.is_structured() && !j.empty();
+    return false;
 }
-
-#endif //GAME_SERIALIZABLE_H

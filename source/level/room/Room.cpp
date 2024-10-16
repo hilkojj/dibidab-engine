@@ -2,11 +2,10 @@
 #include "Room.h"
 
 #include "../../ecs/systems/PlayerControlSystem.h"
-#include "../../ecs/systems/AudioSystem.h"
 #include "../../ecs/systems/SpawningSystem.h"
 #include "../../ecs/systems/LuaScriptsSystem.h"
 
-#include "../../generated/Saving.hpp"
+#include "../../ecs/components/Saving.dibidab.h"
 
 #include <gu/profiler.h>
 
@@ -24,7 +23,6 @@ void Room::initialize(Level *lvl)
 void Room::preLoadInitialize()
 {
     addSystem(new PlayerControlSystem("player control"));
-    addSystem(new AudioSystem("audio"));
 
     addSystem(new LuaScriptsSystem("lua functions"), true); // execute lua functions first, in case they might spawn entities, same reason as below:
     addSystem(new SpawningSystem("(de)spawning"), true); // SPAWN ENTITIES FIRST, so they get a chance to be updated before being rendered

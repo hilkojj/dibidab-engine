@@ -1,7 +1,4 @@
-
-#ifndef GAME_BEHAVIORTREE_H
-#define GAME_BEHAVIORTREE_H
-
+#pragma once
 #include "../../ecs/EntityEngine.h"
 
 #include "../../luau.h"
@@ -456,6 +453,3 @@ class BehaviorTree
   public:
     static void addToLuaEnvironment(sol::state *lua);
 };
-
-
-#endif //GAME_BEHAVIORTREE_H

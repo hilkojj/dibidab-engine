@@ -1,7 +1,4 @@
-
-#ifndef GAME_BEHAVIORTREESYSTEM_H
-#define GAME_BEHAVIORTREESYSTEM_H
-
+#pragma once
 #include "EntitySystem.h"
 
 class BehaviorTreeSystem : public EntitySystem
@@ -13,6 +10,3 @@ class BehaviorTreeSystem : public EntitySystem
 
     void update(double deltaTime, EntityEngine *engine) override;
 };
-
-
-#endif //GAME_BEHAVIORTREESYSTEM_H

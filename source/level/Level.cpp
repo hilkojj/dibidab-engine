@@ -9,7 +9,7 @@
 
 
 #include "Level.h"
-#include "../generated/PlayerControlled.hpp"
+#include "../ecs/components/PlayerControlled.dibidab.h"
 #include "../game/dibidab.h"
 
 std::function<Room *(const json &)> Level::customRoomLoader;

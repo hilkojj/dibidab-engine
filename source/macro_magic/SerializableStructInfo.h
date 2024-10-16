@@ -1,7 +1,4 @@
-
-#ifndef GAME_SERIALIZABLESTRUCTINFO_H
-#define GAME_SERIALIZABLESTRUCTINFO_H
-
+#pragma once
 #include <vector>
 #include <map>
 #include "../luau.h"
@@ -52,12 +49,16 @@ struct SerializableStructInfo
 
     static const SerializableStructInfo *getFor(const char *typeName)
     {
+        if (infos == nullptr)
+            infos = new std::map<std::string, SerializableStructInfo *>();
         return infos->operator[](typeName);
     }
 
     template<typename type>
     static const SerializableStructInfo *getFor()
     {
+        if (infosByType == nullptr)
+            infosByType = new std::map<std::size_t, SerializableStructInfo *>();
         return infosByType->operator[](typeid(type).hash_code());
     }
 
@@ -69,6 +70,8 @@ struct SerializableStructInfo
 
     static const std::map<std::string, SerializableStructInfo *> &getForAllTypes()
     {
+        if (infos == nullptr)
+            infos = new std::map<std::string, SerializableStructInfo *>();
         return *infos;
     }
 
@@ -77,5 +80,3 @@ struct SerializableStructInfo
     static std::map<size_t, SerializableStructInfo *> *infosByType;
 
 };
-
-#endif

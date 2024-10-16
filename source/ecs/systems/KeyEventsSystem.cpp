@@ -1,7 +1,7 @@
 
 #include <ecs/EntityEngine.h>
 #include "KeyEventsSystem.h"
-#include "../../generated/Input.hpp"
+#include "../components/Input.dibidab.h"
 
 void KeyEventsSystem::update(double deltaTime, EntityEngine *engine)
 {

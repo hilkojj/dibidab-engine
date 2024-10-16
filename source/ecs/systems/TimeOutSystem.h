@@ -1,12 +1,8 @@
-
-#ifndef GAME_TIMEOUTSYSTEM_H
-#define GAME_TIMEOUTSYSTEM_H
-
+#pragma once
 #include "EntitySystem.h"
 #include "../EntityEngine.h"
 
 #include <utils/delegate.h>
-
 
 class TimeOutSystem : public EntitySystem
 {
@@ -32,6 +28,3 @@ class TimeOutSystem : public EntitySystem
   private:
     EntityEngine *engine = nullptr;
 };
-
-
-#endif //GAME_TIMEOUTSYSTEM_H

@@ -4,7 +4,7 @@
 #include "../EntityEngine.h"
 #include "../../ai/behavior_trees/BehaviorTree.h"
 
-#include "../../generated/Brain.hpp"
+#include "../components/Brain.dibidab.h"
 
 struct BrainPendingActivation
 {};

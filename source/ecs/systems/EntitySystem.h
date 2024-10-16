@@ -1,7 +1,4 @@
-
-#ifndef GAME_ENTITYSYSTEM_H
-#define GAME_ENTITYSYSTEM_H
-
+#pragma once
 #include <string>
 
 class EntityEngine;
@@ -33,6 +30,3 @@ class EntitySystem
     virtual ~EntitySystem() = default;
 
 };
-
-
-#endif

@@ -1,7 +1,7 @@
 
 #include "../../game/SaveGame.h"
 #include "LuaEntityTemplate.h"
-#include "../../generated/LuaScripted.hpp"
+#include "../components/LuaScripted.dibidab.h"
 
 #include <asset_manager/AssetManager.h>
 #include <utils/string_utils.h>

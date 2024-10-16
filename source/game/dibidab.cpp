@@ -1,12 +1,12 @@
+// TODO: for now importing as first, to confirm it has the necessary includes itself.
+#include "../generated/registry.struct_info.h"
+
 #include "dibidab.h"
 
 #include "../ecs/EntityInspector.h"
 #include "../rendering/ImGuiStyle.h"
 
 #include <graphics/textures/texture.h>
-#include <audio/audio.h>
-#include <audio/WavLoader.h>
-#include <audio/OggLoader.h>
 #include <asset_manager/AssetManager.h>
 
 #include <gu/game_utils.h>
@@ -140,18 +140,6 @@ void dibidab::addDefaultAssetLoaders()
 
         return new json(json::parse(fu::readString(path.c_str())));
     });
-    AssetManager::addAssetLoader<au::Sound>({ ".wav" }, [](auto path) {
-
-        auto sound = new au::Sound;
-        au::WavLoader(path.c_str(), *sound);
-        return sound;
-    });
-    AssetManager::addAssetLoader<au::Sound>({ ".ogg" }, [](auto path) {
-
-        auto sound = new au::Sound;
-        au::OggLoader::load(path.c_str(), *sound);
-        return sound;
-    });
     AssetManager::addAssetLoader<luau::Script>({ ".lua" }, [](auto path) {
 
         return new luau::Script(path);
@@ -164,6 +152,7 @@ FileWatcher assetWatcher;
 
 void dibidab::init(int argc, char **argv, gu::Config &config)
 {
+    registerStructs();
     startupArgsToMap(argc, argv, dibidab::startupArgs);
 
     config.width = dibidab::settings.graphics.windowSize.x;
@@ -180,9 +169,6 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
 
     std::cout << "Running game with\n - GL_VERSION: " << glGetString(GL_VERSION) << "\n";
     std::cout << " - GL_RENDERER: " << glGetString(GL_RENDERER) << "\n";
-
-    // audio:
-    au::init();
 
     setImGuiStyleAndConfig();
 
@@ -245,5 +231,4 @@ void dibidab::run()
 {
     gu::run();
     dibidab::setCurrentSession(nullptr);
-    au::terminate();
 }

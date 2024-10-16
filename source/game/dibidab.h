@@ -1,9 +1,6 @@
-
-#ifndef DIBIDAB_DIBIDAB_H
-#define DIBIDAB_DIBIDAB_H
-
+#pragma once
 #include "session/Session.h"
-#include "../generated/DibidabEngineSettings.hpp"
+#include "dibidab_settings.dibidab.h"
 
 namespace gu
 {
@@ -29,6 +26,3 @@ namespace dibidab
 
     void run();
 };
-
-
-#endif

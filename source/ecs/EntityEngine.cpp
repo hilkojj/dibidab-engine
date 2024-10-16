@@ -6,9 +6,9 @@
 #include "systems/TimeOutSystem.h"
 #include "entity_templates/LuaEntityTemplate.h"
 
-#include "../generated/Children.hpp"
-#include "../generated/Position3d.hpp"
-#include "../generated/LuaScripted.hpp"
+#include "components/Children.dibidab.h"
+#include "components/3d/Position3d.dibidab.h"
+#include "components/LuaScripted.dibidab.h"
 
 #include <gu/profiler.h>
 #include <utils/string_utils.h>

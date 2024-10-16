@@ -8,10 +8,10 @@
 
 #include "../game/dibidab.h"
 
-#include "../generated/LuaScripted.hpp"
-#include "../generated/Inspecting.hpp"
-#include "../generated/Children.hpp"
-#include "../generated/Brain.hpp"
+#include "components/LuaScripted.dibidab.h"
+#include "components/Inspecting.dibidab.h"
+#include "components/Children.dibidab.h"
+#include "components/Brain.dibidab.h"
 
 #include <gu/profiler.h>
 #include <input/mouse_input.h>
@@ -486,11 +486,7 @@ bool drawFieldsTree(
 
         auto subInfo = SerializableStructInfo::getFor(fieldTypeName.c_str());
 
-        static std::string finalTypeBegin = "final<";
-        bool subReadOnly = !forceEditReadOnly
-                            && (readOnly
-                                || fieldTypeName.compare(0, finalTypeBegin.length(), finalTypeBegin) == 0
-                            );
+        bool subReadOnly = !forceEditReadOnly && readOnly;
 
         if (fieldTypeName == "PersistentEntityRef")
         {
@@ -521,7 +517,7 @@ bool drawFieldsTree(
             }
             if (ImGui::IsItemHovered())
             {
-                ImGui::SetTooltip("Persistent Id: %d", ref.getId());
+                ImGui::SetTooltip("Persistent Id: %ld", ref.getId());
             }
         }
         else

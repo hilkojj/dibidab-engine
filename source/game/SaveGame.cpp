@@ -3,7 +3,7 @@
 
 #include "dibidab.h"
 
-#include "../macro_magic/lua_converters.h"
+#include "dibidab/converters/lua_converters.h"
 
 #include <files/file_utils.h>
 

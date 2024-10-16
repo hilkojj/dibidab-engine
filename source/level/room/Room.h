@@ -1,7 +1,4 @@
-
-#ifndef GAME_ROOM_H
-#define GAME_ROOM_H
-
+#pragma once
 #include "../../ecs/EntityEngine.h"
 
 #include <utils/delegate.h>
@@ -76,5 +73,3 @@ class Room : public EntityEngine
     friend void from_json(const json &j, Level &lvl);
     friend Level;
 };
-
-#endif

@@ -1,12 +1,9 @@
+#pragma once
+#include "luau.h"
+#include "entt/entity/registry.hpp"
 
-#ifndef GAME_LUA_CONVERTERS_H
-#define GAME_LUA_CONVERTERS_H
-
-#include "../luau.h"
-#include "../../external/entt/src/entt/entity/registry.hpp"
-
-#include <asset_manager/asset.h>
-#include <json.hpp>
+#include "asset_manager/asset.h"
+#include "json.hpp"
 
 /////////// asset<>
 
@@ -135,5 +132,3 @@ struct sol::usertype_container<json> : public container_detail::usertype_contain
         return 1;
     }
 };
-
-#endif //GAME_LUA_CONVERTERS_H

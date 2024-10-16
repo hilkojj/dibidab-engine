@@ -1,7 +1,4 @@
-
-#ifndef GAME_SAVEGAME_H
-#define GAME_SAVEGAME_H
-
+#pragma once
 #include <json.hpp>
 #include "../luau.h"
 
@@ -20,6 +17,4 @@ struct SaveGame
   private:
     std::string loadedFromPath;
 };
-#endif
-
 #endif

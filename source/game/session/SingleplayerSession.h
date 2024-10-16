@@ -1,8 +1,4 @@
-
-#ifndef GAME_SINGLEPLAYERSESSION_H
-#define GAME_SINGLEPLAYERSESSION_H
-
-
+#pragma once
 #include "Session.h"
 
 class SingleplayerSession : public Session
@@ -21,6 +17,3 @@ class SingleplayerSession : public Session
     void setLevel(Level *);
 
 };
-
-
-#endif

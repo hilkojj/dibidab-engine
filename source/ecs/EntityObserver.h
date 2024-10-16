@@ -1,8 +1,5 @@
-
-#ifndef GAME_ENTITYOBSERVER_H
-#define GAME_ENTITYOBSERVER_H
-
-#include "../../external/entt/src/entt/entity/registry.hpp"
+#pragma once
+#include <entt/entity/registry.hpp>
 
 #include <list>
 
@@ -94,6 +91,3 @@ class EntityObserver
     std::function<std::list<std::shared_ptr<Callback>> *(entt::registry &, entt::entity)> getOrCreateOnConstructCallbacks;
     std::function<std::list<std::shared_ptr<Callback>> *(entt::registry &, entt::entity)> getOrCreateOnDestroyCallbacks;
 };
-
-
-#endif //GAME_ENTITYOBSERVER_H

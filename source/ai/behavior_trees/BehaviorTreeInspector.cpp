@@ -1,7 +1,7 @@
 
 #include "BehaviorTreeInspector.h"
 
-#include "../../generated/Brain.hpp"
+#include "../../ecs/components/Brain.dibidab.h"
 
 #include <utils/string_utils.h>
 

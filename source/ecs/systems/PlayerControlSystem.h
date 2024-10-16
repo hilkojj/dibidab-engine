@@ -1,9 +1,5 @@
-
-#ifndef GAME_PLAYERCONTROLSYSTEM_H
-#define GAME_PLAYERCONTROLSYSTEM_H
-
-
-#include "../../generated/PlayerControlled.hpp"
+#pragma once
+#include "../components/PlayerControlled.dibidab.h"
 #include "../../level/Level.h"
 #include "EntitySystem.h"
 
@@ -54,6 +50,3 @@ class PlayerControlSystem : public EntitySystem
         });
     }
 };
-
-
-#endif

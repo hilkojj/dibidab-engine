@@ -1,7 +1,4 @@
-
-#ifndef GAME_LUAU_H
-#define GAME_LUAU_H
-
+#pragma once
 extern "C" {
     #include "lua.h"
     #include "lauxlib.h"
@@ -54,5 +51,3 @@ namespace luau
     lua_Debug getDebugInfo(sol::function func);
 
 }
-
-#endif //GAME_LUAU_H

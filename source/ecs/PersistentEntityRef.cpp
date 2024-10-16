@@ -1,7 +1,9 @@
 
 #include "PersistentEntityRef.h"
 
-#include "../generated/Saving.hpp"
+#include "components/Saving.dibidab.h"
+
+#include <utils/gu_error.h>
 
 PersistentEntityRef::PersistentEntityRef() :
     resolved(true),

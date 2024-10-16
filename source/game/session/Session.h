@@ -1,10 +1,6 @@
-
-#ifndef GAME_SESSION_H
-#define GAME_SESSION_H
-
-
+#pragma once
 #include "../../level/Level.h"
-#include "Player.h"
+#include "Player.dibidab.h"
 #include "../SaveGame.h"
 
 class Session
@@ -64,6 +60,3 @@ class Session
 
     void removePlayerEntities(int playerId);
 };
-
-
-#endif

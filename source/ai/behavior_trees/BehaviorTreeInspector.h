@@ -1,7 +1,4 @@
-
-#ifndef GAME_BEHAVIORTREEINSPECTOR_H
-#define GAME_BEHAVIORTREEINSPECTOR_H
-
+#pragma once
 #include "BehaviorTree.h"
 
 class EntityEngine;
@@ -20,5 +17,3 @@ class BehaviorTreeInspector
     EntityEngine *engine;
     entt::entity entity;
 };
-
-#endif //GAME_BEHAVIORTREEINSPECTOR_H

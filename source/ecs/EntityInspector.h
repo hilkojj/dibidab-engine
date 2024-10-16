@@ -1,7 +1,4 @@
-
-#ifndef GAME_ENTITYINSPECTOR_H
-#define GAME_ENTITYINSPECTOR_H
-
+#pragma once
 #include "../../external/entt/src/entt/entity/registry.hpp"
 #include "../macro_magic/component.h"
 #include "../level/room/Room.h"
@@ -65,6 +62,3 @@ class EntityInspector
 
     void drawAddComponent(entt::entity e, Inspecting &ins, const char *popupName);
 };
-
-
-#endif

@@ -1,7 +1,4 @@
-
-#ifndef GAME_IMGUISTYLE_H
-#define GAME_IMGUISTYLE_H
-
+#pragma once
 #include <imgui.h>
 #include "../game/dibidab.h"
 
@@ -97,5 +94,3 @@ inline void setImGuiStyleAndConfig()
     colors[ImGuiCol_ModalWindowDimBg]		= ImVec4(0, 0, 0, .3);
 #endif
 }
-
-#endif //GAME_IMGUISTYLE_H

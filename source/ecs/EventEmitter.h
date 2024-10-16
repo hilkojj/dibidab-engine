@@ -1,13 +1,10 @@
-
-#ifndef GAME_EVENTEMITTER_H
-#define GAME_EVENTEMITTER_H
-
+#pragma once
 #include <unordered_map>
 #include <list>
 #include <utils/type_name.h>
 #include "../../external/entt/src/entt/core/hashed_string.hpp"
 #include "../luau.h"
-#include "../macro_magic/lua_converters.h"
+#include "dibidab/converters/lua_converters.h"
 
 class EventEmitter
 {
@@ -68,6 +65,3 @@ class EventEmitter
     }
 
 };
-
-
-#endif

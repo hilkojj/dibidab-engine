@@ -1,21 +1,18 @@
-
-#ifndef GAME_LUAENTITYTEMPLATE_H
-#define GAME_LUAENTITYTEMPLATE_H
-
+#pragma once
 #include "EntityTemplate.h"
 
 #include <utility>
 #include "../../level/room/Room.h"
 #include "../../luau.h"
 #include "../../macro_magic/component.h"
-#include "../../generated/Saving.hpp"
+#include "../components/Saving.dibidab.h"
 
 class LuaEntityTemplate : public EntityTemplate
 {
   public:
     const std::string name;
 
-    const asset<luau::Script> script;
+    asset<luau::Script> script;
 
     LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *);
 
@@ -46,6 +43,3 @@ class LuaEntityTemplate : public EntityTemplate
     Persistent persistency;
     bool bPersistentArgs = false;
 };
-
-
-#endif

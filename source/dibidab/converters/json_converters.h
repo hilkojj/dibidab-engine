@@ -1,11 +1,8 @@
-
-#ifndef GAME_JSON_CONVERTERS_H
-#define GAME_JSON_CONVERTERS_H
-
-#include <math/math_utils.h>
-#include <asset_manager/asset.h>
-#include <asset_manager/AssetManager.h>
-#include <json.hpp>
+#pragma once
+#include "math/math_utils.h"
+#include "asset_manager/asset.h"
+#include "asset_manager/AssetManager.h"
+#include "json.hpp"
 
 namespace nlohmann {
     template <int len, typename type, qualifier something>
@@ -57,5 +54,3 @@ namespace nlohmann {
         }
     };
 }
-
-#endif //GAME_JSON_CONVERTERS_H

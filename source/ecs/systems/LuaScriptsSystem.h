@@ -1,10 +1,7 @@
-
-#ifndef GAME_LUASCRIPTSSYSTEM_H
-#define GAME_LUASCRIPTSSYSTEM_H
-
+#pragma once
 #include "EntitySystem.h"
 #include "../../level/room/Room.h"
-#include "../../generated/LuaScripted.hpp"
+#include "../components/LuaScripted.dibidab.h"
 
 class LuaScriptsSystem : public EntitySystem
 {
@@ -22,6 +19,3 @@ class LuaScriptsSystem : public EntitySystem
     ~LuaScriptsSystem() override;
 
 };
-
-
-#endif

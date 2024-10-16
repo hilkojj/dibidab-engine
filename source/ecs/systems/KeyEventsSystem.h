@@ -1,7 +1,4 @@
-
-#ifndef GAME_KEYEVENTSSYSTEM_H
-#define GAME_KEYEVENTSSYSTEM_H
-
+#pragma once
 #include "EntitySystem.h"
 
 class KeyEventsSystem : public EntitySystem
@@ -14,6 +11,3 @@ class KeyEventsSystem : public EntitySystem
     void update(double deltaTime, EntityEngine *engine) override;
 
 };
-
-
-#endif

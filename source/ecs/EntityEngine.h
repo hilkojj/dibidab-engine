@@ -1,7 +1,4 @@
-
-#ifndef GAME_ENTITYENGINE_H
-#define GAME_ENTITYENGINE_H
-
+#pragma once
 #include "EventEmitter.h"
 #include "entity_templates/EntityTemplate.h"
 
@@ -157,6 +154,3 @@ class EntityEngine
     void onEntityDenaming(entt::registry &, entt::entity);
 
 };
-
-
-#endif

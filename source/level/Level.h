@@ -1,7 +1,4 @@
-
-#ifndef GAME_LEVEL_H
-#define GAME_LEVEL_H
-
+#pragma once
 #include "room/Room.h"
 
 /**
@@ -87,5 +84,3 @@ class Level
 void to_json(json& j, const Level& lvl);
 
 void from_json(const json& j, Level& lvl);
-
-#endif

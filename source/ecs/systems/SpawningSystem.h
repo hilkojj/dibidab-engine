@@ -1,11 +1,7 @@
-
-#ifndef GAME_SPAWNINGSYSTEM_H
-#define GAME_SPAWNINGSYSTEM_H
-
+#pragma once
 #include "EntitySystem.h"
 #include "../../level/room/Room.h"
-#include "../../generated/Spawning.hpp"
-
+#include "../components/Spawning.dibidab.h"
 
 class SpawningSystem : public EntitySystem
 {
@@ -15,9 +11,4 @@ class SpawningSystem : public EntitySystem
 
   protected:
     void update(double deltaTime, EntityEngine *room) override;
-
-    void spawn(entt::entity spawnerEntity, TemplateSpawner &spawner);
 };
-
-
-#endif

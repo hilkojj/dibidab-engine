@@ -1,11 +1,7 @@
-
-#ifndef GAME_PERSISTENTENTITYREF_H
-#define GAME_PERSISTENTENTITYREF_H
-
-#include "../../external/entt/src/entt/entity/registry.hpp"
-
+#pragma once
 #include <math/math_utils.h>
 
+#include <entt/entity/registry.hpp>
 #include <json.hpp>
 
 #include <map>
@@ -61,5 +57,3 @@ namespace std
         }
     };
 }
-
-#endif //GAME_PERSISTENTENTITYREF_H

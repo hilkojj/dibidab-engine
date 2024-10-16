@@ -1,6 +1,6 @@
 
 #include "Session.h"
-#include "../../generated/PlayerControlled.hpp"
+#include "../../ecs/components/PlayerControlled.dibidab.h"
 
 const Player_ptr &Session::getPlayerById(int id) const
 {

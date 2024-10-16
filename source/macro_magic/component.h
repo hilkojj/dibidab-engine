@@ -1,7 +1,4 @@
-
-#ifndef GAME_COMPONENT_H
-#define GAME_COMPONENT_H
-
+#pragma once
 #include "../../external/entt/src/entt/entity/registry.hpp"
 #include "../ecs/PersistentEntityRef.h"
 #include "../ecs/EntityObserver.h"
@@ -157,9 +154,3 @@ struct ComponentUtils
     static std::vector<std::string> *names;
 
 };
-
-// only used to mark fields "read-only" in the in-game inspector, TODO: remove this unnecessary hack?
-template <typename Type>
-using final = Type;
-
-#endif //GAME_COMPONENT_H
