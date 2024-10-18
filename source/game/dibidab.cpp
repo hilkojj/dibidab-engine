@@ -115,8 +115,6 @@ void showDeveloperOptionsMenuBar()
         ImGui::EndMenu();
     }
 
-    EntityInspector::drawInspectingDropDown();
-
     ImGui::EndMainMenuBar();
 
     CodeEditor::drawGUI(

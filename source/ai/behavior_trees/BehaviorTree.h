@@ -1,6 +1,7 @@
 #pragma once
 #include "../../ecs/EntityEngine.h"
-
+#include "../../ecs/EntityObserver.h"
+#include "../../dibidab/component.h"
 #include "../../luau.h"
 
 #include <utils/delegate.h>
@@ -227,29 +228,29 @@ class BehaviorTree
         template<class Component>
         ComponentDecoratorNode *addWhileEntered(EntityEngine *engine, entt::entity entity)
         {
-            addWhileEntered(engine, entity, ComponentUtils::getFor<Component>());
+            addWhileEntered(engine, entity, dibidab::findComponentInfo<Component>());
             return this;
         }
 
-        void addWhileEntered(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+        void addWhileEntered(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
 
         template<class Component>
         ComponentDecoratorNode *addOnEnter(EntityEngine *engine, entt::entity entity)
         {
-            addOnEnter(engine, entity, ComponentUtils::getFor<Component>());
+            addOnEnter(engine, entity, dibidab::findComponentInfo<Component>());
             return this;
         }
 
-        void addOnEnter(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+        void addOnEnter(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
 
         template<class Component>
         ComponentDecoratorNode *removeOnFinish(EntityEngine *engine, entt::entity entity)
         {
-            removeOnFinish(engine, entity, ComponentUtils::getFor<Component>());
+            removeOnFinish(engine, entity, dibidab::findComponentInfo<Component>());
             return this;
         }
 
-        void removeOnFinish(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+        void removeOnFinish(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
 
         void enter() override;
 
@@ -268,7 +269,7 @@ class BehaviorTree
         {
             EntityEngine *engine = nullptr;
             entt::entity entity = entt::null;
-            const ComponentUtils *componentUtils = nullptr;
+            const dibidab::component_info *component = nullptr;
         };
 
         std::vector<EntityComponent> toAddWhileEntered;
@@ -328,20 +329,20 @@ class BehaviorTree
         template<class Component>
         ComponentObserverNode *has(EntityEngine *engine, entt::entity entity)
         {
-            has(engine, entity, ComponentUtils::getFor<Component>());
+            has(engine, entity, dibidab::findComponentInfo<Component>());
             return this;
         }
 
-        void has(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+        void has(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
 
         template<class Component>
         ComponentObserverNode *exclude(EntityEngine *engine, entt::entity entity)
         {
-            exclude(engine, entity, ComponentUtils::getFor<Component>());
+            exclude(engine, entity, dibidab::findComponentInfo<Component>());
             return this;
         }
 
-        void exclude(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils);
+        void exclude(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
 
         ComponentObserverNode *setOnFulfilledNode(Node *child);
 
@@ -361,7 +362,7 @@ class BehaviorTree
 
       private:
 
-        void observe(EntityEngine *engine, entt::entity entity, const ComponentUtils *componentUtils, bool presentValue,
+        void observe(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component, bool presentValue,
             bool absentValue);
 
         bool allConditionsFulfilled() const;
@@ -375,7 +376,7 @@ class BehaviorTree
         struct ObserverHandle
         {
             EntityEngine *engine = nullptr;
-            const ComponentUtils *componentUtils = nullptr;
+            const dibidab::component_info *component = nullptr;
             EntityObserver::Handle handle;
             delegate_method latestConditionChangedDelay;
         };

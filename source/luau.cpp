@@ -1,8 +1,9 @@
+#include "luau.h"
 
+#include "dibidab/struct.h"
 #include "ai/behavior_trees/BehaviorTree.h"
 #include "ecs/PersistentEntityRef.h"
 #include "game/session/SingleplayerSession.h"
-#include "luau.h"
 #include "game/dibidab.h"
 
 #include <input/gamepad_input.h>
@@ -156,9 +157,14 @@ sol::state &luau::getLuaState()
             return newEnv;
         };
 
-        // register Yaml-structs:
-        for (auto &[typeName, info] : SerializableStructInfo::getForAllTypes())
-            info->luaUserTypeGenerator(*lua);
+        // register dibidab headers:
+        for (const auto &[name, structInfo] : dibidab::getAllStructInfos())
+        {
+            if (structInfo.registerLuaUserType)
+            {
+                structInfo.registerLuaUserType(*lua);
+            }
+        }
 
         // register glm vectors:
         registerVecUserType<int>("ivec", *lua);

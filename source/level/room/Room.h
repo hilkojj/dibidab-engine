@@ -60,8 +60,6 @@ class Room : public EntityEngine
 
     void persistentEntityToJson(entt::entity, const Persistent &, json &j) const;
 
-    void tryToSaveRevivableEntity(entt::registry &, entt::entity);
-
     Level *level = nullptr;
     int roomI = -1;
 

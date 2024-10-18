@@ -1,17 +1,22 @@
 
 #include "EntityEngine.h"
 
+#include "EntityObserver.h"
+
 #include "systems/KeyEventsSystem.h"
 #include "systems/AnimationSystem.h"
 #include "systems/TimeOutSystem.h"
 #include "entity_templates/LuaEntityTemplate.h"
 
 #include "components/Children.dibidab.h"
-#include "components/3d/Position3d.dibidab.h"
 #include "components/LuaScripted.dibidab.h"
 
+#include "../dibidab/component.h"
+
+#include <asset_manager/AssetManager.h>
 #include <gu/profiler.h>
 #include <utils/string_utils.h>
+#include <utils/hashing.h>
 
 void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
 {
@@ -29,7 +34,8 @@ TimeOutSystem *EntityEngine::getTimeOuts()
 
 EntityTemplate &EntityEngine::getTemplate(std::string name)
 {
-    try {
+    try
+    {
         return getTemplate(hashStringCrossPlatform(name));
     }
     catch (_gu_err &)
@@ -89,10 +95,18 @@ void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
 EntityEngine::~EntityEngine()
 {
     bDestructing = true;
-    for (auto sys : systems)
-        delete sys;
-    for (auto &entry : entityTemplates)
-        delete entry.second;
+    for (EntitySystem * system : systems)
+    {
+        delete system;
+    }
+    for (auto &templateEntry : entityTemplates)
+    {
+        delete templateEntry.second;
+    }
+    for (auto &[component, observer] : observerPerComponent)
+    {
+        delete observer;
+    }
 }
 
 bool EntityEngine::isDestructing() const
@@ -146,11 +160,16 @@ void EntityEngine::initialize()
 void setComponentFromLua(entt::entity entity, const sol::table &component, entt::registry &reg)
 {
     if (component.get_type() != sol::type::userdata)
+    {
         throw gu_err("Given object is not a registered type");
+    }
 
-    auto typeName = component["__type"]["name"].get<std::string>();
+    const char *typeName = component["__type"]["name"].get<const char *>();
 
-    EntityEngine::componentUtils(typeName).setFromLuaTable(component, entt::entity(entity), reg);
+    if (const dibidab::component_info *info = dibidab::findComponentInfo(typeName))
+    {
+        info->setFromLua(component, entity, reg);
+    }
 }
 
 void EntityEngine::initializeLuaEnvironment()
@@ -210,11 +229,6 @@ void EntityEngine::initializeLuaEnvironment()
         setComponentFromLua(entity, component, entities);
     };
 
-    env["setComponentFromJson"] = [&](entt::entity entity, const char *compName, const json &j)
-    {
-        componentUtils(compName).setJsonComponentWithKeys(j, entity, entities);
-    };
-
     env["setComponents"] = [&](entt::entity entity, const sol::table &componentsTable)
     {
         for (const auto &[i, comp] : componentsTable)
@@ -269,23 +283,12 @@ void EntityEngine::initializeLuaEnvironment()
         f.func = func;
     };
 
-    auto componentUtilsTable = env["component"].get_or_create<sol::table>();
-    for (auto &componentName : ComponentUtils::getAllComponentTypeNames())
-        ComponentUtils::getFor(componentName)->registerLuaFunctions(componentUtilsTable, entities);
-}
-
-void EntityEngine::luaTableToComponent(entt::entity e, const std::string &componentName, const sol::table &component)
-{
-    componentUtils(componentName).setFromLuaTable(component, e, entities);
-}
-
-// todo: ComponentUtils::getFor() and ComponentUtils::tryGetFor()
-const ComponentUtils &EntityEngine::componentUtils(const std::string &componentName)
-{
-    auto utils = ComponentUtils::getFor(componentName);
-    if (!utils)
-        throw gu_err("Component-type named '" + componentName + "' does not exist!");
-    return *utils;
+    sol::table componentTable = env["component"].get_or_create<sol::table>();
+    for (auto &[name, info] : dibidab::getAllComponentInfos())
+    {
+        sol::table utilsTable = componentTable[name].template get_or_create<sol::table>();
+        info.fillLuaUtilsTable(utilsTable, entities, &info);
+    }
 }
 
 void EntityEngine::setParent(entt::entity child, entt::entity parent, const char *childName)
@@ -378,17 +381,6 @@ void EntityEngine::onParentDeletion(entt::registry &reg, entt::entity entity)
             reg.remove<Child>(child);
 }
 
-
-vec3 EntityEngine::getPosition(entt::entity e) const
-{
-    return entities.has<Position3d>(e) ? entities.get<Position3d>(e).vec : vec3(0);
-}
-
-void EntityEngine::setPosition(entt::entity e, const vec3 &pos)
-{
-    entities.get_or_assign<Position3d>(e).vec = pos;
-}
-
 entt::entity EntityEngine::getByName(const char *name) const
 {
     auto it = namedEntities.find(name);
@@ -433,6 +425,16 @@ const char *EntityEngine::getName(entt::entity e) const
     if (const Named *named = entities.try_get<Named>(e))
         return named->name_dont_change.c_str();
     else return nullptr;
+}
+
+EntityObserver &EntityEngine::getObserverForComponent(const dibidab::component_info &component)
+{
+    auto it = observerPerComponent.find(&component);
+    if (it == observerPerComponent.end())
+    {
+        it = observerPerComponent.emplace(&component, component.createObserver(this->entities)).first;
+    }
+    return *it->second;
 }
 
 std::list<EntitySystem *> EntityEngine::getSystemsToUpdate() const

@@ -19,11 +19,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
 
     int
         TEMPLATE = luaEnvironment["TEMPLATE"] = 1 << 0,
-        ARGS = luaEnvironment["ARGS"] = 1 << 1,
-        FINAL_POS = luaEnvironment["FINAL_POS"] = 1 << 2,
-        SPAWN_POS = luaEnvironment["SPAWN_POS"] = 1 << 3,
-        ALL_COMPONENTS = luaEnvironment["ALL_COMPONENTS"] = 1 << 4,
-        REVIVE = luaEnvironment["REVIVE"] = 1 << 5;
+        ARGS = luaEnvironment["ARGS"] = 1 << 1;
 
     auto setPersistentMode = [&](int mode, sol::optional<std::vector<std::string>> componentsToSave) {
 
@@ -32,19 +28,13 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
             persistency.applyTemplateOnLoad = this->name;   // 'name' is a pointer and thus can break. 'this->name' is a string :)
 
         bPersistentArgs = mode & ARGS;
-        persistency.saveFinalPosition = mode & FINAL_POS;
-        persistency.saveSpawnPosition = mode & SPAWN_POS;
-        persistency.saveAllComponents = mode & ALL_COMPONENTS;
-        persistency.revive = mode & REVIVE;
         if (componentsToSave.has_value())
         {
             persistency.saveComponents = componentsToSave.value();
-            for (auto &c : persistency.saveComponents)
-                engine->componentUtils(c);  // will throw error if that type of component does not exist.
         }
     };
     luaEnvironment["persistenceMode"] = setPersistentMode;
-    setPersistentMode(TEMPLATE | ARGS | FINAL_POS, sol::optional<std::vector<std::string>>());
+    setPersistentMode(TEMPLATE | ARGS, sol::optional<std::vector<std::string>>());
 
     luaEnvironment["defaultArgs"] = [&](const sol::table &table) {
         defaultArgs = table;
@@ -179,12 +169,6 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
         if (!result.valid())
             throw gu_err(result.get<sol::error>().what());
         // NOTE!!: ALL REFERENCES TO COMPONENTS MIGHT BE BROKEN AFTER CALLING createFunc. (EnTT might resize containers)
-
-        if (persistent)
-        {
-            if (auto *p = engine->entities.try_get<Persistent>(e))
-                p->spawnPosition = engine->getPosition(e);
-        }
     }
     catch (std::exception &e)
     {

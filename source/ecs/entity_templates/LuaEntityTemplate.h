@@ -4,7 +4,6 @@
 #include <utility>
 #include "../../level/room/Room.h"
 #include "../../luau.h"
-#include "../../macro_magic/component.h"
 #include "../components/Saving.dibidab.h"
 
 class LuaEntityTemplate : public EntityTemplate

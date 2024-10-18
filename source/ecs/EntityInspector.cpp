@@ -1,6 +1,6 @@
 
 #include "EntityInspector.h"
-
+#if 0
 #include "entity_templates/LuaEntityTemplate.h"
 #include "systems/EntitySystem.h"
 
@@ -23,12 +23,19 @@
 #include <files/file_utils.h>
 
 #include <imgui_internal.h>
+#endif
 
 EntityInspector::EntityInspector(EntityEngine &engine, const std::string &name) : engine(engine), reg(engine.entities), inspectorName(name)
 {
 
 }
 
+void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
+{
+
+}
+
+#if 0
 std::list<std::string> inspectors;
 std::string activeInspector;
 
@@ -957,3 +964,4 @@ void EntityInspector::drawNamedEntitiesTree(const Camera *cam, DebugLineRenderer
 
     ImGui::Columns(1);
 }
+#endif

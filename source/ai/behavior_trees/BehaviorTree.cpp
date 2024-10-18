@@ -596,7 +596,7 @@ void BehaviorTree::RepeaterNode::drawDebugInfo() const
 }
 
 void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine, entt::entity entity,
-    const ComponentUtils *componentUtils)
+    const dibidab::component_info *component)
 {
     if (engine == nullptr)
     {
@@ -606,15 +606,15 @@ void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine,
     {
         throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
     }
-    if (componentUtils == nullptr)
+    if (component == nullptr)
     {
-        throw gu_err("ComponentUtils is a nullptr! " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::component_info is a nullptr! " + getNodeErrorInfo(this));
     }
-    toAddWhileEntered.push_back({engine, entity, componentUtils});
+    toAddWhileEntered.push_back({engine, entity, component});
 }
 
 void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt::entity entity,
-    const ComponentUtils *componentUtils)
+    const dibidab::component_info *component)
 {
     if (engine == nullptr)
     {
@@ -624,15 +624,15 @@ void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt
     {
         throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
     }
-    if (componentUtils == nullptr)
+    if (component == nullptr)
     {
-        throw gu_err("ComponentUtils is a nullptr! " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::component_info is a nullptr! " + getNodeErrorInfo(this));
     }
-    toAddOnEnter.push_back({engine, entity, componentUtils});
+    toAddOnEnter.push_back({engine, entity, component});
 }
 
 void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, entt::entity entity,
-    const ComponentUtils *componentUtils)
+    const dibidab::component_info *component)
 {
     if (engine == nullptr)
     {
@@ -642,11 +642,11 @@ void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, 
     {
         throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
     }
-    if (componentUtils == nullptr)
+    if (component == nullptr)
     {
-        throw gu_err("ComponentUtils is a nullptr! " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::component_info is a nullptr! " + getNodeErrorInfo(this));
     }
-    toRemoveOnFinish.push_back({engine, entity, componentUtils});
+    toRemoveOnFinish.push_back({engine, entity, component});
 }
 
 void BehaviorTree::ComponentDecoratorNode::enter()
@@ -664,10 +664,10 @@ void BehaviorTree::ComponentDecoratorNode::enter()
         {
             if (!entityComponent.engine->entities.valid(entityComponent.entity))
             {
-                throw gu_err("Cannot add " + std::string(entityComponent.componentUtils->structInfo->name) +
+                throw gu_err("Cannot add " + std::string(entityComponent.component->name) +
                     " to an invalid entity while entering: " + getNodeErrorInfo(this));
             }
-            entityComponent.componentUtils->addComponent(entityComponent.entity, entityComponent.engine->entities);
+            entityComponent.component->addComponent(entityComponent.entity, entityComponent.engine->entities);
         }
     }
 
@@ -684,7 +684,7 @@ void BehaviorTree::ComponentDecoratorNode::finish(BehaviorTree::Node::Result res
             {
                 continue; // Ignore.
             }
-            entityComponent.componentUtils->removeComponent(entityComponent.entity, entityComponent.engine->entities);
+            entityComponent.component->removeComponent(entityComponent.entity, entityComponent.engine->entities);
         }
     }
     DecoratorNode::finish(result);
@@ -709,7 +709,7 @@ void BehaviorTree::ComponentDecoratorNode::drawDebugInfo() const
 
         ImGui::TextDisabled("Add ");
         ImGui::SameLine();
-        ImGui::Text("%s", entityComponent.componentUtils->structInfo->name);
+        ImGui::Text("%s", entityComponent.component->name);
         ImGui::SameLine();
         ImGui::TextDisabled(" to ");
         ImGui::SameLine();
@@ -892,15 +892,15 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withou
 }
 
 void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
-    const ComponentUtils *componentUtils)
+    const dibidab::component_info *component)
 {
-    observe(engine, entity, componentUtils, true, false);
+    observe(engine, entity, component, true, false);
 }
 
 void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::entity entity,
-    const ComponentUtils *componentUtils)
+    const dibidab::component_info *component)
 {
-    observe(engine, entity, componentUtils, false, true);
+    observe(engine, entity, component, false, true);
 }
 
 BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnFulfilledNode(Node *child)
@@ -961,7 +961,7 @@ void BehaviorTree::ComponentObserverNode::drawDebugInfo() const
         ImGui::Checkbox("", &bTmpValue);
         ImGui::SameLine();
 
-        const bool bHasComponent = observerHandle.componentUtils->entityHasComponent(entity,
+        const bool bHasComponent = observerHandle.component->hasComponent(entity,
             observerHandle.engine->entities);
 
         if (const char *entityName = observerHandle.engine->getName(entity))
@@ -971,7 +971,7 @@ void BehaviorTree::ComponentObserverNode::drawDebugInfo() const
         }
         ImGui::TextDisabled(bCurrentValue == bHasComponent ? "has " : "excludes ");
         ImGui::SameLine();
-        ImGui::Text("%s", observerHandle.componentUtils->structInfo->name);
+        ImGui::Text("%s", observerHandle.component->name);
         ImGui::SameLine();
     }
 }
@@ -1001,13 +1001,17 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
 }
 
 void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
-    const ComponentUtils *componentUtils, const bool presentValue, const bool absentValue)
+    const dibidab::component_info *component, const bool presentValue, const bool absentValue)
 {
     if (isEntered())
     {
         throw gu_err("Cannot edit while entered: " + getNodeErrorInfo(this));
     }
 #ifndef NDEBUG
+    if (component == nullptr)
+    {
+        throw gu_err("dibidab::component_info is a nullptr: " + getNodeErrorInfo(this));
+    }
     if (engine == nullptr)
     {
         throw gu_err("No EntityEngine was given: " + getNodeErrorInfo(this));
@@ -1018,7 +1022,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     }
 #endif
     // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
-    EntityObserver *observer = componentUtils->getEntityObserver(engine->entities);
+    EntityObserver &observer = engine->getObserverForComponent(*component);
     const int conditionIndex = int(conditions.size());
 
     std::function<void()> onConstructCallback = [this, engine, entity, conditionIndex, presentValue]
@@ -1027,7 +1031,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
         onConditionsChanged(engine, entity);
     };
 
-    EntityObserver::Handle onConstructHandle = observer->onConstruct(entity,
+    EntityObserver::Handle onConstructHandle = observer.onConstruct(entity,
         bUseSafetyDelay ? [this, engine, onConstructCallback, conditionIndex]
         {
             observerHandles[conditionIndex * 2ul].latestConditionChangedDelay =
@@ -1043,7 +1047,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
         onConditionsChanged(engine, entity);
     };
 
-    EntityObserver::Handle onDestroyHandle = observer->onDestroy(entity,
+    EntityObserver::Handle onDestroyHandle = observer.onDestroy(entity,
         bUseSafetyDelay ? [this, engine, onDestroyCallback, conditionIndex]
         {
             observerHandles[conditionIndex * 2ul + 1ul].latestConditionChangedDelay =
@@ -1054,12 +1058,12 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     );
 
     observerHandles.push_back({
-        engine, componentUtils, onConstructHandle
+        engine, component, onConstructHandle
     });
     observerHandles.push_back({
-        engine, componentUtils, onDestroyHandle
+        engine, component, onDestroyHandle
     });
-    conditions.push_back(componentUtils->entityHasComponent(entity, engine->entities) ? presentValue : absentValue);
+    conditions.push_back(component->hasComponent(entity, engine->entities) ? presentValue : absentValue);
     bFulFilled = allConditionsFulfilled();
 }
 
@@ -1129,9 +1133,7 @@ BehaviorTree::ComponentObserverNode::~ComponentObserverNode()
             // Unregistering is not needed because the callbacks will be destroyed anyway.
             continue;
         }
-        observerHandle.componentUtils
-            ->getEntityObserver(observerHandle.engine->entities)
-            ->unregister(observerHandle.handle);
+        observerHandle.engine->getObserverForComponent(*observerHandle.component).unregister(observerHandle.handle);
     }
 }
 
@@ -1420,24 +1422,24 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> BehaviorTree::ComponentDecoratorNode &
         {
-            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
-            node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
         "addOnEnter", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
         -> BehaviorTree::ComponentDecoratorNode &
         {
-            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
-            node.addOnEnter(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            node.addOnEnter(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
         "removeOnFinish", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
         -> BehaviorTree::ComponentDecoratorNode &
         {
-            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
-            node.removeOnFinish(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            node.removeOnFinish(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         }
     );
@@ -1477,16 +1479,16 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
             -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
-            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
-            node.has(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            node.has(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
         "exclude", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
             -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
-            const ComponentUtils *componentUtils = ComponentUtils::getFromLuaComponentTable(componentTable);
-            node.exclude(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, componentUtils);
+            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            node.exclude(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
         "fulfilled", &BehaviorTree::ComponentObserverNode::setOnFulfilledNode,

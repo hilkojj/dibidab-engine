@@ -1,17 +1,26 @@
 #include "struct.h"
 
 #include <map>
-#include <string>
 
 namespace
 {
-    std::map<std::string, dibidab::struct_info> structInfoByName;
+    std::map<std::string, dibidab::struct_info> &getAllStructInfos()
+    {
+        static std::map<std::string, dibidab::struct_info> infos;
+        return infos;
+    }
+}
+
+const std::map<std::string, dibidab::struct_info> &dibidab::getAllStructInfos()
+{
+    return ::getAllStructInfos();
 }
 
 const dibidab::struct_info *dibidab::findStructInfo(const char *structId)
 {
-    auto it = structInfoByName.find(structId);
-    if (it != structInfoByName.end())
+    const auto &infos = ::getAllStructInfos();
+    auto it = infos.find(structId);
+    if (it != infos.end())
     {
         return &it->second;
     }
@@ -20,6 +29,5 @@ const dibidab::struct_info *dibidab::findStructInfo(const char *structId)
 
 void dibidab::registerStructInfo(const dibidab::struct_info &info)
 {
-    structInfoByName[info.id] = info;
+    ::getAllStructInfos()[info.id] = info;
 }
-

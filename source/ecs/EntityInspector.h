@@ -1,6 +1,5 @@
 #pragma once
 #include "../../external/entt/src/entt/entity/registry.hpp"
-#include "../macro_magic/component.h"
 #include "../level/room/Room.h"
 #include "entity_templates/LuaEntityTemplate.h"
 
@@ -33,12 +32,11 @@ class EntityInspector
 
     void drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
 
-    static void drawInspectingDropDown();
-
   protected:
     EntityEngine &engine;
     entt::registry &reg;
 
+#if 0
     virtual void pickEntityGUI(const Camera *, DebugLineRenderer &);
 
     virtual void moveEntityGUI(const Camera *, DebugLineRenderer &);
@@ -61,4 +59,5 @@ class EntityInspector
     void drawComponentFieldsTree(entt::entity e, Inspecting &ins, const char *componentName, const ComponentUtils *componentUtils);
 
     void drawAddComponent(entt::entity e, Inspecting &ins, const char *popupName);
+#endif
 };

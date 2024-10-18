@@ -11,12 +11,7 @@ struct Persistent
     std::string applyTemplateOnLoad;
     json data = json::object();
 
-    bool saveFinalPosition = false;
-    bool saveSpawnPosition = false;
-    vec3 spawnPosition = vec3(0.0f);
-
-    bool revive = false;
-    bool saveAllComponents = false;
+    // TODO: replace with component_info ptrs?
     std::vector<std::string> saveComponents;
 
     bool saveName = true;

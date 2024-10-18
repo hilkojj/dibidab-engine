@@ -3,8 +3,6 @@
 #include "entity_templates/EntityTemplate.h"
 
 #include "../luau.h"
-#include "../macro_magic/component.h"
-
 #include "../../external/entt/src/entt/entity/registry.hpp"
 
 #include <utils/type_name.h>
@@ -14,13 +12,21 @@
 #include <list>
 
 class EntitySystem;
+class EntityObserver;
 class TimeOutSystem;
+
+namespace dibidab
+{
+    struct component_info;
+}
 
 class EntityEngine
 {
     bool bInitialized = false, bUpdating = false, bDestructing = false;
 
     TimeOutSystem *timeOutSystem;
+
+    std::map<const dibidab::component_info *, EntityObserver *> observerPerComponent;
 
   protected:
 
@@ -63,6 +69,7 @@ class EntityEngine
 
     TimeOutSystem *getTimeOuts();
 
+    // TODO: remove: not used:
     template <class EntityTemplate_>
     EntityTemplate &getTemplate()
     {
@@ -77,24 +84,6 @@ class EntityEngine
 
     entt::entity getChildByName(entt::entity parent, const char *childName);
 
-    template<typename Component>
-    Component &getChildComponentByName(entt::entity parent, const char *childName)
-    {
-        entt::entity child = getChildByName(parent, childName);
-        return entities.get<Component>(child);
-    }
-
-    template<typename Component>
-    Component *tryGetChildComponentByName(entt::entity parent, const char *childName)
-    {
-        entt::entity child = getChildByName(parent, childName);
-        return entities.try_get<Component>(child);
-    }
-
-    void luaTableToComponent(entt::entity, const std::string &componentName, const sol::table &);
-
-    static const ComponentUtils &componentUtils(const std::string &componentName);
-
     entt::entity createChild(entt::entity parent, const char *childName="");
 
     void setParent(entt::entity child, entt::entity parent, const char *childName="");
@@ -107,6 +96,8 @@ class EntityEngine
     const char *getName(entt::entity) const;
 
     const std::unordered_map<std::string, entt::entity> &getNamedEntities() const { return namedEntities; };
+
+    EntityObserver &getObserverForComponent(const dibidab::component_info &component);
 
     template<typename type>
     void emitEntityEvent(entt::entity e, const type &event, const char *customEventName=nullptr)
@@ -122,10 +113,6 @@ class EntityEngine
     virtual void update(double deltaTime);
 
     bool isUpdating() const;
-
-    virtual vec3 getPosition(entt::entity) const;
-
-    virtual void setPosition(entt::entity, const vec3 &);
 
   protected:
 
