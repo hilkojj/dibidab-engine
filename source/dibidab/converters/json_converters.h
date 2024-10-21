@@ -1,7 +1,7 @@
 #pragma once
 #include "math/math_utils.h"
-#include "asset_manager/asset.h"
-#include "asset_manager/AssetManager.h"
+#include "assets/asset.h"
+#include "assets/AssetManager.h"
 #include "json.hpp"
 
 namespace nlohmann {

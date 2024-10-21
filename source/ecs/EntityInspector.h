@@ -1,63 +1,89 @@
 #pragma once
-#include "../../external/entt/src/entt/entity/registry.hpp"
-#include "../level/room/Room.h"
-#include "entity_templates/LuaEntityTemplate.h"
 
-#include <graphics/camera/camera.h>
-#include <graphics/3d/renderers/debug_line_renderer.h>
-#include <imgui.h>
+#include <entt/entity/fwd.hpp>
 
+class EntityEngine;
+class EntityTemplate;
 struct Inspecting;
+struct loaded_asset;
+
+
+class EntityPicker
+{
+  public:
+    virtual entt::entity tryPick() = 0;
+
+    virtual ~EntityPicker() = default;
+};
+
+
+class EntityMover
+{
+  public:
+    explicit EntityMover(entt::entity entity);
+
+    virtual bool update() = 0;
+
+    virtual ~EntityMover() = default;
+
+  protected:
+    const entt::entity entity;
+};
+
 
 class EntityInspector
 {
-    std::string inspectorName;
-
-    LuaEntityTemplate *creatingTempl = nullptr;
-    json creatingTemplArgs;
-
   public:
+    explicit EntityInspector(EntityEngine &);
 
-    std::string createEntity_showSubFolder = "";
-    bool createEntity_persistentOption = true;
-    bool showInDropDown = true;
+    void draw();
 
-    bool
-        pickEntity = false,
-        moveEntity = false;
-
-    entt::entity movingEntity = entt::null;
-
-    EntityInspector(EntityEngine &, const std::string &name);
-
-    void drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer);
+    ~EntityInspector();
 
   protected:
-    EntityEngine &engine;
-    entt::registry &reg;
+    virtual EntityPicker *createPicker();
 
-#if 0
-    virtual void pickEntityGUI(const Camera *, DebugLineRenderer &);
+    virtual EntityMover *createMover(entt::entity entityToMove);
 
-    virtual void moveEntityGUI(const Camera *, DebugLineRenderer &);
+    virtual const char *getUsedTemplateName(entt::entity entity) const;
 
-    virtual void highLightEntity(entt::entity, const Camera *, DebugLineRenderer &);
+    virtual const loaded_asset *getAssetForTemplate(const EntityTemplate &entityTemplate) const;
+
+    virtual void editTemplateAsset(const loaded_asset &templateAsset);
 
   private:
-    void createEntityGUI();
+    void updatePicking();
 
-    void createEntity(const std::string &templateName);
+    void updateMoving();
 
-    void templateArgsGUI();
+    void drawInspectWindow(const entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity);
 
-    void editLuaScript(LuaEntityTemplate *);
+    void drawEntityNameField(const entt::entity entity);
 
-    void drawNamedEntitiesTree(const Camera *, DebugLineRenderer &);
+    void drawMainMenuItem();
 
-    void drawEntityInspectorGUI(entt::entity e, Inspecting &ins);
+    void drawEntityTemplateSelect();
 
-    void drawComponentFieldsTree(entt::entity e, Inspecting &ins, const char *componentName, const ComponentUtils *componentUtils);
+    void drawEntityRegistryTree();
 
-    void drawAddComponent(entt::entity e, Inspecting &ins, const char *popupName);
-#endif
+    void drawInspectById();
+
+    void drawCreateEntityFromTemplate();
+
+    void drawBehaviorTreeInspectors();
+
+    EntityTemplate *getUsedTemplate(entt::entity entity) const;
+
+  private:
+    EntityEngine *engine;
+    EntityPicker *picker = nullptr;
+    EntityMover *mover = nullptr;
+
+    struct CreatingEntity
+    {
+        EntityTemplate *fromTemplate = nullptr;
+        bool bPersistent = false;
+        bool bInspectOnCreate = false;
+    }
+    creatingEntity;
 };

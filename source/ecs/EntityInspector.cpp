@@ -1,967 +1,610 @@
-
 #include "EntityInspector.h"
-#if 0
-#include "entity_templates/LuaEntityTemplate.h"
+
+#include "EntityEngine.h"
+
 #include "systems/EntitySystem.h"
-
-#include "../ai/behavior_trees/BehaviorTreeInspector.h"
-
-#include "../game/dibidab.h"
-
-#include "components/LuaScripted.dibidab.h"
 #include "components/Inspecting.dibidab.h"
+#include "components/LuaScripted.dibidab.h"
 #include "components/Children.dibidab.h"
 #include "components/Brain.dibidab.h"
 
-#include <gu/profiler.h>
+#include "../ai/behavior_trees/BehaviorTreeInspector.h"
+#include "../game/dibidab.h"
+
+#include <assets/AssetManager.h>
 #include <input/mouse_input.h>
-#include <input/key_input.h>
-#include <code_editor/CodeEditor.h>
 #include <utils/string_utils.h>
-#include <asset_manager/asset.h>
-#include <asset_manager/AssetManager.h>
+#include <code_editor/CodeEditor.h>
 #include <files/file_utils.h>
+#include <gu/profiler.h>
 
 #include <imgui_internal.h>
-#endif
 
-EntityInspector::EntityInspector(EntityEngine &engine, const std::string &name) : engine(engine), reg(engine.entities), inspectorName(name)
+EntityMover::EntityMover(entt::entity entity) :
+    entity(entity)
 {
-
 }
 
-void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
+EntityInspector::EntityInspector(EntityEngine &engine) :
+    engine(&engine)
 {
-
 }
 
-#if 0
-std::list<std::string> inspectors;
-std::string activeInspector;
-
-static bool createEntityGUIJustOpened = false;
-
-void EntityInspector::drawGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
+void EntityInspector::draw()
 {
-    gu::profiler::Zone z("entity inspector");
+    gu::profiler::Zone profilerZone("EntityInspector");
 
-    if (showInDropDown)
-        inspectors.push_front(inspectorName);
-    if (pickEntity)
+    if (picker != nullptr)
     {
-        pickEntityGUI(cam, lineRenderer);
+        updatePicking();
+    }
+    else if (KeyInput::justPressed(dibidab::settings.developerKeyInput.inspectEntity))
+    {
+        picker = createPicker();
+    }
+    else if (mover != nullptr)
+    {
+        updateMoving();
+    }
+    else
+    {
+        std::vector<entt::entity> toInspect;
+        engine->entities.view<Inspecting>().each([&] (const entt::entity e, Inspecting &inspecting)
+        {
+            toInspect.push_back(e);
+        });
+
+        for (const entt::entity entity : toInspect)
+        {
+            if (!engine->entities.valid(entity))
+            {
+                continue;
+            }
+            if (Inspecting *inspecting = engine->entities.try_get<Inspecting>(entity))
+            {
+                bool bKeepInspecting = true;
+                bool bDestroyEntity = false;
+                drawInspectWindow(entity, *inspecting, bKeepInspecting, bDestroyEntity);
+                if (!bKeepInspecting)
+                {
+                    engine->entities.remove<Inspecting>(entity);
+                }
+                if (bDestroyEntity)
+                {
+                    engine->entities.destroy(entity);
+                }
+            }
+        }
+    }
+
+    if (KeyInput::justPressed(dibidab::settings.developerKeyInput.createEntity))
+    {
+        ImGui::OpenPopup("Create entity");
+    }
+    if (ImGui::BeginPopup("Create entity"))
+    {
+        drawEntityTemplateSelect();
+        ImGui::EndPopup();
+    }
+
+    if (creatingEntity.fromTemplate != nullptr)
+    {
+        drawCreateEntityFromTemplate();
+    }
+
+    drawMainMenuItem();
+}
+
+EntityInspector::~EntityInspector()
+{
+    delete picker;
+    delete mover;
+}
+
+EntityPicker *EntityInspector::createPicker()
+{
+    return nullptr;
+}
+
+EntityMover *EntityInspector::createMover(const entt::entity entityToMove)
+{
+    return nullptr;
+}
+
+const char *EntityInspector::getUsedTemplateName(entt::entity entity) const
+{
+    if (const LuaScripted *scripted = engine->entities.try_get<LuaScripted>(entity))
+    {
+        if (scripted->usedTemplate != nullptr)
+        {
+            return scripted->usedTemplate->name.c_str();
+        }
+    }
+    return nullptr;
+}
+
+const loaded_asset *EntityInspector::getAssetForTemplate(const EntityTemplate &entityTemplate) const
+{
+    if (const LuaEntityTemplate *luaEntityTemplate = dynamic_cast<const LuaEntityTemplate *>(&entityTemplate))
+    {
+        return luaEntityTemplate->script.getLoadedAsset();
+    }
+    return nullptr;
+}
+
+void EntityInspector::editTemplateAsset(const loaded_asset &templateAsset)
+{
+    CodeEditor::Tab &codeTab = CodeEditor::tabs.emplace_back();
+    codeTab.title = templateAsset.fullPath;
+    codeTab.code = fu::readString(templateAsset.fullPath.c_str());
+    codeTab.languageDefinition = TextEditor::LanguageDefinition::C(); // C syntax highlighting works better than Lua
+    codeTab.save = [&templateAsset] (const CodeEditor::Tab &tab)
+    {
+        fu::writeBinary(templateAsset.fullPath.c_str(), tab.code.c_str(), tab.code.length());
+        AssetManager::loadFile(templateAsset.fullPath, "assets/");
+    };
+    codeTab.revert = [&templateAsset] (CodeEditor::Tab &tab)
+    {
+        tab.code = fu::readString(templateAsset.fullPath.c_str());
+    };
+}
+
+void EntityInspector::updatePicking()
+{
+    const entt::entity pickedEntity = picker->tryPick();
+    if (engine->entities.valid(pickedEntity))
+    {
+        Inspecting &inspecting = engine->entities.assign_or_replace<Inspecting>(pickedEntity);
+        inspecting.nextWindowPos.emplace(MouseInput::mouseX, MouseInput::mouseY);
+        delete picker;
+        picker = nullptr;
+    }
+    if (KeyInput::justPressed(dibidab::settings.developerKeyInput.cancel))
+    {
+        delete picker;
+        picker = nullptr;
+    }
+}
+
+void EntityInspector::updateMoving()
+{
+    if (!mover->update())
+    {
+        delete mover;
+        mover = nullptr;
+    }
+}
+
+void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity)
+{
+    if (inspecting.nextWindowPos.has_value())
+    {
+        ImGui::SetNextWindowPos(inspecting.nextWindowPos.value());
+        inspecting.nextWindowPos.reset();
+    }
+    ImGui::SetNextWindowSize(vec2(500, 680), ImGuiCond_Once);
+
+    std::string inspectWindowTile = "Inspect #" + std::to_string(int(entity));
+    if (const char *templateName = getUsedTemplateName(entity))
+    {
+        inspectWindowTile += " (";
+        inspectWindowTile += templateName;
+        inspectWindowTile += ")";
+    }
+    if (!ImGui::Begin(inspectWindowTile.c_str(), &bKeepInspecting, ImGuiWindowFlags_NoSavedSettings))
+    {
+        ImGui::End();
         return;
     }
-    if (moveEntity)
-    {
-        moveEntityGUI(cam, lineRenderer);
-        return;
-    }
-    if (activeInspector == inspectorName)
-    {
-        pickEntity = KeyInput::justPressed(dibidab::settings.keyInput.inspectEntity);
-        moveEntity = KeyInput::justPressed(dibidab::settings.keyInput.moveEntity);
+    ImGui::BeginChild("EntityOptions", vec2(-1, 36), true);
 
-        if (KeyInput::justPressed(dibidab::settings.keyInput.createEntity))
-        {
-            ImGui::OpenPopup("Create entity");
-            createEntityGUIJustOpened = true;
-        }
+    drawEntityNameField(entity);
 
-        if (ImGui::BeginPopup("Create entity"))
-        {
-            createEntityGUI();
-            ImGui::EndPopup();
-        }
+    ImGui::SameLine();
+    if (ImGui::Button("Move"))
+    {
+        delete mover;
+        mover = createMover(entity);
     }
 
-    entt::entity addInspectingTo = entt::null;
-    reg.view<Inspecting>().each([&](auto e, Inspecting &ins) {
-        drawEntityInspectorGUI(e, ins);
-        if (reg.valid(e) && reg.has<Inspecting>(e) && ins.addInspectingTo != entt::null)
-        {
-            addInspectingTo = ins.addInspectingTo;
-            ins.addInspectingTo = entt::null;
-        }
-    });
-    if (engine.entities.valid(addInspectingTo))
+    ImGui::SameLine();
+    bDestroyEntity = ImGui::Button("Destroy");
+
+    if (EntityTemplate *usedTemplate = getUsedTemplate(entity))
     {
-        engine.entities.get_or_assign<Inspecting>(addInspectingTo);
+        ImGui::SameLine();
+        if (ImGui::Button("Regenerate"))
+        {
+            bDestroyEntity = true;
+            const entt::entity newEntity = usedTemplate->create(engine->entities.has<Persistent>(entity));
+            engine->entities.assign_or_replace<Inspecting>(newEntity).nextWindowPos = ImGui::GetWindowPos();
+        }
     }
 
-    if (creatingTempl)
-        templateArgsGUI();
+    if (engine->entities.has<Brain>(entity))
+    {
+        ImGui::SameLine();
+        if (ImGui::Button("Inspect brain") && !engine->entities.has<BehaviorTreeInspector>(entity))
+        {
+            engine->entities.assign<BehaviorTreeInspector>(entity, *engine, entity);
+        }
+    }
 
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+void EntityInspector::drawEntityNameField(const entt::entity entity)
+{
+    std::string currentName;
+    if (const char *name = engine->getName(entity))
+    {
+        currentName = name;
+    }
+    const int extraBuffer = 128;
+    char *buffer = new char[currentName.length() + extraBuffer]();
+    memcpy(buffer, &currentName[0], currentName.length());
+    ImGui::SetNextItemWidth(120);
+    if (ImGui::InputText("Name", buffer, currentName.length() + extraBuffer)
+        && ImGui::IsItemDeactivatedAfterEdit())
+    {
+        engine->setName(entity, buffer[0] == '\0' ? nullptr : buffer);
+    }
+    delete[] buffer;
+}
+
+void EntityInspector::drawMainMenuItem()
+{
     ImGui::BeginMainMenuBar();
-
-    if (ImGui::BeginMenu(inspectorName.c_str()))
+    if (ImGui::BeginMenu("Inspect"))
     {
-        auto str = std::to_string(reg.alive()) + " entities active";
-        ImGui::MenuItem(str.c_str(), "", false, false);
+        const std::string entitiesAliveStr = std::to_string(engine->entities.alive()) + " Entities alive";
+        ImGui::MenuItem(entitiesAliveStr.c_str(), nullptr, false, false);
 
-        if (ImGui::BeginMenu("Create entity"))
+        if (ImGui::BeginMenu("Create Entity"))
         {
-            createEntityGUI();
+            drawEntityTemplateSelect();
             ImGui::EndMenu();
         }
 
-        pickEntity |= ImGui::MenuItem("Inspect entity", KeyInput::getKeyName(dibidab::settings.keyInput.inspectEntity));
-        moveEntity |= ImGui::MenuItem("Move entity", KeyInput::getKeyName(dibidab::settings.keyInput.moveEntity));
-
-        ImGui::SetNextWindowSize(ImVec2(490, 0));
-        if (ImGui::BeginMenu("Entity tree"))
+        if (ImGui::BeginMenu("Entity Tree"))
         {
-            drawNamedEntitiesTree(cam, lineRenderer);
+            drawEntityRegistryTree();
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Systems"))
+        if (ImGui::BeginMenu("Enabled Systems"))
         {
-            for (auto sys : engine.getSystems())
-                ImGui::MenuItem(sys->name.c_str(), nullptr, &sys->bUpdatesEnabled);
-
+            for (const EntitySystem *system : engine->getSystems())
+            {
+                ImGui::MenuItem(system->name.c_str(), nullptr, system->bUpdatesEnabled);
+            }
             ImGui::EndMenu();
         }
 
         ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
-
-    engine.entities.view<InspectingBrain>(entt::exclude<BehaviorTreeInspector>).each([&] (entt::entity entity, auto)
-    {
-        engine.entities.assign<BehaviorTreeInspector>(entity, engine, entity);
-    });
-
-    engine.entities.view<BehaviorTreeInspector>().each([&] (entt::entity entity, BehaviorTreeInspector &inspector)
-    {
-        engine.entities.get_or_assign<InspectingBrain>(entity);
-        if (!inspector.drawGUI())
-        {
-            engine.entities.remove<BehaviorTreeInspector>(entity);
-            engine.entities.remove<InspectingBrain>(entity);
-        }
-    });
 }
 
-void EntityInspector::drawEntityInspectorGUI(entt::entity e, Inspecting &ins)
+void EntityInspector::drawEntityTemplateSelect()
 {
-    if (!ins.show)
+    static ImGuiTextFilter templateFilter;
+    if (ImGui::IsWindowAppearing())
     {
-        reg.remove<Inspecting>(e);
-        return;
+        templateFilter.Clear();
     }
-    ImGui::SetNextWindowPos(ins.windowPos.x > 0 ? ins.windowPos : ImVec2(MouseInput::mouseX, MouseInput::mouseY), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(500, 680), ImGuiCond_Once);
 
-    std::string title(inspectorName + " Entity #" + std::to_string(int(e)));
-    if (!ImGui::Begin(title.c_str(), &ins.show, ImGuiWindowFlags_NoSavedSettings))
+    if (ImGui::MenuItem("Empty Entity"))
     {
-        // Early out if the window is collapsed, as an optimization.
-        ImGui::End();
-        return;
+        engine->entities.assign<Inspecting>(engine->entities.create());
     }
-
-    if (ImGui::Button("Destroy entity"))
-    {
-        reg.destroy(e);
-        ImGui::End();
-        return;
-    }
-    if (auto *luaScripted = reg.try_get<LuaScripted>(e))
-    {
-        if (luaScripted->usedTemplate != nullptr)
-        {
-            ImGui::SameLine();
-            if (ImGui::Button("Regenerate"))
-            {
-                vec3 pos = engine.getPosition(e);
-
-                bool persistent = reg.try_get<Persistent>(e) != nullptr;
-
-                auto newE = luaScripted->usedTemplate->create(persistent);
-
-                reg.get_or_assign<Inspecting>(newE).windowPos = ImGui::GetWindowPos();
-
-                engine.setPosition(newE, pos);
-
-                reg.destroy(e);
-                ImGui::End();
-                return;
-            }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("This will:\n- Destroy this entity\n- Create a new entity using the '%s' template\n- Copy the position from this entity", luaScripted->usedTemplate->name.c_str());
-        }
-    }
-    if (reg.has<Brain>(e))
-    {
-        ImGui::SameLine();
-        if (ImGui::Button("Inspect brain") && !reg.has<BehaviorTreeInspector>(e))
-        {
-            reg.assign<BehaviorTreeInspector>(e, engine, e);
-        }
-    }
-    {
-        std::string currName;
-        if (auto name = engine.getName(e))
-            currName = name;
-        const int extraBuffer = 1024;
-        char *ptr = new char[currName.length() + extraBuffer]();
-        memcpy(ptr, &currName[0], currName.length());
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(120);
-        if (ImGui::InputText("Name", ptr, currName.length() + extraBuffer))
-            if (ImGui::IsItemDeactivatedAfterEdit())
-                if (!engine.setName(e, ptr[0] == '\0' ? nullptr : ptr))
-                    std::cerr << "Name '" << ptr << "' already in use!" << std::endl;
-        delete[] ptr;
-    }
-
-    // ---- COMPONENTS TREE -------
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
-    ImGui::Columns(2);
-    ImGui::Separator();
-
-    ImGui::Text("Components:");
-    ImGui::NextColumn();
-    std::string addComponentPopupName = "add_component_" + std::to_string(int(e));
-    if (ImGui::Button("Add"))
-        ImGui::OpenPopup(addComponentPopupName.c_str());
-    drawAddComponent(e, ins, addComponentPopupName.c_str());
-
-    ImGui::NextColumn();
-
-    for (auto componentName : ComponentUtils::getAllComponentTypeNames())
-    {
-        auto componentUtils = ComponentUtils::getFor(componentName);
-        if (!componentUtils->entityHasComponent(e, reg)) continue;
-
-        ImGui::PushID(componentName.c_str());
-        ImGui::AlignTextToFramePadding();
-
-        bool dontRemove = true;
-        bool component_open = ImGui::CollapsingHeader(componentName.c_str(), &dontRemove);
-        if (!dontRemove)
-        {
-            componentUtils->removeComponent(e, reg);
-            component_open = false;
-        }
-        ImGui::NextColumn();
-
-        ImGui::NextColumn();
-        if (component_open)
-            drawComponentFieldsTree(e, ins, componentName.c_str(), componentUtils);
-
-        ImGui::PopID();
-    }
-    ImGui::Columns(1);
-    ImGui::PopStyleVar();
-
-    ImGui::End();
-}
-
-void helpMarker(const char* desc)
-{
-    ImGui::TextDisabled("(?)");
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-        ImGui::TextUnformatted(desc);
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-}
-
-bool drawStringInput(std::string &str, Inspecting &ins, bool expandable=true, const char *label="")
-{
-    bool &multiline = ins.getState().multiline;
-
-    ImGui::AlignTextToFramePadding();
-
-    if (expandable)
-    {
-        if (!multiline && ImGui::Button(" v "))
-            multiline = true;
-        else if (multiline && ImGui::Button(" ^ "))
-            multiline  = false;
-    }
-    ImGui::SameLine();
-
-    const int extraBuffer = 1024;
-    char *ptr = new char[str.length() + extraBuffer]();
-    memcpy(ptr, &str[0], str.length());
-    if (
-            ((multiline && expandable) && ImGui::InputTextMultiline(label, ptr, str.length() + extraBuffer))
-            ||
-            (!(multiline && expandable) && ImGui::InputText(label, ptr, str.length() + extraBuffer))
-            )
-    {
-        str = std::string(ptr);
-        return ImGui::IsItemDeactivatedAfterEdit();
-    }
-    delete[] ptr;
-    return false;
-}
-
-bool drawJsonValue(json &value, Inspecting &ins, bool arrayPreview=true, bool readOnly=false)
-{
-    bool changed = false;
-    if (readOnly || (arrayPreview && value.is_array()))
-    {
-        std::string str = value.dump();
-        ImGui::Text("%s", str.c_str());
-    }
-    else if (value.is_number_float())
-    {
-        float v = value;
-        if (changed = ImGui::DragFloat(" ", &v))
-            value = v;
-        ImGui::SameLine();
-        helpMarker("Drag or double-click");
-    }
-    else if (value.is_boolean())
-    {
-        bool v = value;
-        if (changed = ImGui::Checkbox(" ", &v))
-            value = v;
-    }
-    else if (value.is_number_integer())
-    {
-        int v = value;
-        if (changed = ImGui::DragInt(" ", &v))
-            value = v;
-        ImGui::SameLine();
-        helpMarker("Drag or double-click");
-    }
-    else if (value.is_string())
-    {
-        std::string v = value;
-        changed = drawStringInput(v, ins);
-        value = v;
-    }
-    return changed;
-}
-
-bool drawJsonTree(json &obj, Inspecting &ins, bool editStructure=true, bool readOnlyValues=false)
-{
-    bool changed = false;
-    int i = 0;
-    int eraseI = -1;
-    std::string eraseKey, addKey;
-    json addJson;
-    for (auto& [key, value] : obj.items()) { // also works for arrays: keys will be "0", "1", "2", etc.
-
-        ins.currentPath.emplace_back(key);
-        ImGui::PushID(i++);                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
-        ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
-
-        std::string keyStr = key, keyLabel = obj.is_array() ? "[" + key + "]" : (editStructure ? "" : key);
-
-        bool field_open = value.is_structured();
-        if (field_open)
-            field_open = ImGui::TreeNode("Object", "%s", keyLabel.c_str());
-        else
-            ImGui::TreeNodeEx(
-                    "Field", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_None,
-                    "%s", keyLabel.c_str()
-            );
-
-        if (editStructure)
-        {
-            ImGui::SameLine();
-            if (ImGui::Button(" x "))
-            {
-                eraseI = i;
-                eraseKey = key;
-            }
-            if (obj.is_object())
-            {
-                ImGui::SameLine();
-                if (drawStringInput(keyStr, ins, false, "     "))
-                {
-                    eraseI = i;
-                    eraseKey = key;
-                    addKey = keyStr;
-                    addJson = value;
-                }
-            }
-        }
-
-        ImGui::NextColumn();
-        ImGui::AlignTextToFramePadding();
-
-        changed |= drawJsonValue(value, ins, true, readOnlyValues);
-
-        ImGui::NextColumn();
-
-        if (field_open)
-        {
-            changed |= drawJsonTree(value, ins, true, readOnlyValues);
-            ImGui::TreePop();
-        }
-        ImGui::PopID();
-        ins.currentPath.pop_back();
-    }
-    if (editStructure)
-    {
-        ImGui::Separator();
-        ImGui::Text("Add: ");
-        if (obj.is_array())
-        {
-            ImGui::NextColumn();
-            if (changed |= ImGui::Button("float")) obj.push_back(float(0));
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("int")) obj.push_back(int(0));
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("string")) obj.push_back("");
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("bool")) obj.push_back(bool(false));
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("array")) obj.push_back(json::array());
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("object")) obj.push_back(json::object());
-            ImGui::SameLine();
-            ImGui::NextColumn();
-        } else
-        {
-            std::string &newKey = ins.getState().newKey;
-            drawStringInput(newKey, ins, false, "  ");
-
-            ImGui::NextColumn();
-            if (changed |= ImGui::Button("float")) obj[newKey] = float(0);
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("int")) obj[newKey] = int(0);
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("string")) obj[newKey] = "";
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("bool")) obj[newKey] = bool(false);
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("array")) obj[newKey] = json::array();
-            ImGui::SameLine();
-            if (changed |= ImGui::Button("object")) obj[newKey] = json::object();
-            ImGui::SameLine();
-            ImGui::NextColumn();
-        }
-        ImGui::Separator();
-    }
-    if (eraseI > -1)
-    {
-        changed = true;
-        if (obj.is_array()) obj.erase(eraseI - 1);
-        else obj.erase(eraseKey);
-    }
-    if (!addKey.empty())
-    {
-        changed = true;
-        obj[addKey] = addJson;
-    }
-    return changed;
-}
-
-bool drawFieldsTree(
-    EntityEngine &engine,
-    json &valuesArray, const SerializableStructInfo *info, Inspecting &ins,
-    bool readOnly=false, bool forceEditReadOnly=false
-)
-{
-    bool changed = false;
-    for (int i = 0; i < info->nrOfFields; i++)
-    {
-        auto fieldName = info->fieldNames[i];
-        const std::string fieldTypeName = info->fieldTypeNames[i];
-
-        ImGui::PushID(fieldName);                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
-        ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
-
-        json &value = valuesArray[i];
-
-        bool field_open = value.is_structured();
-        if (field_open)
-            field_open = ImGui::TreeNode("Object", "%s", fieldName);
-        else
-            ImGui::TreeNodeEx(
-                    "Field", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_None,
-                    "%s", fieldName
-            );
-
-        ImGui::SameLine();
-        ImGui::Text("%s", fieldTypeName.c_str());
-
-        ImGui::NextColumn();
-        ImGui::AlignTextToFramePadding();
-
-        auto subInfo = SerializableStructInfo::getFor(fieldTypeName.c_str());
-
-        bool subReadOnly = !forceEditReadOnly && readOnly;
-
-        if (fieldTypeName == "PersistentEntityRef")
-        {
-            PersistentEntityRef ref;
-            ref = value;
-            entt::entity resolvedEntity = entt::null;
-            bool bResolved = ref.tryResolve(engine.entities, resolvedEntity);
-
-            if (!bResolved)
-            {
-                ImGui::ButtonEx("Unresolved!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
-            }
-            else if (resolvedEntity == entt::null)
-            {
-                ImGui::ButtonEx("entt::null", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
-            }
-            else if (!engine.entities.valid(resolvedEntity))
-            {
-                ImGui::ButtonEx("Invalid!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
-            }
-            else
-            {
-                std::string btnTxt = "#" + std::to_string(int(resolvedEntity));
-                if (ImGui::Button(btnTxt.c_str()))
-                {
-                    ins.addInspectingTo = resolvedEntity;
-                }
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Persistent Id: %ld", ref.getId());
-            }
-        }
-        else
-        {
-            changed |= drawJsonValue(value, ins, !subInfo, subReadOnly);
-        }
-
-        ImGui::NextColumn();
-        if (field_open)
-        {
-            ins.currentPath.emplace_back(fieldName);
-            if (subInfo)
-                changed |= drawFieldsTree(engine, value, subInfo, ins, subReadOnly);
-            else changed |= drawJsonTree(
-                    value, ins,
-                    !info->structFieldIsFixedSize[i] && !subReadOnly,
-                    subReadOnly
-            );
-            ins.currentPath.pop_back();
-            ImGui::TreePop();
-        }
-        ImGui::PopID();
-    }
-    return changed;
-}
-
-void EntityInspector::drawComponentFieldsTree(entt::entity e, Inspecting &ins, const char *componentName, const ComponentUtils *componentUtils)
-{
-    auto info = SerializableStructInfo::getFor(componentName);
-    json valuesArray;
-    componentUtils->getJsonComponent(valuesArray, e, reg);
-
-    assert(ins.currentPath.empty());
-    ins.currentPath.emplace_back(componentName);
-    if (drawFieldsTree(engine, valuesArray, info, ins))
-    {
-        try {
-            componentUtils->setJsonComponent(valuesArray, e, reg);
-        }
-        catch (std::exception &e) {
-            std::cerr << "Exception after editing component in inspector:\n" << e.what() << std::endl;
-        }
-    }
-    ins.currentPath.pop_back();
-}
-
-void EntityInspector::drawAddComponent(entt::entity e, Inspecting &ins, const char *popupName)
-{
-    if (ImGui::BeginPopup(popupName))
-    {
-        ImGui::Text("Component Type:");
-        ImGui::Separator();
-
-        for (auto typeName : ComponentUtils::getAllComponentTypeNames())
-        {
-            auto utils = ComponentUtils::getFor(typeName);
-            if (utils->entityHasComponent(e, reg))
-                continue;
-            if (ImGui::Selectable(typeName.c_str()))
-            {
-                ins.addingComponentTypeName = typeName;
-                ins.addingComponentJson = utils->getDefaultJsonComponent();
-            }
-        }
-        ImGui::EndPopup();
-    }
-
-    if (ins.addingComponentTypeName.empty()) return;
-
-    ImGui::SetNextWindowPos(ImVec2(MouseInput::mouseX - 200, MouseInput::mouseY - 15), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
-
-    std::string title = "Adding " + ins.addingComponentTypeName + " to entity #" + std::to_string(int(e));
-    bool open = true;
-    ImGui::Begin(title.c_str(), &open, ImGuiWindowFlags_NoSavedSettings);
-
-    ImGui::Text("[Warning]:\nadding components (with wrong values) could crash the game!");
-    ImGui::Columns(2);
-    ImGui::Separator();
-
-    drawFieldsTree(engine, ins.addingComponentJson, SerializableStructInfo::getFor(ins.addingComponentTypeName.c_str()), ins, false);
-
-    ImGui::Columns(1);
-    ImGui::Separator();
-
-    if (ImGui::Button("Add"))
-    {
-        open = false;
-
-        auto utils = ComponentUtils::getFor(ins.addingComponentTypeName);
-        try
-        {
-            utils->setJsonComponent(ins.addingComponentJson, e, reg);
-        } catch (std::exception& e) {
-            std::cerr << "Exception while trying to add component in inspector:\n" << e.what() << std::endl;
-        }
-    }
-    ImGui::End();
-    if (!open)
-        ins.addingComponentTypeName.clear();
-}
-
-bool createPersistent = false;
-
-#define HOVERED_AND_PRESSED_ENTER (ImGui::IsItemHovered() && ImGui::IsKeyPressed(GLFW_KEY_ENTER))
-
-void EntityInspector::createEntityGUI()
-{
-    static ImGuiTextFilter filter;
-    if (ImGui::IsKeyPressed(GLFW_KEY_ESCAPE))
-    {
-        bool close = !filter.IsActive();
-        filter = ImGuiTextFilter();
-        if (close)
-        {
-            ImGui::CloseCurrentPopup();
-            return;
-        }
-    }
-
-    if (ImGui::MenuItem("Empty entity"))
-        reg.assign<Inspecting>(reg.create());
 
     ImGui::Separator();
-    ImGui::MenuItem("From template:", nullptr, false, false);
+    ImGui::TextDisabled("From Template:");
 
-    static bool _ = false;
-    if (_)
+    if (ImGui::IsWindowAppearing())
     {
         ImGui::SetKeyboardFocusHere();
-        _ = false;
     }
-    if (createEntityGUIJustOpened)
+    templateFilter.Draw();
+
+    for (const std::string &templateName : engine->getTemplateNames())
     {
-        _ = true;
-        createEntityGUIJustOpened = false;
-    }
-    filter.Draw("Filter", 200);
-    ImGui::NewLine();
-
-    for (auto &templateName : engine.getTemplateNames())
-    {
-        if (!filter.PassFilter(templateName.c_str()))
-            continue;
-
-        auto name = templateName;
-        const char *description = nullptr;
-
-        auto templ = &engine.getTemplate(templateName);
-        auto luaTempl = dynamic_cast<LuaEntityTemplate *>(templ);
-        if (luaTempl)
+        if (!templateFilter.PassFilter(templateName.c_str()))
         {
-            name = su::split(luaTempl->script.getLoadedAsset()->shortPath, "scripts/entities/").back();
-            if (!luaTempl->getDescription().empty())
-                description = luaTempl->getDescription().c_str();
+            continue;
+        }
+        EntityTemplate &entityTemplate = engine->getTemplate(templateName);
+        const loaded_asset *loadedAsset = getAssetForTemplate(entityTemplate);
+
+        std::vector<std::string> categoryPath;
+
+        // Get category path from loaded asset path, only if we are not filtering. Show flat list otherwise.
+        if (!templateFilter.IsActive() && loadedAsset != nullptr)
+        {
+            categoryPath = su::split(su::split(loadedAsset->shortPath, engine->getTemplateDirectoryPath()).back(), "/");
+            categoryPath.pop_back();
         }
 
-        bool show = true;
-
-        auto dirSplitted = su::split(name, "/");
-
-        int subMenusOpened = 0;
-        if (filter.Filters.empty()) for (int i = 0; i < dirSplitted.size() - 1; i++)
+        int categoriesOpened = 0;
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+        for (const std::string &category : categoryPath)
         {
-            if (i == 0 && dirSplitted[0] == createEntity_showSubFolder)
-                continue;
-
-            ImGui::SetNextWindowContentSize(ImVec2(240, 0));
-            if (!ImGui::BeginMenu(dirSplitted[i].c_str()))
+            if (ImGui::BeginMenu(category.c_str()))
             {
-                show = false;
+                categoriesOpened++;
+            }
+            else
+            {
                 break;
             }
-            else subMenusOpened++;
         }
+        ImGui::PopStyleColor();
 
-        if (show)
+        const bool bShowTemplateItem = categoriesOpened == categoryPath.size();
+
+        if (bShowTemplateItem && ImGui::BeginMenu(templateName.c_str()))
         {
-            ImGui::Columns(2, nullptr, false);
-            ImGui::SetColumnWidth(0, 120);
-            ImGui::SetColumnWidth(1, 120);
-
-            bool create = false;
-
-            if (ImGui::MenuItem(dirSplitted.back().c_str(), nullptr) || HOVERED_AND_PRESSED_ENTER)
+            if (!entityTemplate.getDescription().empty())
             {
-                create = true;
-                createPersistent = false;
+                ImGui::TextDisabled("%s", entityTemplate.getDescription().c_str());
+                ImGui::Separator();
             }
-
-            if (description && ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", description);
-
-            ImGui::NextColumn();
-            if (!createEntity_persistentOption)
+            if (ImGui::MenuItem("Create"))
             {
-                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+                creatingEntity = {
+                    &entityTemplate,
+                    false
+                };
             }
-            if (ImGui::Button(("Persistent###pers_" + name).c_str()) || HOVERED_AND_PRESSED_ENTER)
+            if (ImGui::MenuItem("Create Persistent"))
             {
-                create = true;
-                createPersistent = true;
+                creatingEntity = {
+                    &entityTemplate,
+                    true
+                };
             }
-            if (!createEntity_persistentOption)
+            if (loadedAsset != nullptr && ImGui::MenuItem("Edit Script"))
             {
-                ImGui::PopItemFlag();
-                ImGui::PopStyleVar();
+                editTemplateAsset(*loadedAsset);
             }
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Save the created entity to level file");
-
-            if (luaTempl)
-            {
-                ImGui::SameLine();
-                auto str = "Edit###edit_" + name;
-                if (ImGui::Button(str.c_str()) || HOVERED_AND_PRESSED_ENTER)
-                    editLuaScript(luaTempl);
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Edit the Lua script for this entity");
-            }
-
-            ImGui::Columns(1);
-
-            if (create)
-                createEntity(dirSplitted.back());
-        }
-
-        for (int i = 0; i < subMenusOpened; i++)
             ImGui::EndMenu();
-    }
-}
+        }
 
-void EntityInspector::createEntity(const std::string &templateName)
-{
-    auto templ = &engine.getTemplate(templateName);
-
-    auto *luaTempl = dynamic_cast<LuaEntityTemplate *>(templ);
-
-    if (luaTempl && !luaTempl->getDefaultArgs().empty())
-    {
-        creatingTempl = luaTempl;
-        creatingTemplArgs = luaTempl->getDefaultArgs();
-    }
-    else
-    {
-        moveEntity = true;
-        movingEntity = templ->create(createPersistent);
-    }
-}
-
-void EntityInspector::templateArgsGUI()
-{
-    ImGui::SetNextWindowPos(ImVec2(MouseInput::mouseX - 200, MouseInput::mouseY - 15), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
-
-    const std::string &name = creatingTempl->script.getLoadedAsset()->shortPath;
-    std::string title = "Creating " + name;
-    bool open = !ImGui::IsKeyPressed(GLFW_KEY_ESCAPE);
-    ImGui::Begin(title.c_str(), &open, ImGuiWindowFlags_NoSavedSettings);
-
-    ImGui::Columns(2);
-    ImGui::Separator();
-
-    static Inspecting ins;
-    drawJsonTree(creatingTemplArgs, ins, false);
-
-    ImGui::Columns(1);
-    ImGui::Separator();
-
-    if (createEntity_persistentOption)
-    {
-        ImGui::Checkbox("Persistent", &createPersistent);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Save the created entity to level file");
-    }
-
-    if (ImGui::Button("Create") || HOVERED_AND_PRESSED_ENTER)
-    {
-        open = false;
-        auto e = reg.create();
-        creatingTempl->createComponentsWithJsonArguments(e, creatingTemplArgs, createPersistent);
-        moveEntity = true;
-        movingEntity = e;
-    }
-    ImGui::SetItemDefaultFocus();
-
-    ImGui::End();
-    if (!open)
-    {
-        creatingTempl = nullptr;
-        creatingTemplArgs.clear();
-    }
-}
-
-void EntityInspector::editLuaScript(LuaEntityTemplate *luaTemplate)
-{
-    auto script = luaTemplate->script;
-    for (auto &t : CodeEditor::tabs)
-        if (t.title == script.getLoadedAsset()->fullPath)
-            return;
-
-    auto &tab = CodeEditor::tabs.emplace_back();
-    tab.title = script.getLoadedAsset()->fullPath;
-    tab.code = fu::readString(script.getLoadedAsset()->fullPath.c_str());
-    tab.languageDefinition = TextEditor::LanguageDefinition::C(); // the lua definition is pretty broken
-    tab.save = [script] (auto &tab) {
-
-        fu::writeBinary(script.getLoadedAsset()->fullPath.c_str(), tab.code.data(), tab.code.length()); // todo: why is this called writeBINARY? lol
-
-        AssetManager::loadFile(script.getLoadedAsset()->fullPath, "assets/");
-    };
-    tab.revert = [script] (auto &tab) {
-        tab.code = fu::readString(script.getLoadedAsset()->fullPath.c_str());
-    };
-}
-
-void EntityInspector::drawInspectingDropDown()
-{
-    if (inspectors.empty())
-        return;
-
-    if (inspectors.size() == 1)
-    {
-        activeInspector = inspectors.front();
-        inspectors.clear();
-        return;
-    }
-
-    ImGui::Text("    Inspecting:");
-    ImGui::SetNextItemWidth(120);
-
-    auto prevInspector = activeInspector;
-    activeInspector.clear();
-
-    bool draw = ImGui::BeginCombo("    ", prevInspector.c_str());
-    for (auto &name : inspectors)
-    {
-        if (activeInspector.empty() || prevInspector == name)
-            activeInspector = name;
-
-        if (draw && ImGui::Selectable(name.c_str()))
+        for (int i = 0; i < categoriesOpened; i++)
         {
-            activeInspector = name;
-            break;
+            ImGui::EndMenu();
         }
     }
-
-    if (draw)
-        ImGui::EndCombo();
-
-    inspectors.clear();
 }
 
-void EntityInspector::pickEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
-{
-    pickEntity = false;
-}
 
-void EntityInspector::moveEntityGUI(const Camera *cam, DebugLineRenderer &lineRenderer)
+void EntityInspector::drawEntityRegistryTree()
 {
-    moveEntity = false;
-}
+    drawInspectById();
 
-void EntityInspector::highLightEntity(entt::entity, const Camera *, DebugLineRenderer &)
-{
-    // :)
-}
+    ImGui::Separator();
 
-void EntityInspector::drawNamedEntitiesTree(const Camera *cam, DebugLineRenderer &lineRenderer)
-{
+    static ImGuiTextFilter nameFilter;
+    static ImGuiTextFilter templateFilter;
+    if (ImGui::IsWindowAppearing())
     {
-        static int inspectByID = 0;
-        ImGui::SetNextItemWidth(100);
-        ImGui::InputInt("Inspect by ID", &inspectByID);
-        ImGui::SameLine();
-        bool valid = reg.valid(entt::entity(inspectByID));
-        bool inspect = ImGui::Button("Inspect");
-        if (ImGui::IsItemHovered() && !valid)
-            ImGui::SetTooltip("Entity #%d does not exist!", int(inspectByID));
-        if (inspect && valid)
-            engine.entities.assign_or_replace<Inspecting>(entt::entity(inspectByID));
+        nameFilter.Clear();
+        templateFilter.Clear();
     }
+    ImGui::TextDisabled("Filter (inc,-exc):");
+    nameFilter.Draw("Name");
+    templateFilter.Draw("Template");
 
-    ImGui::Columns(2, nullptr, false);
+    ImGui::Columns(2, NULL, false);
     ImGui::SetColumnWidth(0, 400);
-    ImGui::Separator();
 
-    struct funcs
+    std::function<void(entt::entity, const std::string &name)> drawEntity;
+
+    drawEntity = [&] (const entt::entity entity, const std::string &name)
     {
-        static void showEntity(const std::string &name, entt::entity e, EntityEngine &engine)
+        ImGui::PushID(name.c_str());
+        const Parent *parentComponent = engine->entities.try_get<Parent>(entity);
+        const bool bIsParent = parentComponent != nullptr;
+        bool bShowChildren = false;
+        bool bWasShowingChildren = ImGui::TreeNodeBehaviorIsOpen(ImGui::GetID(name.c_str()));
+
+        if (bIsParent)
         {
-            ImGui::PushID(&name);                      // Use object uid as identifier. Most commonly you could also use the object pointer as a base ID.
-            ImGui::AlignTextToFramePadding();  // Text and Tree nodes are less high than regular widgets, here we add vertical spacing to make the tree lines equal high.
-
-            Parent *isParent = engine.entities.try_get<Parent>(e);
-            bool node_open = false;
-
-            if (!isParent)
-                ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_None);
-            else
-                node_open = ImGui::TreeNode(name.c_str());
-
-            LuaScripted *luaScripted = engine.entities.try_get<LuaScripted>(e);
-            if (luaScripted && luaScripted->usedTemplate)
-            {
-                ImGui::SameLine();
-                ImGui::TextDisabled("Lua: %s", luaScripted->usedTemplate->name.c_str());
-            }
-
-            ImGui::NextColumn();
-            ImGui::AlignTextToFramePadding();
-            if (ImGui::Button(std::to_string(int(e)).c_str()))
-                engine.entities.assign_or_replace<Inspecting>(e);
-            ImGui::NextColumn();
-            if (node_open && isParent)
-            {
-                for (auto &[childName, child] : isParent->childrenByName)
-                {
-                    std::string childNameStr;
-                    if (auto globalName = engine.getName(child))
-                    {
-                        childNameStr = globalName;
-                        childNameStr += " ";
-                    }
-                    childNameStr += "[child '" + childName + "']";
-                    funcs::showEntity(childNameStr, child, engine);
-                }
-                ImGui::TreePop();
-            }
-            ImGui::PopID();
+            bShowChildren = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_OpenOnArrow);
         }
+        else
+        {
+            ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
+        }
+
+        if (ImGui::IsItemClicked() && bShowChildren == bWasShowingChildren)
+        {
+            engine->entities.assign_or_replace<Inspecting>(entity);
+        }
+
+        if (const char *templateName = getUsedTemplateName(entity))
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled("(%s)", templateName);
+        }
+
+        if (bIsParent && bShowChildren)
+        {
+            for (auto &[childName, childEntity] : parentComponent->childrenByName)
+            {
+                std::string displayChildName = "";
+                if (const char *globalChildName = engine->getName(childEntity))
+                {
+                    displayChildName = globalChildName;
+                    displayChildName += " ";
+                }
+                displayChildName += "[child '" + childName + "']";
+                drawEntity(childEntity, displayChildName);
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
     };
 
-    for (auto &[name, e] : engine.getNamedEntities())
-        funcs::showEntity(name, e, engine);
-
-    ImGui::Columns(1);
+    for (auto &[name, entity] : engine->getNamedEntities())
+    {
+        bool bPassedFilters = true;
+        if (templateFilter.IsActive())
+        {
+            if (const char *templateName = getUsedTemplateName(entity))
+            {
+                bPassedFilters &= templateFilter.PassFilter(templateName);
+            }
+            else
+            {
+                for (const ImGuiTextFilter::ImGuiTextRange &filter : templateFilter.Filters)
+                {
+                    // If we have an including-filter, exclude all without a template.
+                    // But if we only have excluding-filters, include all without a template.
+                    if (*filter.b != '-')
+                    {
+                        bPassedFilters = false;
+                        break;
+                    }
+                }
+            }
+        }
+        bPassedFilters &= nameFilter.PassFilter(name.c_str());
+        if (bPassedFilters)
+        {
+            drawEntity(entity, name);
+        }
+    }
 }
-#endif
+
+void EntityInspector::drawInspectById()
+{
+    bool bHovered = false;
+
+    static int id = 0;
+    ImGui::SetNextItemWidth(100);
+    ImGui::InputInt("Inspect by ID", &id);
+    bHovered |= ImGui::IsItemHovered();
+
+    ImGui::SameLine();
+
+    const entt::entity entity = entt::entity(id);
+    const bool bValid = engine->entities.valid(entity);
+
+    if (ImGui::Button("Inspect") && bValid)
+    {
+        engine->entities.get_or_assign<Inspecting>(entity);
+    }
+    bHovered |= ImGui::IsItemHovered();
+
+    if (bHovered)
+    {
+        if (bValid)
+        {
+            std::string entityDescription = "#" + std::to_string(id);
+            if (const char *name = engine->getName(entity))
+            {
+                entityDescription += " '";
+                entityDescription += name;
+                entityDescription += "'";
+            }
+            if (const char *templateName = getUsedTemplateName(entity))
+            {
+                entityDescription += " (";
+                entityDescription += templateName;
+                entityDescription += ")";
+            }
+            ImGui::SetTooltip("%s", entityDescription.c_str());
+        }
+        else
+        {
+            ImGui::SetTooltip("#%d does not exist!", id);
+        }
+    }
+}
+
+void EntityInspector::drawCreateEntityFromTemplate()
+{
+    LuaEntityTemplate *luaTemplate = dynamic_cast<LuaEntityTemplate *>(creatingEntity.fromTemplate);
+    if (luaTemplate == nullptr || luaTemplate->getDefaultArgs().empty())
+    {
+        creatingEntity.fromTemplate->create(creatingEntity.bPersistent);
+        creatingEntity = CreatingEntity();
+        return;
+    }
+
+    static json args;
+
+    static LuaEntityTemplate *prevLuaTemplate = nullptr;
+    if (prevLuaTemplate != luaTemplate)
+    {
+        prevLuaTemplate = luaTemplate;
+        args = luaTemplate->getDefaultArgs();
+    }
+
+    ImGui::SetNextWindowPos(vec2(MouseInput::mouseX - 200, MouseInput::mouseY - 15), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(vec2(400, 300), ImGuiCond_Once);
+
+    const std::string title = "Creating " + luaTemplate->name;
+    bool bOpen = true;
+    if (ImGui::Begin(title.c_str(), &bOpen, ImGuiWindowFlags_NoSavedSettings))
+    {
+        // TODO: Json tree.
+        ImGui::Separator();
+        ImGui::Checkbox("Persistent", &creatingEntity.bPersistent);
+        ImGui::Checkbox("Inspect on Create", &creatingEntity.bInspectOnCreate);
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Save the created entity to level file");
+        }
+        if (ImGui::Button("Create"))
+        {
+            bOpen = false;
+
+            const entt::entity createdEntity = engine->entities.create();
+            luaTemplate->createComponentsWithJsonArguments(createdEntity, args, creatingEntity.bPersistent);
+            if (creatingEntity.bInspectOnCreate)
+            {
+                engine->entities.assign_or_replace<Inspecting>(createdEntity);
+            }
+        }
+    }
+    ImGui::End();
+
+    if (!bOpen)
+    {
+        creatingEntity = CreatingEntity();
+    }
+}
+
+void EntityInspector::drawBehaviorTreeInspectors()
+{
+    engine->entities.view<InspectingBrain>(entt::exclude<BehaviorTreeInspector>).each([&] (entt::entity entity, auto)
+    {
+        engine->entities.assign<BehaviorTreeInspector>(entity, *engine, entity);
+    });
+
+    engine->entities.view<BehaviorTreeInspector>().each([&] (entt::entity entity, BehaviorTreeInspector &inspector)
+    {
+        engine->entities.get_or_assign<InspectingBrain>(entity);
+        if (!inspector.drawGUI())
+        {
+            engine->entities.remove<BehaviorTreeInspector>(entity);
+            engine->entities.remove<InspectingBrain>(entity);
+        }
+    });
+}
+
+EntityTemplate *EntityInspector::getUsedTemplate(entt::entity entity) const
+{
+    if (const LuaScripted *scripted = engine->entities.try_get<LuaScripted>(entity))
+    {
+        if (scripted->usedTemplate != nullptr)
+        {
+            return scripted->usedTemplate;
+        }
+    }
+    return nullptr;
+}

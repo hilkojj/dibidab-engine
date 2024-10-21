@@ -22,10 +22,10 @@ inline void setImGuiStyleAndConfig()
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
 
-    if (!dibidab::settings.graphics.imGuiFont.empty())
+    if (!dibidab::settings.graphics.fontPath.empty())
     {
-        ImGui::GetIO().Fonts->AddFontFromFileTTF(dibidab::settings.graphics.imGuiFont.c_str(),
-            dibidab::settings.graphics.imGuiFontSize, dibidab::settings.graphics.imGuiFontConfig);
+        ImGui::GetIO().Fonts->AddFontFromFileTTF(dibidab::settings.graphics.fontPath.c_str(),
+            dibidab::settings.graphics.fontSize, dibidab::settings.graphics.imGuiFontConfig);
     }
     ImGui::GetIO().Fonts->AddFontDefault();
 
@@ -38,11 +38,11 @@ inline void setImGuiStyleAndConfig()
     ImVec4* colors = style.Colors;
 
     auto
-        TextColor = dibidab::settings.graphics.imGuiThemeColor_text,
-        BackGroundColor = dibidab::settings.graphics.imGuiThemeColor_background,
-        MainColor = dibidab::settings.graphics.imGuiThemeColor_main,
-        MainAccentColor = dibidab::settings.graphics.imGuiThemeColor_mainAccent,
-        HighlightColor = dibidab::settings.graphics.imGuiThemeColor_highLight;
+        TextColor = vec3(244, 241, 222),
+        BackGroundColor = vec3(37, 33, 49),
+        MainColor = vec3(218, 17, 94),
+        MainAccentColor = vec3(121, 35, 89),
+        HighlightColor = vec3(199, 239, 0);
 
     colors[ImGuiCol_Text]					= GetColor(TextColor);
     colors[ImGuiCol_TextDisabled]			= Disabled(colors[ImGuiCol_Text]);

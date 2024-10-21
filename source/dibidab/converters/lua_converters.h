@@ -2,7 +2,7 @@
 #include "luau.h"
 #include "entt/entity/registry.hpp"
 
-#include "asset_manager/asset.h"
+#include "assets/asset.h"
 #include "json.hpp"
 
 /////////// asset<>

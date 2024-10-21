@@ -7,7 +7,7 @@
 #include "../rendering/ImGuiStyle.h"
 
 #include <graphics/textures/texture.h>
-#include <asset_manager/AssetManager.h>
+#include <assets/AssetManager.h>
 
 #include <gu/game_utils.h>
 #include <gu/game_config.h>
@@ -62,7 +62,7 @@ void showDeveloperOptionsMenuBar()
     {
         ImGui::MenuItem(
             "Show developer options",
-            KeyInput::getKeyName(dibidab::settings.keyInput.toggleDeveloperOptions),
+            KeyInput::getKeyName(dibidab::settings.developerKeyInput.toggleDeveloperOptions),
             &dibidab::settings.bShowDeveloperOptions
         );
 
@@ -72,7 +72,7 @@ void showDeveloperOptionsMenuBar()
             ImGui::MenuItem("VSync", "", &bVSync);
             gu::setVSync(bVSync);
 
-            ImGui::MenuItem("Fullscreen", KeyInput::getKeyName(dibidab::settings.keyInput.toggleFullscreen), &gu::bFullscreen);
+            ImGui::MenuItem("Fullscreen", KeyInput::getKeyName(dibidab::settings.developerKeyInput.toggleFullscreen), &gu::bFullscreen);
 
             if (ImGui::BeginMenu("Edit shader"))
             {
@@ -155,13 +155,13 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
 
     config.width = dibidab::settings.graphics.windowSize.x;
     config.height = dibidab::settings.graphics.windowSize.y;
-    config.bVSync = dibidab::settings.graphics.vsync;
+    config.bVSync = dibidab::settings.graphics.bVSync;
     config.samples = 0;
-    config.bPrintOpenGLMessages = dibidab::settings.graphics.printOpenGLMessages;
-    config.bPrintOpenGLErrors = dibidab::settings.graphics.printOpenGLErrors;
+    config.bPrintOpenGLMessages = dibidab::settings.graphics.bPrintOpenGLMessages;
+    config.bPrintOpenGLErrors = dibidab::settings.graphics.bPrintOpenGLErrors;
     config.openGLMajorVersion = dibidab::settings.graphics.openGLMajorVersion;
     config.openGLMinorVersion = dibidab::settings.graphics.openGLMinorVersion;
-    gu::bFullscreen = dibidab::settings.graphics.fullscreen; // dont ask me why this is not in config
+    gu::bFullscreen = dibidab::settings.graphics.bFullscreen; // dont ask me why this is not in config
     if (!gu::init(config))
         throw gu_err("Error while initializing gu");
 
@@ -196,7 +196,7 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
         if (currSession)
             currSession->update(deltaTime);
 
-        if (KeyInput::justPressed(dibidab::settings.keyInput.reloadAssets) && dibidab::settings.bShowDeveloperOptions)
+        if (KeyInput::justPressed(dibidab::settings.developerKeyInput.reloadAssets) && dibidab::settings.bShowDeveloperOptions)
             AssetManager::loadDirectory("assets", true);
 
         {
@@ -208,14 +208,14 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
         }
 
         {
-            dibidab::settings.graphics.vsync = gu::getVSync();
-            dibidab::settings.graphics.fullscreen = gu::bFullscreen;
+            dibidab::settings.graphics.bVSync = gu::getVSync();
+            dibidab::settings.graphics.bFullscreen = gu::bFullscreen;
         }
 
-        if (KeyInput::justPressed(dibidab::settings.keyInput.toggleDeveloperOptions))
+        if (KeyInput::justPressed(dibidab::settings.developerKeyInput.toggleDeveloperOptions))
             dibidab::settings.bShowDeveloperOptions ^= 1;
 
-        if (KeyInput::justPressed(dibidab::settings.keyInput.toggleFullscreen))
+        if (KeyInput::justPressed(dibidab::settings.developerKeyInput.toggleFullscreen))
             gu::bFullscreen = !gu::bFullscreen;
 
         if (dibidab::settings.bShowDeveloperOptions)

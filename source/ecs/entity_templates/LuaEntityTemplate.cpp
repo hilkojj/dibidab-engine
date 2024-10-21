@@ -3,7 +3,7 @@
 #include "LuaEntityTemplate.h"
 #include "../components/LuaScripted.dibidab.h"
 
-#include <asset_manager/AssetManager.h>
+#include <assets/AssetManager.h>
 #include <utils/string_utils.h>
 
 
@@ -177,10 +177,8 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
     }
 }
 
-const std::string &LuaEntityTemplate::getDescription()
+const std::string &LuaEntityTemplate::getDescription() const
 {
-    if (script.hasReloaded())
-        runScript();
     return description;
 }
 

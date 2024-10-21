@@ -4,7 +4,6 @@
 #include "EntityObserver.h"
 
 #include "systems/KeyEventsSystem.h"
-#include "systems/AnimationSystem.h"
 #include "systems/TimeOutSystem.h"
 #include "entity_templates/LuaEntityTemplate.h"
 
@@ -13,7 +12,7 @@
 
 #include "../dibidab/component.h"
 
-#include <asset_manager/AssetManager.h>
+#include <assets/AssetManager.h>
 #include <gu/profiler.h>
 #include <utils/string_utils.h>
 #include <utils/hashing.h>
@@ -30,6 +29,11 @@ void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
 TimeOutSystem *EntityEngine::getTimeOuts()
 {
     return timeOutSystem;
+}
+
+const std::string &EntityEngine::getTemplateDirectoryPath() const
+{
+    return templateDirectoryPath;
 }
 
 EntityTemplate &EntityEngine::getTemplate(std::string name)
@@ -122,9 +126,8 @@ void EntityEngine::initialize()
 {
     assert(!bInitialized);
 
-    addSystem(new AnimationSystem("animations"));
-    addSystem(new KeyEventsSystem("key listeners"));
-    timeOutSystem = new TimeOutSystem("timeouts");
+    addSystem(new KeyEventsSystem("Key Listeners"));
+    timeOutSystem = new TimeOutSystem("Timeouts");
     addSystem(timeOutSystem);
 
     entities.on_construct<Child>().connect<&EntityEngine::onChildCreation>(this);
@@ -144,7 +147,7 @@ void EntityEngine::initialize()
         if (registered[shortPath])
             continue;
 
-        if (su::startsWith(el.first, templateFolder))
+        if (su::startsWith(el.first, templateDirectoryPath))
         {
             registerLuaEntityTemplate(shortPath);
             registered[shortPath] = true;
@@ -182,16 +185,16 @@ void EntityEngine::initializeLuaEnvironment()
     env["currentEngine"] = env;
     env[LUA_ENV_PTR_NAME] = this;
 
-    env["valid"] = [&](entt::entity e)
+    env["valid"] = [&] (entt::entity e)
     {
         return entities.valid(e);
     };
 
-    env["setName"] = [&](entt::entity e, sol::optional<const char *> name)
+    env["setName"] = [&] (entt::entity e, sol::optional<const char *> name)
     {
         return setName(e, name.has_value() ? name.value() : nullptr);
     };
-    env["getName"] = [&](entt::entity e) -> sol::optional<std::string>
+    env["getName"] = [&] (entt::entity e) -> sol::optional<std::string>
     {
         if (Named *named = entities.try_get<Named>(e))
             return named->name_dont_change;
@@ -224,34 +227,34 @@ void EntityEngine::initializeLuaEnvironment()
         return result;
     };
 
-    env["setComponent"] = [&](entt::entity entity, const sol::table &component)
+    env["setComponent"] = [&] (entt::entity entity, const sol::table &component)
     {
         setComponentFromLua(entity, component, entities);
     };
 
-    env["setComponents"] = [&](entt::entity entity, const sol::table &componentsTable)
+    env["setComponents"] = [&] (entt::entity entity, const sol::table &componentsTable)
     {
         for (const auto &[i, comp] : componentsTable)
             setComponentFromLua(entity, comp, entities);
     };
 
-    env["createEntity"] = [&]() -> entt::entity
+    env["createEntity"] = [&] () -> entt::entity
     {
         return entities.create();
     };
-    env["destroyEntity"] = [&](entt::entity e)
+    env["destroyEntity"] = [&] (entt::entity e)
     {
         entities.destroy(e);
     };
-    env["createChild"] = [&](entt::entity parentEntity, sol::optional<std::string> childName) -> entt::entity
+    env["createChild"] = [&] (entt::entity parentEntity, sol::optional<std::string> childName) -> entt::entity
     {
         return createChild(parentEntity, childName.value_or("").c_str());
     };
-    env["getChild"] = [&](entt::entity parentEntity, const char *childName) -> entt::entity
+    env["getChild"] = [&] (entt::entity parentEntity, const char *childName) -> entt::entity
     {
         return getChildByName(parentEntity, childName);
     };
-    env["applyTemplate"] = [&](entt::entity extendE, const char *templateName, const sol::optional<sol::table> &extendArgs, sol::optional<bool> persistent)
+    env["applyTemplate"] = [&] (entt::entity extendE, const char *templateName, const sol::optional<sol::table> &extendArgs, sol::optional<bool> persistent)
     {
         auto entityTemplate = &getTemplate(templateName); // could throw error :)
 
@@ -265,18 +268,18 @@ void EntityEngine::initializeLuaEnvironment()
             entityTemplate->createComponents(extendE, makePersistent);
     };
 
-    env["onEntityEvent"] = [&](entt::entity entity, const char *eventName, const sol::function &listener)
+    env["onEntityEvent"] = [&] (entt::entity entity, const char *eventName, const sol::function &listener)
     {
 
         auto &emitter = entities.get_or_assign<EventEmitter>(entity);
         emitter.on(eventName, listener);
     };
-    env["onEvent"] = [&](const char *eventName, const sol::function &listener)
+    env["onEvent"] = [&] (const char *eventName, const sol::function &listener)
     {
         events.on(eventName, listener);
     };
 
-    env["setTimeout"] = [&](entt::entity e, float time, const sol::function &func)
+    env["setTimeout"] = [&] (entt::entity e, float time, const sol::function &func)
     {
         auto &f = entities.get_or_assign<LuaScripted>(e).timeoutFuncs.emplace_back();
         f.timer = time;

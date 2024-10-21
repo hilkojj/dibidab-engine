@@ -1,7 +1,7 @@
 
 #include "LuaScriptsSystem.h"
 
-#include <asset_manager/AssetManager.h>
+#include <assets/AssetManager.h>
 
 // https://github.com/skypjack/entt/issues/17
 

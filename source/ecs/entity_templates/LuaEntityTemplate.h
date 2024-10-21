@@ -15,7 +15,7 @@ class LuaEntityTemplate : public EntityTemplate
 
     LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *);
 
-    const std::string &getDescription() override;
+    const std::string &getDescription() const override;
 
     json getDefaultArgs();
 

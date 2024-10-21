@@ -33,7 +33,7 @@ class EntityEngine
     std::list<EntitySystem *> systems;
     std::map<int, EntityTemplate *> entityTemplates;
     std::vector<std::string> entityTemplateNames;
-    std::string templateFolder = "scripts/entities/";
+    std::string templateDirectoryPath = "scripts/entities/";
 
     virtual void initializeLuaEnvironment();
 
@@ -68,6 +68,8 @@ class EntityEngine
     }
 
     TimeOutSystem *getTimeOuts();
+
+    const std::string &getTemplateDirectoryPath() const;
 
     // TODO: remove: not used:
     template <class EntityTemplate_>

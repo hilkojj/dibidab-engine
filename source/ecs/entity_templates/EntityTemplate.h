@@ -23,7 +23,7 @@ class EntityTemplate
 
   public:
 
-    virtual const std::string &getDescription();
+    virtual const std::string &getDescription() const;
 
     entt::entity create(bool persistent=false);
 

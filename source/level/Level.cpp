@@ -98,7 +98,7 @@ void Level::update(double deltaTime)
 
 Level::~Level()
 {
-    if (saveOnDestruct)
+    if (bSaveOnDestruct)
         save(loadedFromFile.empty() ? DEFAULT_LEVEL_PATH : loadedFromFile.c_str());
 
     for (auto r : rooms)

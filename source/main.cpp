@@ -19,18 +19,18 @@ int main(int argc, char *argv[])
     dibidab::setCurrentSession(&session);
     session.join("yoooooooooooooo");
 
-    Level level("test_level.lvl");
-    Room room;
-    level.addRoom(&room);
+    Level level;
+    level.bSaveOnDestruct = false;
+    Room *room = new Room;
+    level.addRoom(room);
 
     session.setLevel(&level);
 
-    EntityInspector inspector(room, "room inspector");
-    DebugLineRenderer lineRenderer;
+    EntityInspector inspector(*room);
 
     auto renderInspector = gu::beforeRender += [&] (double deltaTime)
     {
-        inspector.drawGUI(nullptr, lineRenderer);
+        inspector.draw();
     };
 
     dibidab::run();

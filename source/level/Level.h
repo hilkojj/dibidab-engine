@@ -33,7 +33,7 @@ class Level
     static std::function<Room *(const json &)> customRoomLoader;
 
     const std::string loadedFromFile;
-    bool saveOnDestruct = true;
+    bool bSaveOnDestruct = true;
 
     std::string spawnRoom;
 

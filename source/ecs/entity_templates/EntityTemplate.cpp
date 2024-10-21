@@ -1,10 +1,9 @@
 #include "EntityTemplate.h"
 #include "../EntityEngine.h"
 
-const std::string &EntityTemplate::getDescription()
+const std::string &EntityTemplate::getDescription() const
 {
-    static const std::string defaultDescription = "";
-    return defaultDescription;
+    return "";
 }
 
 entt::entity EntityTemplate::create(bool persistent)
