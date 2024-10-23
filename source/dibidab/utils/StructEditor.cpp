@@ -84,7 +84,9 @@ bool StructEditor::drawKeyValue(json &key, json &value, const std::string &keyTy
     {
         // Show field for editing key:
         ImGui::SetNextItemWidth(72);
+        ImGui::PushID("Key");
         bEdited |= drawField(key, keyType);
+        ImGui::PopID();
         ImGui::SameLine();
     }
 
@@ -140,6 +142,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
     else if (isVecType(valueType, vecSize, vecDataType) && value.is_array() && value.size() == vecSize)
     {
         const float widthPerInput = ImGui::CalcItemWidth() / vecSize;
+        json editedVec = value;
         for (int i = 0; i < vecSize; i++)
         {
             ImGui::PushID(i);
@@ -153,8 +156,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
                 float floatValue = value[i];
                 if (ImGui::InputScalar("", vecDataType, &floatValue))
                 {
-                    value[i] = floatValue;
-                    bEdited = true;
+                    editedVec[i] = floatValue;
                 }
             }
             else if (vecDataType == ImGuiDataType_U8 || vecDataType == ImGuiDataType_U16 || vecDataType == ImGuiDataType_U32 || vecDataType == ImGuiDataType_U64)
@@ -162,8 +164,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
                 uint64 uintValue = value[i];
                 if (ImGui::InputScalar("", ImGuiDataType_U64, &uintValue))
                 {
-                    value[i] = uintValue;
-                    bEdited = true;
+                    editedVec[i] = uintValue;
                 }
             }
             else
@@ -171,9 +172,13 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
                 int64 intValue = value[i];
                 if (ImGui::InputScalar("", ImGuiDataType_S64, &intValue))
                 {
-                    value[i] = intValue;
-                    bEdited = true;
+                    editedVec[i] = intValue;
                 }
+            }
+            if (ImGui::IsItemDeactivatedAfterEdit())
+            {
+                bEdited = true;
+                value = editedVec;
             }
             ImGui::PopID();
         }
@@ -190,7 +195,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
     else if (value.is_number_float())
     {
         float floatValue = value;
-        if (ImGui::DragFloat("", &floatValue))
+        if ((ImGui::DragFloat("##FloatDrag", &floatValue) && !ImGui::TempInputIsActive(ImGui::GetID("##FloatDrag"))) || ImGui::IsItemDeactivatedAfterEdit())
         {
             value = floatValue;
             bEdited = true;
@@ -199,7 +204,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
     else if (value.is_number_unsigned())
     {
         uint64 uintValue = value;
-        if (ImGui::InputScalar("", ImGuiDataType_U64, &uintValue))
+        if (ImGui::InputScalar("", ImGuiDataType_U64, &uintValue) && ImGui::IsItemDeactivatedAfterEdit())
         {
             value = uintValue;
             bEdited = true;
@@ -208,7 +213,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
     else if (value.is_number_integer())
     {
         int64 intValue = value;
-        if (ImGui::InputScalar("", ImGuiDataType_S64, &intValue))
+        if (ImGui::InputScalar("", ImGuiDataType_S64, &intValue) && ImGui::IsItemDeactivatedAfterEdit())
         {
             value = intValue;
             bEdited = true;
@@ -273,21 +278,21 @@ bool StructEditor::drawStructure(json &structure, const std::string &structureTy
                 {
                     replacementMap[key] = value;
                 }
+                if (keyEditable != key)
+                {
+                    // We can't change the key while iterating. Instead, we make a copy of the map and change the key there.
+                    if (!bReplacingMap)
+                    {
+                        bReplacingMap = true;
+                        replacementMap = structure;
+                    }
+                    replacementMap.erase(replacementMap.find(key));
+                    replacementMap[std::string(keyEditable)] = value;
+                }
             }
             if (bRemove)
             {
                 keysToRemove.push_back(keyEditable);
-            }
-            if (keyEditable != key)
-            {
-                // We can't change the key while iterating. Instead, we make a copy of the map and change the key there.
-                if (!bReplacingMap)
-                {
-                    bReplacingMap = true;
-                    replacementMap = structure;
-                }
-                replacementMap.erase(replacementMap.find(key));
-                replacementMap[std::string(keyEditable)] = value;
             }
         }
         if (bReplacingMap)
@@ -316,21 +321,24 @@ bool StructEditor::drawStructure(json &structure, const std::string &structureTy
             {
                 bool bRemove = false;
                 json keyEditable = pair[0];
-                bEdited |= drawKeyValue(keyEditable, pair[1], mapKeyType, mapValueType, true, &bRemove);
-                if (keyEditable != pair[0])
+                if (drawKeyValue(keyEditable, pair[1], mapKeyType, mapValueType, true, &bRemove))
                 {
-                    bool bKeyUnique = true;
-                    for (json &otherPair : structure)
+                    bEdited = true;
+                    if (keyEditable != pair[0])
                     {
-                        if (otherPair.size() == 2 && otherPair[0] == keyEditable)
+                        bool bKeyUnique = true;
+                        for (json &otherPair : structure)
                         {
-                            bKeyUnique = false;
-                            break;
+                            if (otherPair.size() == 2 && otherPair[0] == keyEditable)
+                            {
+                                bKeyUnique = false;
+                                break;
+                            }
                         }
-                    }
-                    if (bKeyUnique)
-                    {
-                        pair[0] = keyEditable;
+                        if (bKeyUnique)
+                        {
+                            pair[0] = keyEditable;
+                        }
                     }
                 }
                 if (bRemove)

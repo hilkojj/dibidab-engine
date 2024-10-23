@@ -28,12 +28,14 @@ struct Child
     std::vector<entt::entity> entityVector { entt::null };
     std::vector<std::string> stringVector { "test string" };
     std::vector<vec3> positionVector { vec3(1, 2, 3) };
-    std::map<int, Parent> testSubMap {
-        { 2, Parent() },
-        { 5, Parent() },
+    std::map<int, std::string> testSubMap {
+        { 2, "abc" },
+        { 5, "def" },
     };
     std::map<std::string, Parent> testSubMapStr {
         { "test0", Parent() },
         { "test1", Parent() },
     };
+    std::vector<int> testIntVec;
+    std::vector<float> testFloatVec;
 };
