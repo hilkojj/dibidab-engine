@@ -106,9 +106,13 @@ bool StructEditor::drawKeyValue(json &key, json &value, const std::string &keyTy
         ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen);
     }
 
-    // Show type of value:
-    ImGui::SameLine();
-    ImGui::TextDisabled("%s", valueType.c_str());
+    // Do not show type of value next to key when key is editable, because that is confusing.
+    if (!bEditKey)
+    {
+        // Show type of value:
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", valueType.c_str());
+    }
 
     ImGui::NextColumn();
     ImGui::AlignTextToFramePadding();

@@ -261,6 +261,9 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
     {
         ImGui::OpenPopup("AddComponent");
     }
+    ImGui::NextColumn();
+    ImGui::Columns(1);
+
     if (ImGui::BeginPopup("AddComponent"))
     {
         if (const dibidab::component_info *info = drawComponentSelect(&ownedComponents))
@@ -270,12 +273,54 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
                 AddingComponent &adding = engine->entities.assign_or_replace<AddingComponent>(entity, AddingComponent {
                     info,
                     structInfo->getDefaultJsonObject(),
-                    createStructEditor(*structInfo)
+                    StructEditor(*structInfo)
                 });
+                addCustomDrawFunctions(adding.editor);
             }
         }
         ImGui::EndPopup();
     }
+
+    for (const dibidab::component_info *component : ownedComponents)
+    {
+        if (component->structId == typename_utils::getTypeName<Inspecting>())
+        {
+            // Do not draw the component that makes this window appear.
+            // Note that it would allow for deleting the component, to which we have a reference here: `inspecting`
+            continue;
+        }
+        bool bKeepComponent = true;
+        if (ImGui::CollapsingHeader(component->name, &bKeepComponent))
+        {
+            if (const dibidab::struct_info *structInfo = dibidab::findStructInfo(component->structId))
+            {
+                if (inspecting.componentEditors.find(component) == inspecting.componentEditors.end())
+                {
+                    inspecting.componentEditors.insert({ component, StructEditor(*structInfo) });
+                    addCustomDrawFunctions(inspecting.componentEditors.at(component));
+                }
+                StructEditor &editor = inspecting.componentEditors.at(component);
+                json componentJson;
+                component->getJsonObject(entity, engine->entities, componentJson);
+                if (editor.draw(componentJson))
+                {
+                    try
+                    {
+                        component->setFromJson(componentJson, entity, engine->entities);
+                    }
+                    catch (const nlohmann::detail::exception &exception)
+                    {
+                        editor.jsonParseError = exception.what();
+                    }
+                }
+            }
+        }
+        if (!bKeepComponent)
+        {
+            component->removeComponent(entity, engine->entities);
+        }
+    }
+
     ImGui::End();
 }
 
@@ -797,10 +842,9 @@ std::set<const dibidab::component_info *> EntityInspector::getComponentsForEntit
     return infos;
 }
 
-StructEditor EntityInspector::createStructEditor(const dibidab::struct_info &structInfo)
+void EntityInspector::addCustomDrawFunctions(StructEditor &structEditor)
 {
-    StructEditor editor(structInfo);
-    editor.customFieldDraw[typename_utils::getTypeName<entt::entity>(false)] = [&] (json &entityJson)
+    structEditor.customFieldDraw[typename_utils::getTypeName<entt::entity>(false)] = [&] (json &entityJson)
     {
         bool bEdited = false;
         int32 entityInt = entityJson.is_null() ? int32(entt::entity(entt::null)) : int32(entityJson);
@@ -838,7 +882,7 @@ StructEditor EntityInspector::createStructEditor(const dibidab::struct_info &str
         }
         return bEdited;
     };
-    editor.customFieldDraw[typename_utils::getTypeName<PersistentEntityRef>(false)] = [&] (json &refJson)
+    structEditor.customFieldDraw[typename_utils::getTypeName<PersistentEntityRef>(false)] = [&] (json &refJson)
     {
         PersistentEntityRef ref = refJson;
         entt::entity resolvedEntity = entt::null;
@@ -870,5 +914,4 @@ StructEditor EntityInspector::createStructEditor(const dibidab::struct_info &str
         }
         return false;
     };
-    return editor;
 }

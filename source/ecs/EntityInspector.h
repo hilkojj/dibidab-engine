@@ -93,7 +93,7 @@ class EntityInspector
 
     std::set<const dibidab::component_info *> getComponentsForEntity(entt::entity entity) const;
 
-    StructEditor createStructEditor(const dibidab::struct_info &structInfo);
+    void addCustomDrawFunctions(StructEditor &structEditor);
 
   private:
     EntityEngine *engine;
