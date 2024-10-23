@@ -2,10 +2,19 @@
 
 #include <entt/entity/fwd.hpp>
 
+#include <set>
+
 class EntityEngine;
 class EntityTemplate;
+class StructEditor;
 struct Inspecting;
 struct loaded_asset;
+
+namespace dibidab
+{
+    struct component_info;
+    struct struct_info;
+}
 
 
 class EntityPicker
@@ -56,9 +65,17 @@ class EntityInspector
 
     void updateMoving();
 
-    void drawInspectWindow(const entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity);
+    void drawInspectWindows();
 
-    void drawEntityNameField(const entt::entity entity);
+    void drawInspectWindow(entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity);
+
+    void drawEntityNameField(entt::entity entity);
+
+    const dibidab::component_info *drawComponentSelect(const std::set<const dibidab::component_info *> *exclude = nullptr) const;
+
+    void drawAddComponents();
+
+    void drawAddComponent(entt::entity entity);
 
     void drawMainMenuItem();
 
@@ -73,6 +90,10 @@ class EntityInspector
     void drawBehaviorTreeInspectors();
 
     EntityTemplate *getUsedTemplate(entt::entity entity) const;
+
+    std::set<const dibidab::component_info *> getComponentsForEntity(entt::entity entity) const;
+
+    StructEditor createStructEditor(const dibidab::struct_info &structInfo);
 
   private:
     EntityEngine *engine;

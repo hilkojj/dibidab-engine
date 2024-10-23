@@ -1,8 +1,9 @@
 #pragma once
-#include "math/math_utils.h"
-#include "assets/asset.h"
-#include "assets/AssetManager.h"
-#include "json.hpp"
+
+#include <math/math_utils.h>
+#include <assets/asset.h>
+#include <assets/AssetManager.h>
+#include <json.hpp>
 
 namespace nlohmann {
     template <int len, typename type, qualifier something>

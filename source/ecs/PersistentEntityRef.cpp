@@ -1,7 +1,7 @@
 
 #include "PersistentEntityRef.h"
 
-#include "components/Saving.dibidab.h"
+#include "ecs/components/Saving.dibidab.h"
 
 #include <utils/gu_error.h>
 

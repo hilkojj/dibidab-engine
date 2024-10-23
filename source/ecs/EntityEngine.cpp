@@ -376,7 +376,7 @@ void EntityEngine::onParentDeletion(entt::registry &reg, entt::entity entity)
     auto tmpChildren(parent.children);
     parent.children.clear();
 
-    if (parent.deleteChildrenOnDeletion)
+    if (parent.bDestroyChildrenOnDestroy)
         for (auto child : tmpChildren)
             reg.destroy(child);
     else

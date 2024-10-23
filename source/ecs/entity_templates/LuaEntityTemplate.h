@@ -4,7 +4,7 @@
 #include <utility>
 #include "../../level/room/Room.h"
 #include "../../luau.h"
-#include "../components/Saving.dibidab.h"
+#include "ecs/components/Saving.dibidab.h"
 
 class LuaEntityTemplate : public EntityTemplate
 {

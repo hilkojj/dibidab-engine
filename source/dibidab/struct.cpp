@@ -29,5 +29,5 @@ const dibidab::struct_info *dibidab::findStructInfo(const char *structId)
 
 void dibidab::registerStructInfo(const dibidab::struct_info &info)
 {
-    ::getAllStructInfos()[info.id] = info;
+    ::getAllStructInfos().insert({ info.id, info });
 }

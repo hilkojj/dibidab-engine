@@ -3,10 +3,11 @@
 #include "entity_templates/EntityTemplate.h"
 
 #include "../luau.h"
-#include "../../external/entt/src/entt/entity/registry.hpp"
 
 #include <utils/type_name.h>
 #include <math/math_utils.h>
+
+#include <entt/entity/registry.hpp>
 
 #include <map>
 #include <list>

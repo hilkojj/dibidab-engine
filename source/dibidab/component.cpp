@@ -36,5 +36,5 @@ void dibidab::registerComponentInfo(const dibidab::component_info &info)
     {
         throw gu_err(std::string("Already registered ") + info.name);
     }
-    ::getAllComponentInfos()[info.name] = info;
+    ::getAllComponentInfos().insert({ info.name, info });
 }

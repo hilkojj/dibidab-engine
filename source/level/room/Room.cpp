@@ -151,7 +151,7 @@ void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, 
     j["template"] = persistent.applyTemplateOnLoad;
     j["data"] = persistent.data;
 
-    if (persistent.saveName)
+    if (persistent.bSaveName)
         if (const char *eName = getName(e))
             j["name"] = eName;
 

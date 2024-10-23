@@ -10,6 +10,8 @@
 
 #include "../ai/behavior_trees/BehaviorTreeInspector.h"
 #include "../game/dibidab.h"
+#include "../dibidab/utils/StructEditor.h"
+#include "../dibidab/struct.h"
 
 #include <assets/AssetManager.h>
 #include <input/mouse_input.h>
@@ -18,7 +20,18 @@
 #include <files/file_utils.h>
 #include <gu/profiler.h>
 
+#include <json.hpp>
 #include <imgui_internal.h>
+
+namespace
+{
+    struct AddingComponent
+    {
+        const dibidab::component_info *componentInfo = nullptr;
+        json componentJson;
+        StructEditor editor;
+    };
+}
 
 EntityMover::EntityMover(entt::entity entity) :
     entity(entity)
@@ -48,33 +61,7 @@ void EntityInspector::draw()
     }
     else
     {
-        std::vector<entt::entity> toInspect;
-        engine->entities.view<Inspecting>().each([&] (const entt::entity e, Inspecting &inspecting)
-        {
-            toInspect.push_back(e);
-        });
-
-        for (const entt::entity entity : toInspect)
-        {
-            if (!engine->entities.valid(entity))
-            {
-                continue;
-            }
-            if (Inspecting *inspecting = engine->entities.try_get<Inspecting>(entity))
-            {
-                bool bKeepInspecting = true;
-                bool bDestroyEntity = false;
-                drawInspectWindow(entity, *inspecting, bKeepInspecting, bDestroyEntity);
-                if (!bKeepInspecting)
-                {
-                    engine->entities.remove<Inspecting>(entity);
-                }
-                if (bDestroyEntity)
-                {
-                    engine->entities.destroy(entity);
-                }
-            }
-        }
+        drawInspectWindows();
     }
 
     if (KeyInput::justPressed(dibidab::settings.developerKeyInput.createEntity))
@@ -93,6 +80,8 @@ void EntityInspector::draw()
     }
 
     drawMainMenuItem();
+    drawAddComponents();
+    drawBehaviorTreeInspectors();
 }
 
 EntityInspector::~EntityInspector()
@@ -175,6 +164,37 @@ void EntityInspector::updateMoving()
     }
 }
 
+void EntityInspector::drawInspectWindows()
+{
+    std::vector<entt::entity> toInspect;
+    engine->entities.view<Inspecting>().each([&] (const entt::entity e, Inspecting &inspecting)
+    {
+        toInspect.push_back(e);
+    });
+
+    for (const entt::entity entity : toInspect)
+    {
+        if (!engine->entities.valid(entity))
+        {
+            continue;
+        }
+        if (Inspecting *inspecting = engine->entities.try_get<Inspecting>(entity))
+        {
+            bool bKeepInspecting = true;
+            bool bDestroyEntity = false;
+            drawInspectWindow(entity, *inspecting, bKeepInspecting, bDestroyEntity);
+            if (!bKeepInspecting)
+            {
+                engine->entities.remove<Inspecting>(entity);
+            }
+            if (bDestroyEntity)
+            {
+                engine->entities.destroy(entity);
+            }
+        }
+    }
+}
+
 void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity)
 {
     if (inspecting.nextWindowPos.has_value())
@@ -229,8 +249,33 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
             engine->entities.assign<BehaviorTreeInspector>(entity, *engine, entity);
         }
     }
-
     ImGui::EndChild();
+
+    const std::set<const dibidab::component_info *> ownedComponents = getComponentsForEntity(entity);
+
+    ImGui::Columns(2);
+
+    ImGui::Text("Components:");
+    ImGui::NextColumn();
+    if (ImGui::Button("Add"))
+    {
+        ImGui::OpenPopup("AddComponent");
+    }
+    if (ImGui::BeginPopup("AddComponent"))
+    {
+        if (const dibidab::component_info *info = drawComponentSelect(&ownedComponents))
+        {
+            if (const dibidab::struct_info *structInfo = dibidab::findStructInfo(info->structId))
+            {
+                AddingComponent &adding = engine->entities.assign_or_replace<AddingComponent>(entity, AddingComponent {
+                    info,
+                    structInfo->getDefaultJsonObject(),
+                    createStructEditor(*structInfo)
+                });
+            }
+        }
+        ImGui::EndPopup();
+    }
     ImGui::End();
 }
 
@@ -253,6 +298,130 @@ void EntityInspector::drawEntityNameField(const entt::entity entity)
     delete[] buffer;
 }
 
+const dibidab::component_info *EntityInspector::drawComponentSelect(const std::set<const dibidab::component_info *> *exclude) const
+{
+    static ImGuiTextFilter filter;
+    if (ImGui::IsWindowAppearing())
+    {
+        filter.Clear();
+    }
+    filter.Draw();
+
+    const dibidab::component_info *componentToReturn = nullptr;
+
+    std::vector<std::string> commonCategoryPath;
+    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    {
+        int i = 0;
+        for (const char *directory : info.categoryPath)
+        {
+            if (commonCategoryPath.size() <= i)
+            {
+                commonCategoryPath.push_back(directory);
+            }
+            ++i;
+        }
+    }
+    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    {
+        int i = 0;
+        for (const char *directory : info.categoryPath)
+        {
+            if (commonCategoryPath.size() > i && commonCategoryPath[i] != directory)
+            {
+                commonCategoryPath.resize(i);
+                break;
+            }
+            ++i;
+        }
+        if (info.categoryPath.size() < commonCategoryPath.size())
+        {
+            commonCategoryPath.resize(info.categoryPath.size());
+        }
+    }
+
+    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    {
+        if (!filter.PassFilter(info.name))
+        {
+            continue;
+        }
+        if (exclude != nullptr && exclude->find(&info) != exclude->end())
+        {
+            continue;
+        }
+        int categoriesOpened = 0;
+        if (!filter.IsActive())
+        {
+            for (int i = commonCategoryPath.size(); i < info.categoryPath.size(); i++)
+            {
+                if (ImGui::BeginMenu(info.categoryPath[i]))
+                {
+                    ++categoriesOpened;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        if ((filter.IsActive() || categoriesOpened == info.categoryPath.size() - commonCategoryPath.size())
+            && ImGui::MenuItem(info.name))
+        {
+            componentToReturn = &info;
+        }
+        for (int i = 0; i < categoriesOpened; i++)
+        {
+            ImGui::EndMenu();
+        }
+    }
+    return componentToReturn;
+}
+
+void EntityInspector::drawAddComponents()
+{
+    engine->entities.view<AddingComponent>().each([&] (entt::entity e, AddingComponent &)
+    {
+        drawAddComponent(e);
+    });
+}
+
+void EntityInspector::drawAddComponent(const entt::entity entity)
+{
+    AddingComponent &addingComponent = engine->entities.get<AddingComponent>(entity);
+
+    const std::string title = std::string("Adding ") + addingComponent.componentInfo->name;
+    bool bOpen = true;
+
+    ImGui::SetNextWindowPos(ImVec2(MouseInput::mouseX - 200, MouseInput::mouseY - 15), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Once);
+
+    if (ImGui::Begin(title.c_str(), &bOpen, ImGuiWindowFlags_NoSavedSettings))
+    {
+        addingComponent.editor.draw(addingComponent.componentJson);
+
+        ImGui::Separator();
+        if (ImGui::Button("Add"))
+        {
+            try
+            {
+                addingComponent.componentInfo->setFromJson(addingComponent.componentJson, entity, engine->entities);
+                bOpen = false;
+            }
+            catch (const nlohmann::detail::exception &e)
+            {
+                addingComponent.editor.jsonParseError = e.what();
+            }
+        }
+    }
+    ImGui::End();
+
+    if (!bOpen)
+    {
+        engine->entities.remove<AddingComponent>(entity);
+    }
+}
+
 void EntityInspector::drawMainMenuItem()
 {
     ImGui::BeginMainMenuBar();
@@ -265,6 +434,12 @@ void EntityInspector::drawMainMenuItem()
         {
             drawEntityTemplateSelect();
             ImGui::EndMenu();
+        }
+
+        if (ImGui::MenuItem("Pick to Inspect", KeyInput::getKeyName(dibidab::settings.developerKeyInput.inspectEntity)))
+        {
+            delete picker;
+            picker = createPicker();
         }
 
         if (ImGui::BeginMenu("Entity Tree"))
@@ -607,4 +782,93 @@ EntityTemplate *EntityInspector::getUsedTemplate(entt::entity entity) const
         }
     }
     return nullptr;
+}
+
+std::set<const dibidab::component_info *> EntityInspector::getComponentsForEntity(entt::entity entity) const
+{
+    std::set<const dibidab::component_info *> infos;
+    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    {
+        if (info.hasComponent(entity, engine->entities))
+        {
+            infos.insert(&info);
+        }
+    }
+    return infos;
+}
+
+StructEditor EntityInspector::createStructEditor(const dibidab::struct_info &structInfo)
+{
+    StructEditor editor(structInfo);
+    editor.customFieldDraw[typename_utils::getTypeName<entt::entity>(false)] = [&] (json &entityJson)
+    {
+        bool bEdited = false;
+        int32 entityInt = entityJson.is_null() ? int32(entt::entity(entt::null)) : int32(entityJson);
+        ImGui::SetNextItemWidth(64);
+        if (ImGui::InputScalar("", ImGuiDataType_S32, &entityInt))
+        {
+            entityJson = entityInt;
+            bEdited = true;
+        }
+        bool bHovered = ImGui::IsItemHovered();
+        ImGui::SameLine();
+        const entt::entity entity = entt::entity(entityInt);
+        if (engine->entities.valid(entity))
+        {
+            if (ImGui::Button("Inspect"))
+            {
+                engine->entities.assign<Inspecting>(entity);
+            }
+            bHovered |= ImGui::IsItemHovered();
+        }
+        else if (entity == entt::null)
+        {
+            ImGui::ButtonEx("Null", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+        }
+        else
+        {
+            ImGui::ButtonEx("Invalid!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+        }
+        if (bHovered && engine->entities.valid(entity))
+        {
+            if (const char *name = engine->getName(entity))
+            {
+                ImGui::SetTooltip("%s", name);
+            }
+        }
+        return bEdited;
+    };
+    editor.customFieldDraw[typename_utils::getTypeName<PersistentEntityRef>(false)] = [&] (json &refJson)
+    {
+        PersistentEntityRef ref = refJson;
+        entt::entity resolvedEntity = entt::null;
+        const bool bResolved = ref.tryResolve(engine->entities, resolvedEntity);
+
+        if (!bResolved)
+        {
+            ImGui::ButtonEx("Unresolved!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+        }
+        else if (resolvedEntity == entt::null)
+        {
+            ImGui::ButtonEx("Null", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+        }
+        else if (!engine->entities.valid(resolvedEntity))
+        {
+            ImGui::ButtonEx("Invalid!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
+        }
+        else
+        {
+            const std::string btnTxt = "#" + std::to_string(int(resolvedEntity));
+            if (ImGui::Button(btnTxt.c_str()))
+            {
+                engine->entities.assign<Inspecting>(resolvedEntity);
+            }
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Persistent Id: %lu", ref.getId());
+        }
+        return false;
+    };
+    return editor;
 }

@@ -1,7 +1,10 @@
 #pragma once
 
+#include <json_fwd.hpp>
+
 #include <map>
 #include <string>
+#include <vector>
 
 namespace sol
 {
@@ -10,9 +13,21 @@ namespace sol
 
 namespace dibidab
 {
+    struct variable_info
+    {
+        const char *name;
+        const char *typeName;
+        const bool bLuaExposed;
+        const bool bJsonExposed;
+    };
+
     struct struct_info
     {
         const char *id;
+
+        const std::vector<variable_info> variables;
+
+        json (*getDefaultJsonObject)();
 
         void (*registerLuaUserType)(sol::state &);
     };

@@ -1,7 +1,7 @@
 #pragma once
-#include "../PersistentEntityRef.h"
+#include "ecs/PersistentEntityRef.h"
 
-#include <dibidab_header.h>
+#include "dibidab_header.h"
 
 struct Persistent
 {
@@ -14,5 +14,5 @@ struct Persistent
     // TODO: replace with component_info ptrs?
     std::vector<std::string> saveComponents;
 
-    bool saveName = true;
+    bool bSaveName = true;
 };

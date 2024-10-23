@@ -18,13 +18,14 @@ namespace dibidab
         const char *name;
         const char *structId;
 
+        const std::vector<const char *> categoryPath;
+
         bool (*hasComponent)(entt::entity, const entt::registry &);
         void (*addComponent)(entt::entity, entt::registry &);
         void (*removeComponent)(entt::entity, entt::registry &);
 
         EntityObserver *(*createObserver)(entt::registry &);
 
-        json (*getDefaultJsonObject)();
         void (*getJsonObject)(entt::entity, const entt::registry &, json &outObject);
         void (*getJsonArray)(entt::entity, const entt::registry &, json &outArray);
         void (*setFromJson)(const json &objectOrArray, entt::entity, entt::registry &);
