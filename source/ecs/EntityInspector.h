@@ -12,8 +12,8 @@ struct loaded_asset;
 
 namespace dibidab
 {
-    struct component_info;
-    struct struct_info;
+    struct ComponentInfo;
+    struct StructInfo;
 }
 
 
@@ -71,7 +71,7 @@ class EntityInspector
 
     void drawEntityNameField(entt::entity entity);
 
-    const dibidab::component_info *drawComponentSelect(const std::set<const dibidab::component_info *> *exclude = nullptr) const;
+    const dibidab::ComponentInfo *drawComponentSelect(const std::set<const dibidab::ComponentInfo *> *exclude = nullptr) const;
 
     void drawAddComponents();
 
@@ -91,7 +91,7 @@ class EntityInspector
 
     EntityTemplate *getUsedTemplate(entt::entity entity) const;
 
-    std::set<const dibidab::component_info *> getComponentsForEntity(entt::entity entity) const;
+    std::set<const dibidab::ComponentInfo *> getComponentsForEntity(entt::entity entity) const;
 
     void addCustomDrawFunctions(StructEditor &structEditor);
 

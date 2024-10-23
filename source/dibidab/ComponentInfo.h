@@ -13,7 +13,7 @@ class EntityObserver;
 
 namespace dibidab
 {
-    struct component_info
+    struct ComponentInfo
     {
         const char *name;
         const char *structId;
@@ -31,20 +31,20 @@ namespace dibidab
         void (*setFromJson)(const json &objectOrArray, entt::entity, entt::registry &);
 
         void (*setFromLua)(const sol::table &, entt::entity, entt::registry &);
-        void (*fillLuaUtilsTable)(sol::table &, entt::registry &, const component_info *);
+        void (*fillLuaUtilsTable)(sol::table &, entt::registry &, const ComponentInfo *);
     };
 
-    const std::map<std::string, component_info> &getAllComponentInfos();
+    const std::map<std::string, ComponentInfo> &getAllComponentInfos();
 
-    const component_info *findComponentInfo(const char *name);
+    const ComponentInfo *findComponentInfo(const char *name);
 
     template <typename component>
-    const component_info *findComponentInfo()
+    const ComponentInfo *findComponentInfo()
     {
         return findComponentInfo(typename_utils::getTypeName<component>());
     }
 
-    const component_info *getInfoFromUtilsTable(const sol::table &);
+    const ComponentInfo *getInfoFromUtilsTable(const sol::table &);
 
-    void registerComponentInfo(const component_info &);
+    void registerComponentInfo(const ComponentInfo &);
 }

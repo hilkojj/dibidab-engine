@@ -8,14 +8,14 @@
 
 namespace dibidab
 {
-    struct struct_info;
-    struct variable_info;
+    struct StructInfo;
+    struct VariableInfo;
 }
 
 class StructEditor
 {
   public:
-    StructEditor(const dibidab::struct_info &structInfo);
+    StructEditor(const dibidab::StructInfo &structInfo);
 
     bool draw(json &structJson);
 
@@ -36,7 +36,7 @@ class StructEditor
 
     bool drawInsertIntoStructure(json &structure, const std::string &keyType, const std::string &valueType, bool bInsertAsPair = false);
 
-    bool drawSubStructEditor(const dibidab::struct_info &subStructInfo, json &subStructJson);
+    bool drawSubStructEditor(const dibidab::StructInfo &subStructInfo, json &subStructJson);
 
     bool inferArrayValueType(const std::string &fullArrayType, std::string &outValueType) const;
 
@@ -46,7 +46,7 @@ class StructEditor
 
     bool isVecType(const std::string &type, int &outSize, int &outImGuiDataType) const;
 
-    const dibidab::struct_info *structInfo;
+    const dibidab::StructInfo *structInfo;
 
     // Struct Editors for values stored inside our struct. Key is latest ImGui ID from the window stack.
     std::map<unsigned int, StructEditor> subStructEditors;

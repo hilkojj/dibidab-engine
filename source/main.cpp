@@ -1,5 +1,5 @@
 
-#include "dibidab/struct.h"
+#include "dibidab/StructInfo.h"
 #include "game/dibidab.h"
 #include "game/session/SingleplayerSession.h"
 #include "ecs/EntityInspector.h"

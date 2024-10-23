@@ -7,11 +7,13 @@
 #include "components/LuaScripted.dibidab.h"
 #include "components/Children.dibidab.h"
 #include "components/Brain.dibidab.h"
+#include "entity_templates/EntityTemplateArgs.dibidab.h"
 
 #include "../ai/behavior_trees/BehaviorTreeInspector.h"
 #include "../game/dibidab.h"
 #include "../dibidab/utils/StructEditor.h"
-#include "../dibidab/struct.h"
+#include "../dibidab/StructInfo.h"
+#include "../generated/registry.struct_json.h"
 
 #include <assets/AssetManager.h>
 #include <input/mouse_input.h>
@@ -27,7 +29,7 @@ namespace
 {
     struct AddingComponent
     {
-        const dibidab::component_info *componentInfo = nullptr;
+        const dibidab::ComponentInfo *componentInfo = nullptr;
         json componentJson;
         StructEditor editor;
     };
@@ -251,7 +253,7 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
     }
     ImGui::EndChild();
 
-    const std::set<const dibidab::component_info *> ownedComponents = getComponentsForEntity(entity);
+    const std::set<const dibidab::ComponentInfo *> ownedComponents = getComponentsForEntity(entity);
 
     ImGui::Columns(2);
 
@@ -266,9 +268,9 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
 
     if (ImGui::BeginPopup("AddComponent"))
     {
-        if (const dibidab::component_info *info = drawComponentSelect(&ownedComponents))
+        if (const dibidab::ComponentInfo *info = drawComponentSelect(&ownedComponents))
         {
-            if (const dibidab::struct_info *structInfo = dibidab::findStructInfo(info->structId))
+            if (const dibidab::StructInfo *structInfo = dibidab::findStructInfo(info->structId))
             {
                 AddingComponent &adding = engine->entities.assign_or_replace<AddingComponent>(entity, AddingComponent {
                     info,
@@ -281,7 +283,7 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
         ImGui::EndPopup();
     }
 
-    for (const dibidab::component_info *component : ownedComponents)
+    for (const dibidab::ComponentInfo *component : ownedComponents)
     {
         if (component->structId == typename_utils::getTypeName<Inspecting>())
         {
@@ -292,7 +294,7 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
         bool bKeepComponent = true;
         if (ImGui::CollapsingHeader(component->name, &bKeepComponent))
         {
-            if (const dibidab::struct_info *structInfo = dibidab::findStructInfo(component->structId))
+            if (const dibidab::StructInfo *structInfo = dibidab::findStructInfo(component->structId))
             {
                 if (inspecting.componentEditors.find(component) == inspecting.componentEditors.end())
                 {
@@ -343,7 +345,7 @@ void EntityInspector::drawEntityNameField(const entt::entity entity)
     delete[] buffer;
 }
 
-const dibidab::component_info *EntityInspector::drawComponentSelect(const std::set<const dibidab::component_info *> *exclude) const
+const dibidab::ComponentInfo *EntityInspector::drawComponentSelect(const std::set<const dibidab::ComponentInfo *> *exclude) const
 {
     static ImGuiTextFilter filter;
     if (ImGui::IsWindowAppearing())
@@ -352,7 +354,7 @@ const dibidab::component_info *EntityInspector::drawComponentSelect(const std::s
     }
     filter.Draw();
 
-    const dibidab::component_info *componentToReturn = nullptr;
+    const dibidab::ComponentInfo *componentToReturn = nullptr;
 
     std::vector<std::string> commonCategoryPath;
     for (const auto &[name, info] : dibidab::getAllComponentInfos())
@@ -755,13 +757,13 @@ void EntityInspector::drawCreateEntityFromTemplate()
         return;
     }
 
-    static json args;
+    static EntityTemplateArgs args;
 
     static LuaEntityTemplate *prevLuaTemplate = nullptr;
     if (prevLuaTemplate != luaTemplate)
     {
         prevLuaTemplate = luaTemplate;
-        args = luaTemplate->getDefaultArgs();
+        args.createFunctionArguments = luaTemplate->getDefaultArgs();
     }
 
     ImGui::SetNextWindowPos(vec2(MouseInput::mouseX - 200, MouseInput::mouseY - 15), ImGuiCond_Once);
@@ -771,7 +773,13 @@ void EntityInspector::drawCreateEntityFromTemplate()
     bool bOpen = true;
     if (ImGui::Begin(title.c_str(), &bOpen, ImGuiWindowFlags_NoSavedSettings))
     {
-        // TODO: Json tree.
+        // TODO: Ideally there is a Json editor, so we do not need the wrapper struct..
+        static StructEditor editor(*dibidab::findStructInfo(typename_utils::getTypeName<EntityTemplateArgs>(false).c_str()));
+        json jsonArgs = args;
+        if (editor.draw(jsonArgs))
+        {
+            args = jsonArgs;
+        }
         ImGui::Separator();
         ImGui::Checkbox("Persistent", &creatingEntity.bPersistent);
         ImGui::Checkbox("Inspect on Create", &creatingEntity.bInspectOnCreate);
@@ -784,7 +792,7 @@ void EntityInspector::drawCreateEntityFromTemplate()
             bOpen = false;
 
             const entt::entity createdEntity = engine->entities.create();
-            luaTemplate->createComponentsWithJsonArguments(createdEntity, args, creatingEntity.bPersistent);
+            luaTemplate->createComponentsWithJsonArguments(createdEntity, args.createFunctionArguments, creatingEntity.bPersistent);
             if (creatingEntity.bInspectOnCreate)
             {
                 engine->entities.assign_or_replace<Inspecting>(createdEntity);
@@ -829,9 +837,9 @@ EntityTemplate *EntityInspector::getUsedTemplate(entt::entity entity) const
     return nullptr;
 }
 
-std::set<const dibidab::component_info *> EntityInspector::getComponentsForEntity(entt::entity entity) const
+std::set<const dibidab::ComponentInfo *> EntityInspector::getComponentsForEntity(entt::entity entity) const
 {
-    std::set<const dibidab::component_info *> infos;
+    std::set<const dibidab::ComponentInfo *> infos;
     for (const auto &[name, info] : dibidab::getAllComponentInfos())
     {
         if (info.hasComponent(entity, engine->entities))

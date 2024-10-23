@@ -596,7 +596,7 @@ void BehaviorTree::RepeaterNode::drawDebugInfo() const
 }
 
 void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine, entt::entity entity,
-    const dibidab::component_info *component)
+    const dibidab::ComponentInfo *component)
 {
     if (engine == nullptr)
     {
@@ -608,13 +608,13 @@ void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine,
     }
     if (component == nullptr)
     {
-        throw gu_err("dibidab::component_info is a nullptr! " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getNodeErrorInfo(this));
     }
     toAddWhileEntered.push_back({engine, entity, component});
 }
 
 void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt::entity entity,
-    const dibidab::component_info *component)
+    const dibidab::ComponentInfo *component)
 {
     if (engine == nullptr)
     {
@@ -626,13 +626,13 @@ void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt
     }
     if (component == nullptr)
     {
-        throw gu_err("dibidab::component_info is a nullptr! " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getNodeErrorInfo(this));
     }
     toAddOnEnter.push_back({engine, entity, component});
 }
 
 void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, entt::entity entity,
-    const dibidab::component_info *component)
+    const dibidab::ComponentInfo *component)
 {
     if (engine == nullptr)
     {
@@ -644,7 +644,7 @@ void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, 
     }
     if (component == nullptr)
     {
-        throw gu_err("dibidab::component_info is a nullptr! " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getNodeErrorInfo(this));
     }
     toRemoveOnFinish.push_back({engine, entity, component});
 }
@@ -892,13 +892,13 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withou
 }
 
 void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
-    const dibidab::component_info *component)
+    const dibidab::ComponentInfo *component)
 {
     observe(engine, entity, component, true, false);
 }
 
 void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::entity entity,
-    const dibidab::component_info *component)
+    const dibidab::ComponentInfo *component)
 {
     observe(engine, entity, component, false, true);
 }
@@ -1001,7 +1001,7 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
 }
 
 void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
-    const dibidab::component_info *component, const bool presentValue, const bool absentValue)
+    const dibidab::ComponentInfo *component, const bool presentValue, const bool absentValue)
 {
     if (isEntered())
     {
@@ -1010,7 +1010,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
 #ifndef NDEBUG
     if (component == nullptr)
     {
-        throw gu_err("dibidab::component_info is a nullptr: " + getNodeErrorInfo(this));
+        throw gu_err("dibidab::ComponentInfo is a nullptr: " + getNodeErrorInfo(this));
     }
     if (engine == nullptr)
     {
@@ -1422,7 +1422,7 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> BehaviorTree::ComponentDecoratorNode &
         {
-            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
             node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
@@ -1430,7 +1430,7 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> BehaviorTree::ComponentDecoratorNode &
         {
-            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
             node.addOnEnter(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
@@ -1438,7 +1438,7 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> BehaviorTree::ComponentDecoratorNode &
         {
-            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
             node.removeOnFinish(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         }
@@ -1479,7 +1479,7 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
             -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
-            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
             node.has(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
@@ -1487,7 +1487,7 @@ void BehaviorTree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
             -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
-            const dibidab::component_info *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
             node.exclude(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },

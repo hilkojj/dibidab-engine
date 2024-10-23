@@ -1,7 +1,7 @@
 #pragma once
 #include "../../ecs/EntityEngine.h"
 #include "../../ecs/EntityObserver.h"
-#include "../../dibidab/component.h"
+#include "../../dibidab/ComponentInfo.h"
 #include "../../luau.h"
 
 #include <utils/delegate.h>
@@ -232,7 +232,7 @@ class BehaviorTree
             return this;
         }
 
-        void addWhileEntered(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
+        void addWhileEntered(EntityEngine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
 
         template<class Component>
         ComponentDecoratorNode *addOnEnter(EntityEngine *engine, entt::entity entity)
@@ -241,7 +241,7 @@ class BehaviorTree
             return this;
         }
 
-        void addOnEnter(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
+        void addOnEnter(EntityEngine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
 
         template<class Component>
         ComponentDecoratorNode *removeOnFinish(EntityEngine *engine, entt::entity entity)
@@ -250,7 +250,7 @@ class BehaviorTree
             return this;
         }
 
-        void removeOnFinish(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
+        void removeOnFinish(EntityEngine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
 
         void enter() override;
 
@@ -269,7 +269,7 @@ class BehaviorTree
         {
             EntityEngine *engine = nullptr;
             entt::entity entity = entt::null;
-            const dibidab::component_info *component = nullptr;
+            const dibidab::ComponentInfo *component = nullptr;
         };
 
         std::vector<EntityComponent> toAddWhileEntered;
@@ -333,7 +333,7 @@ class BehaviorTree
             return this;
         }
 
-        void has(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
+        void has(EntityEngine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
 
         template<class Component>
         ComponentObserverNode *exclude(EntityEngine *engine, entt::entity entity)
@@ -342,7 +342,7 @@ class BehaviorTree
             return this;
         }
 
-        void exclude(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component);
+        void exclude(EntityEngine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
 
         ComponentObserverNode *setOnFulfilledNode(Node *child);
 
@@ -362,7 +362,7 @@ class BehaviorTree
 
       private:
 
-        void observe(EntityEngine *engine, entt::entity entity, const dibidab::component_info *component, bool presentValue,
+        void observe(EntityEngine *engine, entt::entity entity, const dibidab::ComponentInfo *component, bool presentValue,
             bool absentValue);
 
         bool allConditionsFulfilled() const;
@@ -376,7 +376,7 @@ class BehaviorTree
         struct ObserverHandle
         {
             EntityEngine *engine = nullptr;
-            const dibidab::component_info *component = nullptr;
+            const dibidab::ComponentInfo *component = nullptr;
             EntityObserver::Handle handle;
             delegate_method latestConditionChangedDelay;
         };

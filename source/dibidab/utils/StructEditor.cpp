@@ -1,7 +1,7 @@
 
 #include "StructEditor.h"
 
-#include "../struct.h"
+#include "../StructInfo.h"
 
 #include <utils/type_name.h>
 #include <utils/string_utils.h>
@@ -12,7 +12,7 @@
 
 #include <list>
 
-StructEditor::StructEditor(const dibidab::struct_info &structInfo) :
+StructEditor::StructEditor(const dibidab::StructInfo &structInfo) :
     structInfo(&structInfo)
 {
 
@@ -29,7 +29,7 @@ bool StructEditor::draw(json &structJson)
     bool bEdited = false;
 
     int varIndex = 0;
-    for (const dibidab::variable_info &var : structInfo->variables)
+    for (const dibidab::VariableInfo &var : structInfo->variables)
     {
         if (!var.bJsonExposed)
         {
@@ -256,7 +256,7 @@ bool StructEditor::drawStructure(json &structure, const std::string &structureTy
 {
     static std::string jsonParseError;
     bool bEdited = false;
-    if (const dibidab::struct_info *subStructInfo = dibidab::findStructInfo(structureType.c_str()))
+    if (const dibidab::StructInfo *subStructInfo = dibidab::findStructInfo(structureType.c_str()))
     {
         // Struct inside struct.
         bEdited |= drawSubStructEditor(*subStructInfo, structure);
@@ -473,7 +473,7 @@ bool StructEditor::drawInsertIntoStructure(json &structure, const std::string &k
     ImGui::AlignTextToFramePadding();
 
     json valueJson;
-    if (const dibidab::struct_info *valueStructInfo = dibidab::findStructInfo(valueType.c_str()))
+    if (const dibidab::StructInfo *valueStructInfo = dibidab::findStructInfo(valueType.c_str()))
     {
         ImGui::TextDisabled("%s", valueStructInfo->id);
         if (bAdd)
@@ -520,7 +520,7 @@ bool StructEditor::drawInsertIntoStructure(json &structure, const std::string &k
     return bAdd;
 }
 
-bool StructEditor::drawSubStructEditor(const dibidab::struct_info &subStructInfo, json &subStructJson)
+bool StructEditor::drawSubStructEditor(const dibidab::StructInfo &subStructInfo, json &subStructJson)
 {
     unsigned int id = ImGui::GetCurrentWindow()->IDStack.back();
     auto subEditorIt = subStructEditors.find(id);

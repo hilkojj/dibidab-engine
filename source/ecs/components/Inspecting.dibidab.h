@@ -10,7 +10,7 @@
 
 namespace dibidab
 {
-    struct component_info;
+    struct ComponentInfo;
 }
 
 class StructEditor;
@@ -20,7 +20,7 @@ struct Inspecting
 {
   dibidab_component;
     std::optional<vec2> nextWindowPos;
-    std::map<const dibidab::component_info *, StructEditor> componentEditors;
+    std::map<const dibidab::ComponentInfo *, StructEditor> componentEditors;
 };
 
 struct InspectingBrain

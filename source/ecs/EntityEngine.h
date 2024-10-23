@@ -18,7 +18,7 @@ class TimeOutSystem;
 
 namespace dibidab
 {
-    struct component_info;
+    struct ComponentInfo;
 }
 
 class EntityEngine
@@ -27,7 +27,7 @@ class EntityEngine
 
     TimeOutSystem *timeOutSystem;
 
-    std::map<const dibidab::component_info *, EntityObserver *> observerPerComponent;
+    std::map<const dibidab::ComponentInfo *, EntityObserver *> observerPerComponent;
 
   protected:
 
@@ -100,7 +100,7 @@ class EntityEngine
 
     const std::unordered_map<std::string, entt::entity> &getNamedEntities() const { return namedEntities; };
 
-    EntityObserver &getObserverForComponent(const dibidab::component_info &component);
+    EntityObserver &getObserverForComponent(const dibidab::ComponentInfo &component);
 
     template<typename type>
     void emitEntityEvent(entt::entity e, const type &event, const char *customEventName=nullptr)

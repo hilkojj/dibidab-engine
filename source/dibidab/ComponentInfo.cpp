@@ -1,4 +1,4 @@
-#include "component.h"
+#include "ComponentInfo.h"
 
 #include <utils/gu_error.h>
 
@@ -6,31 +6,31 @@
 
 namespace
 {
-    std::map<std::string, dibidab::component_info> &getAllComponentInfos()
+    std::map<std::string, dibidab::ComponentInfo> &getAllComponentInfos()
     {
-        static std::map<std::string, dibidab::component_info> infos;
+        static std::map<std::string, dibidab::ComponentInfo> infos;
         return infos;
     }
 }
 
-const std::map<std::string, dibidab::component_info> &dibidab::getAllComponentInfos()
+const std::map<std::string, dibidab::ComponentInfo> &dibidab::getAllComponentInfos()
 {
     return ::getAllComponentInfos();
 }
 
-const dibidab::component_info *dibidab::findComponentInfo(const char *name)
+const dibidab::ComponentInfo *dibidab::findComponentInfo(const char *name)
 {
     const auto &infos = getAllComponentInfos();
     auto it = infos.find(name);
     return it == infos.end() ? nullptr : &it->second;
 }
 
-const dibidab::component_info *dibidab::getInfoFromUtilsTable(const sol::table &table)
+const dibidab::ComponentInfo *dibidab::getInfoFromUtilsTable(const sol::table &table)
 {
     return table["info"];
 }
 
-void dibidab::registerComponentInfo(const dibidab::component_info &info)
+void dibidab::registerComponentInfo(const dibidab::ComponentInfo &info)
 {
     if (findComponentInfo(info.name) != nullptr)
     {

@@ -10,7 +10,7 @@
 #include "components/Children.dibidab.h"
 #include "components/LuaScripted.dibidab.h"
 
-#include "../dibidab/component.h"
+#include "../dibidab/ComponentInfo.h"
 
 #include <assets/AssetManager.h>
 #include <gu/profiler.h>
@@ -169,7 +169,7 @@ void setComponentFromLua(entt::entity entity, const sol::table &component, entt:
 
     const char *typeName = component["__type"]["name"].get<const char *>();
 
-    if (const dibidab::component_info *info = dibidab::findComponentInfo(typeName))
+    if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(typeName))
     {
         info->setFromLua(component, entity, reg);
     }
@@ -430,7 +430,7 @@ const char *EntityEngine::getName(entt::entity e) const
     else return nullptr;
 }
 
-EntityObserver &EntityEngine::getObserverForComponent(const dibidab::component_info &component)
+EntityObserver &EntityEngine::getObserverForComponent(const dibidab::ComponentInfo &component)
 {
     auto it = observerPerComponent.find(&component);
     if (it == observerPerComponent.end())

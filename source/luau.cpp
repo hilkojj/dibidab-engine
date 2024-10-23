@@ -1,6 +1,6 @@
 #include "luau.h"
 
-#include "dibidab/struct.h"
+#include "dibidab/StructInfo.h"
 #include "ai/behavior_trees/BehaviorTree.h"
 #include "ecs/PersistentEntityRef.h"
 #include "game/session/SingleplayerSession.h"

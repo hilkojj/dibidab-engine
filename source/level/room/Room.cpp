@@ -4,7 +4,7 @@
 #include "../../ecs/systems/PlayerControlSystem.h"
 #include "../../ecs/systems/SpawningSystem.h"
 #include "../../ecs/systems/LuaScriptsSystem.h"
-#include "../../dibidab/component.h"
+#include "../../dibidab/ComponentInfo.h"
 
 #include <gu/profiler.h>
 
@@ -110,7 +110,7 @@ void Room::loadPersistentEntities()
 
             for (auto &[componentName, componentJson] : jsonEntity.at("components").items())
             {
-                if (const dibidab::component_info *info = dibidab::findComponentInfo(componentName.c_str()))
+                if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(componentName.c_str()))
                 {
                     info->setFromJson(componentJson, e, entities);
                 }
@@ -159,7 +159,7 @@ void Room::persistentEntityToJson(entt::entity e, const Persistent &persistent, 
 
     for (auto &componentTypeName : persistent.saveComponents)
     {
-        if (const dibidab::component_info *info = dibidab::findComponentInfo(componentTypeName.c_str()))
+        if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(componentTypeName.c_str()))
         {
             if (info->hasComponent(e, entities))
             {

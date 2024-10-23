@@ -13,7 +13,7 @@ namespace sol
 
 namespace dibidab
 {
-    struct variable_info
+    struct VariableInfo
     {
         const char *name;
         const char *typeName;
@@ -21,20 +21,20 @@ namespace dibidab
         const bool bJsonExposed;
     };
 
-    struct struct_info
+    struct StructInfo
     {
         const char *id;
 
-        const std::vector<variable_info> variables;
+        const std::vector<VariableInfo> variables;
 
         json (*getDefaultJsonObject)();
 
         void (*registerLuaUserType)(sol::state &);
     };
 
-    const std::map<std::string, struct_info> &getAllStructInfos();
+    const std::map<std::string, StructInfo> &getAllStructInfos();
 
-    const struct_info *findStructInfo(const char *structId);
+    const StructInfo *findStructInfo(const char *structId);
 
-    void registerStructInfo(const struct_info &);
+    void registerStructInfo(const StructInfo &);
 }
