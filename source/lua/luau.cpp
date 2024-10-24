@@ -1,13 +1,13 @@
 #include "luau.h"
 
 #include "dibidab/StructInfo.h"
-#include "ai/behavior_trees/BehaviorTree.h"
+#include "ai/behavior_trees/Tree.h"
 #include "ecs/PersistentEntityRef.h"
 #include "game/session/SingleplayerSession.h"
 #include "game/dibidab.h"
 
-#include <input/gamepad_input.h>
-#include <gu/game_utils.h>
+#include "input/gamepad_input.h"
+#include "gu/game_utils.h"
 
 luau::Script::Script(const std::string &path) : path(path)
 {}

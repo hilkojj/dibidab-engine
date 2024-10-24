@@ -1,10 +1,13 @@
 #pragma once
-#include "../../ai/behavior_trees/BehaviorTree.h"
+#include "../../ai/behavior_trees/Tree.h"
 
 #include <dibidab_header.h>
 
-struct Brain
+namespace dibidab::ecs
 {
-  dibidab_component;
-    BehaviorTree behaviorTree;
-};
+    struct Brain
+    {
+        dibidab_component;
+        behavior::Tree behaviorTree;
+    };
+}

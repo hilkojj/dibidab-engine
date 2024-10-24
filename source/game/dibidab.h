@@ -9,7 +9,6 @@ namespace gu
 
 namespace dibidab
 {
-
     extern EngineSettings settings;
 
     extern std::map<std::string, std::string> startupArgs;

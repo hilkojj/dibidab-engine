@@ -3,60 +3,65 @@
 #include "Player.dibidab.h"
 #include "../SaveGame.h"
 
-class Session
+namespace dibidab
 {
-  protected:
-    Level *level = nullptr;
+    class Session
+    {
+      protected:
+        level::Level *level = nullptr;
 
-    std::list<Player_ptr> players;
-    Player_ptr localPlayer;
+        std::list<Player_ptr> players;
+        Player_ptr localPlayer;
 
-  public:
+      public:
 
 #ifndef DIBIDAB_NO_SAVE_GAME
-    SaveGame saveGame;
+        SaveGame saveGame;
 #endif
 
-    Session(const char *saveGamePath);
+        Session(const char *saveGamePath);
 
-    virtual ~Session();
+        virtual ~Session();
 
-    std::function<void(const std::string &reason)> onJoinRequestDeclined = [](auto){};
+        std::function<void(const std::string &reason)> onJoinRequestDeclined = [](auto)
+        {};
 
-    virtual void join(std::string username) = 0;
+        virtual void join(std::string username) = 0;
+
+        delegate<void(level::Level *)> onNewLevel;
+
+        level::Level *getLevel() const
+        { return level; }
+
+        virtual void update(double deltaTime) = 0;
+
+        // todo: move player functions & members to a Players class.
+        const Player_ptr &getLocalPlayer() const
+        { return localPlayer; }
+
+        const std::list<Player_ptr> &getPlayers() const
+        { return players; }
+
+        const Player_ptr &getPlayerById(int id) const;
+
+        /**
+         * Sets declineReason if name is not valid.
+         */
+        void validateUsername(const std::string &name, std::string &declineReason) const;
 
 
-    delegate<void(Level *)> onNewLevel;
+        Player_ptr deletePlayer(int id, std::list<Player_ptr> &players);
 
-    Level *getLevel() const { return level; }
+      protected:
+        Player_ptr getPlayer(int id) const;
 
+        Player_ptr deletePlayer(int id)
+        { return deletePlayer(id, players); }
 
-    virtual void update(double deltaTime) = 0;
+        void spawnPlayerEntities();
 
+        void spawnPlayerEntity(Player_ptr &);
 
-    // todo: move player functions & members to a Players class.
-    const Player_ptr &getLocalPlayer() const { return localPlayer; }
-
-    const std::list<Player_ptr> &getPlayers() const { return players; }
-
-    const Player_ptr &getPlayerById(int id) const;
-
-    /**
-     * Sets declineReason if name is not valid.
-     */
-    void validateUsername(const std::string &name, std::string &declineReason) const;
-
-
-    Player_ptr deletePlayer(int id, std::list<Player_ptr> &players);
-
-  protected:
-    Player_ptr getPlayer(int id) const;
-
-    Player_ptr deletePlayer(int id) { return deletePlayer(id, players); }
-
-    void spawnPlayerEntities();
-
-    void spawnPlayerEntity(Player_ptr &);
-
-    void removePlayerEntities(int playerId);
-};
+        void removePlayerEntities(int playerId);
+    };
+}

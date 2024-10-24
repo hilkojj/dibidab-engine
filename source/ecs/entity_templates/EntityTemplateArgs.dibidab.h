@@ -2,8 +2,11 @@
 #include <dibidab_header.h>
 #include <json.hpp>
 
-struct EntityTemplateArgs
+namespace dibidab::ecs
 {
-  dibidab_expose(json);
-    json createFunctionArguments = json::object();
-};
+    struct EntityTemplateArgs
+    {
+        dibidab_expose(json);
+        json createFunctionArguments = json::object();
+    };
+}

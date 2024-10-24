@@ -1,5 +1,5 @@
 #pragma once
-#include "../../dibidab/utils/StructEditor.h"
+#include "../../reflection/StructInspector.h"
 
 #include <dibidab_header.h>
 
@@ -11,19 +11,19 @@
 namespace dibidab
 {
     struct ComponentInfo;
+
+    namespace ecs
+    {
+        struct Inspecting
+        {
+            dibidab_component;
+            std::optional<vec2> nextWindowPos;
+            std::map<const dibidab::ComponentInfo *, StructInspector> componentInspectors;
+        };
+
+        struct InspectingBrain
+        {
+            dibidab_component;
+        };
+    }
 }
-
-class StructEditor;
-
-
-struct Inspecting
-{
-  dibidab_component;
-    std::optional<vec2> nextWindowPos;
-    std::map<const dibidab::ComponentInfo *, StructEditor> componentEditors;
-};
-
-struct InspectingBrain
-{
-  dibidab_component;
-};

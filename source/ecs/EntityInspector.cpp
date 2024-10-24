@@ -9,7 +9,7 @@
 #include "components/Brain.dibidab.h"
 #include "entity_templates/EntityTemplateArgs.dibidab.h"
 
-#include "../ai/behavior_trees/BehaviorTreeInspector.h"
+#include "../ai/behavior_trees/TreeInspector.h"
 #include "../game/dibidab.h"
 #include "../dibidab/utils/StructEditor.h"
 #include "../dibidab/StructInfo.h"
@@ -31,7 +31,7 @@ namespace
     {
         const dibidab::ComponentInfo *componentInfo = nullptr;
         json componentJson;
-        StructEditor editor;
+        StructInspector editor;
     };
 }
 
@@ -246,9 +246,9 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
     if (engine->entities.has<Brain>(entity))
     {
         ImGui::SameLine();
-        if (ImGui::Button("Inspect brain") && !engine->entities.has<BehaviorTreeInspector>(entity))
+        if (ImGui::Button("Inspect brain") && !engine->entities.has<TreeInspector>(entity))
         {
-            engine->entities.assign<BehaviorTreeInspector>(entity, *engine, entity);
+            engine->entities.assign<TreeInspector>(entity, *engine, entity);
         }
     }
     ImGui::EndChild();
@@ -275,7 +275,7 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
                 AddingComponent &adding = engine->entities.assign_or_replace<AddingComponent>(entity, AddingComponent {
                     info,
                     structInfo->getDefaultJsonObject(),
-                    StructEditor(*structInfo)
+                    StructInspector(*structInfo)
                 });
                 addCustomDrawFunctions(adding.editor);
             }
@@ -298,10 +298,10 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
             {
                 if (inspecting.componentEditors.find(component) == inspecting.componentEditors.end())
                 {
-                    inspecting.componentEditors.insert({ component, StructEditor(*structInfo) });
+                    inspecting.componentEditors.insert({ component, StructInspector(*structInfo) });
                     addCustomDrawFunctions(inspecting.componentEditors.at(component));
                 }
-                StructEditor &editor = inspecting.componentEditors.at(component);
+                StructInspector &editor = inspecting.componentEditors.at(component);
                 json componentJson;
                 component->getJsonObject(entity, engine->entities, componentJson);
                 if (editor.draw(componentJson))
@@ -774,7 +774,7 @@ void EntityInspector::drawCreateEntityFromTemplate()
     if (ImGui::Begin(title.c_str(), &bOpen, ImGuiWindowFlags_NoSavedSettings))
     {
         // TODO: Ideally there is a Json editor, so we do not need the wrapper struct..
-        static StructEditor editor(*dibidab::findStructInfo(typename_utils::getTypeName<EntityTemplateArgs>(false).c_str()));
+        static StructInspector editor(*dibidab::findStructInfo(typename_utils::getTypeName<EntityTemplateArgs>(false).c_str()));
         json jsonArgs = args;
         if (editor.draw(jsonArgs))
         {
@@ -809,17 +809,17 @@ void EntityInspector::drawCreateEntityFromTemplate()
 
 void EntityInspector::drawBehaviorTreeInspectors()
 {
-    engine->entities.view<InspectingBrain>(entt::exclude<BehaviorTreeInspector>).each([&] (entt::entity entity, auto)
+    engine->entities.view<InspectingBrain>(entt::exclude<TreeInspector>).each([&] (entt::entity entity, auto)
     {
-        engine->entities.assign<BehaviorTreeInspector>(entity, *engine, entity);
+        engine->entities.assign<TreeInspector>(entity, *engine, entity);
     });
 
-    engine->entities.view<BehaviorTreeInspector>().each([&] (entt::entity entity, BehaviorTreeInspector &inspector)
+    engine->entities.view<TreeInspector>().each([&] (entt::entity entity, TreeInspector &inspector)
     {
         engine->entities.get_or_assign<InspectingBrain>(entity);
         if (!inspector.drawGUI())
         {
-            engine->entities.remove<BehaviorTreeInspector>(entity);
+            engine->entities.remove<TreeInspector>(entity);
             engine->entities.remove<InspectingBrain>(entity);
         }
     });
@@ -850,7 +850,7 @@ std::set<const dibidab::ComponentInfo *> EntityInspector::getComponentsForEntity
     return infos;
 }
 
-void EntityInspector::addCustomDrawFunctions(StructEditor &structEditor)
+void EntityInspector::addCustomDrawFunctions(StructInspector &structEditor)
 {
     structEditor.customFieldDraw[typename_utils::getTypeName<entt::entity>(false)] = [&] (json &entityJson)
     {

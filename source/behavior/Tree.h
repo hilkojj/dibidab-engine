@@ -1,10 +1,10 @@
 #pragma once
-#include "../../ecs/EntityEngine.h"
-#include "../../ecs/EntityObserver.h"
-#include "../../dibidab/ComponentInfo.h"
-#include "../../luau.h"
+#include "../ecs/EntityEngine.h"
+#include "../ecs/EntityObserver.h"
+#include "../reflection/ComponentInfo.h"
+#include "../lua/luau.h"
 
-#include <utils/delegate.h>
+#include "utils/delegate.h"
 
 #include <vector>
 
@@ -14,7 +14,7 @@
  * The root node will be deleted by the BehaviorTree's destructor.
  * Created nodes that are not part of the tree will not be deleted automatically.
  */
-class BehaviorTree
+class Tree
 {
   public:
 
@@ -440,7 +440,7 @@ class BehaviorTree
         bool bInEnterFunction;
     };
 
-    BehaviorTree();
+    Tree();
 
     void setRootNode(Node *root);
 

@@ -1,20 +1,24 @@
 #pragma once
+#include "lua/luau.h"
+
 #include <json.hpp>
-#include "../luau.h"
 
 #ifndef DIBIDAB_NO_SAVE_GAME
 
-struct SaveGame
+namespace dibidab
 {
-    SaveGame(const char *path);
+    struct SaveGame
+    {
+        SaveGame(const char *path);
 
-    sol::table luaTable;
+        sol::table luaTable;
 
-    void save(const char *path=nullptr); // if path == nullptr then same path from constructor is used.
+        void save(const char *path = nullptr); // if path == nullptr then same path from constructor is used.
 
-    static sol::table getSaveDataForEntity(const std::string &entitySaveGameID, bool temporary);
+        static sol::table getSaveDataForEntity(const std::string &entitySaveGameID, bool bTemporary);
 
-  private:
-    std::string loadedFromPath;
-};
+      private:
+        std::string loadedFromPath;
+    };
+}
 #endif

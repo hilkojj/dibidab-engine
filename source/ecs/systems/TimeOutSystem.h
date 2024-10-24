@@ -4,27 +4,30 @@
 
 #include <utils/delegate.h>
 
-class TimeOutSystem : public EntitySystem
+namespace dibidab::ecs
 {
-    using EntitySystem::EntitySystem;
+    class TimeOutSystem : public EntitySystem
+    {
+        using EntitySystem::EntitySystem;
 
-  public:
+      public:
 
-    /**
-     * 'Unsafe' as in: This function will assign the TimeOuts component if not present. Which is behavior that
-     * can cause crashes if this function is called from somewhere where assigning Components is not allowed:
-     *  - Entity is being destroyed.
-     *  - ???
-     */
-    delegate_method unsafeCallAfter(float seconds, entt::entity waitingEntity, const std::function<void()> &callback);
+        /**
+         * 'Unsafe' as in: This function will assign the TimeOuts component if not present. Which is behavior that
+         * can cause crashes if this function is called from somewhere where assigning Components is not allowed:
+         *  - Entity is being destroyed.
+         *  - ???
+         */
+        delegate_method unsafeCallAfter(float seconds, entt::entity waitingEntity, const std::function<void()> &callback);
 
-    delegate<void()> nextUpdate;
+        delegate<void()> nextUpdate;
 
-  protected:
-    void init(EntityEngine *engine) override;
+      protected:
+        void init(EntityEngine *engine) override;
 
-    void update(double deltaTime, EntityEngine *engine) override;
+        void update(double deltaTime, EntityEngine *engine) override;
 
-  private:
-    EntityEngine *engine = nullptr;
-};
+      private:
+        EntityEngine *engine = nullptr;
+    };
+}

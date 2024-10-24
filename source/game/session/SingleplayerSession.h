@@ -1,19 +1,22 @@
 #pragma once
 #include "Session.h"
 
-class SingleplayerSession : public Session
+namespace dibidab
 {
+    class SingleplayerSession : public Session
+    {
+        bool firstUpdate = true;
 
-    bool firstUpdate = true;
+      public:
 
-  public:
+        SingleplayerSession(const char *saveGamePath) : Session(saveGamePath)
+        {};
 
-    SingleplayerSession(const char *saveGamePath) : Session(saveGamePath) {};
+        void join(std::string username) override;
 
-    void join(std::string username) override;
+        void update(double deltaTime) override;
 
-    void update(double deltaTime) override;
+        void setLevel(level::Level *);
 
-    void setLevel(Level *);
-
-};
+    };
+}

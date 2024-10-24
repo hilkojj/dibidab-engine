@@ -1,24 +1,24 @@
 
-#include "StructEditor.h"
+#include "StructInspector.h"
 
-#include "../StructInfo.h"
+#include "StructInfo.h"
 
-#include <utils/type_name.h>
-#include <utils/string_utils.h>
+#include "utils/type_name.h"
+#include "utils/string_utils.h"
 
-#include <json.hpp>
-#include <imgui.h>
-#include <imgui_internal.h>
+#include "json.hpp"
+#include "imgui.h"
+#include "imgui_internal.h"
 
 #include <list>
 
-StructEditor::StructEditor(const dibidab::StructInfo &structInfo) :
+StructInspector::StructInspector(const dibidab::StructInfo &structInfo) :
     structInfo(&structInfo)
 {
 
 }
 
-bool StructEditor::draw(json &structJson)
+bool StructInspector::draw(json &structJson)
 {
     const int prevColumns = ImGui::GetColumnsCount();
     if (prevColumns != 2)
@@ -63,7 +63,7 @@ bool StructEditor::draw(json &structJson)
     return bEdited;
 }
 
-bool StructEditor::drawKeyValue(json &key, json &value, const std::string &keyType, const std::string &valueType, const bool bEditKey, bool *bRemove)
+bool StructInspector::drawKeyValue(json &key, json &value, const std::string &keyType, const std::string &valueType, const bool bEditKey, bool *bRemove)
 {
     ImGui::PushID(key.dump().c_str());
     ImGui::AlignTextToFramePadding();
@@ -131,7 +131,7 @@ bool StructEditor::drawKeyValue(json &key, json &value, const std::string &keyTy
     return bEdited;
 }
 
-bool StructEditor::drawField(json &value, const std::string &valueType)
+bool StructInspector::drawField(json &value, const std::string &valueType)
 {
     bool bEdited = false;
 
@@ -239,7 +239,7 @@ bool StructEditor::drawField(json &value, const std::string &valueType)
     return bEdited;
 }
 
-bool StructEditor::drawStringField(std::string &string, const char *previewText)
+bool StructInspector::drawStringField(std::string &string, const char *previewText)
 {
     const int extraBuffer = 1024;
     char *ptr = new char[string.length() + extraBuffer]();
@@ -252,7 +252,7 @@ bool StructEditor::drawStringField(std::string &string, const char *previewText)
     return ImGui::IsItemDeactivatedAfterEdit();
 }
 
-bool StructEditor::drawStructure(json &structure, const std::string &structureType)
+bool StructInspector::drawStructure(json &structure, const std::string &structureType)
 {
     static std::string jsonParseError;
     bool bEdited = false;
@@ -412,7 +412,7 @@ bool StructEditor::drawStructure(json &structure, const std::string &structureTy
     return bEdited;
 }
 
-bool StructEditor::drawInsertIntoStructure(json &structure, const std::string &keyType, const std::string &valueType, bool bInsertAsPair)
+bool StructInspector::drawInsertIntoStructure(json &structure, const std::string &keyType, const std::string &valueType, bool bInsertAsPair)
 {
     std::string addButtonText;
     bool bShowKeyInput = false;
@@ -520,18 +520,18 @@ bool StructEditor::drawInsertIntoStructure(json &structure, const std::string &k
     return bAdd;
 }
 
-bool StructEditor::drawSubStructEditor(const dibidab::StructInfo &subStructInfo, json &subStructJson)
+bool StructInspector::drawSubStructEditor(const dibidab::StructInfo &subStructInfo, json &subStructJson)
 {
     unsigned int id = ImGui::GetCurrentWindow()->IDStack.back();
     auto subEditorIt = subStructEditors.find(id);
     if (subEditorIt == subStructEditors.end())
     {
-        subEditorIt = subStructEditors.insert({ id, StructEditor(subStructInfo) }).first;
+        subEditorIt = subStructEditors.insert({ id, StructInspector(subStructInfo) }).first;
     }
     return subEditorIt->second.draw(subStructJson);
 }
 
-bool StructEditor::inferArrayValueType(const std::string &fullArrayType, std::string &outValueType) const
+bool StructInspector::inferArrayValueType(const std::string &fullArrayType, std::string &outValueType) const
 {
     const static std::vector<std::string> arrayTypes { "std::vector", "std::list", "std::set" };
     for (const std::string &arrayType : arrayTypes)
@@ -545,7 +545,7 @@ bool StructEditor::inferArrayValueType(const std::string &fullArrayType, std::st
     return false;
 }
 
-bool StructEditor::isMapType(const std::string &valueType, std::string *outMapType) const
+bool StructInspector::isMapType(const std::string &valueType, std::string *outMapType) const
 {
     const static std::vector<std::string> mapTypes { "std::map", "std::unordered_map" };
     for (const std::string &mapType : mapTypes)
@@ -562,7 +562,7 @@ bool StructEditor::isMapType(const std::string &valueType, std::string *outMapTy
     return false;
 }
 
-bool StructEditor::inferMapKeyValueTypes(const std::string &fullMapType, std::string &outKeyType, std::string &outValueType) const
+bool StructInspector::inferMapKeyValueTypes(const std::string &fullMapType, std::string &outKeyType, std::string &outValueType) const
 {
     std::string shortMapType;
     if (isMapType(fullMapType, &shortMapType))
@@ -582,7 +582,7 @@ bool StructEditor::inferMapKeyValueTypes(const std::string &fullMapType, std::st
     return false;
 }
 
-bool StructEditor::isVecType(const std::string &type, int &outSize, int &outImGuiDataType) const
+bool StructInspector::isVecType(const std::string &type, int &outSize, int &outImGuiDataType) const
 {
     static const std::map<std::string, int> prefixToDataType = {
         { "", ImGuiDataType_Float },

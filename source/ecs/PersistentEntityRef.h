@@ -6,52 +6,55 @@
 
 #include <map>
 
-typedef uint64 PersistentEntityID;
-
-struct PersistentEntities
+namespace dibidab::ecs
 {
-    PersistentEntityID idCounter;
-    std::map<PersistentEntityID, entt::entity> persistentEntityIdMap;
-};
+    typedef uint64 PersistentEntityID;
 
-struct PersistentEntityRef
-{
-    PersistentEntityRef();
+    struct PersistentEntities
+    {
+        PersistentEntityID idCounter;
+        std::map<PersistentEntityID, entt::entity> persistentEntityIdMap;
+    };
 
-    void set(entt::entity, const entt::registry &);
+    struct PersistentEntityRef
+    {
+        PersistentEntityRef();
 
-    entt::entity resolve(const entt::registry &) const;
+        void set(entt::entity, const entt::registry &);
 
-    bool tryResolve(const entt::registry &, entt::entity &) const;
+        entt::entity resolve(const entt::registry &) const;
 
-    PersistentEntityID getId() const;
+        bool tryResolve(const entt::registry &, entt::entity &) const;
 
-    bool operator==(const PersistentEntityRef &other) const;
+        PersistentEntityID getId() const;
 
-    bool operator<(const PersistentEntityRef &other) const;
+        bool operator==(const PersistentEntityRef &other) const;
 
-  private:
-    mutable bool resolved;
-    mutable entt::entity entity;
-    PersistentEntityID persistentEntityId;
+        bool operator<(const PersistentEntityRef &other) const;
 
-    friend void to_json(json &j, const PersistentEntityRef &v);
+      private:
+        mutable bool resolved;
+        mutable entt::entity entity;
+        PersistentEntityID persistentEntityId;
 
-    friend void from_json(const json &j, PersistentEntityRef &v);
+        friend void to_json(json &j, const PersistentEntityRef &v);
 
-    friend std::hash<PersistentEntityRef>;
-};
+        friend void from_json(const json &j, PersistentEntityRef &v);
 
-void to_json(json &j, const PersistentEntityRef &v);
+        friend std::hash<PersistentEntityRef>;
+    };
 
-void from_json(const json &j, PersistentEntityRef &v);
+    void to_json(json &j, const PersistentEntityRef &v);
+
+    void from_json(const json &j, PersistentEntityRef &v);
+}
 
 namespace std
 {
     template<>
-    struct hash<PersistentEntityRef>
+    struct hash<dibidab::ecs::PersistentEntityRef>
     {
-        inline size_t operator()(const PersistentEntityRef &ref) const
+        inline size_t operator()(const dibidab::ecs::PersistentEntityRef &ref) const
         {
             return ref.persistentEntityId;
         }

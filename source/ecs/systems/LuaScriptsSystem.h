@@ -3,19 +3,22 @@
 #include "../../level/room/Room.h"
 #include "../components/LuaScripted.dibidab.h"
 
-class LuaScriptsSystem : public EntitySystem
+namespace dibidab::ecs
 {
-    using EntitySystem::EntitySystem;
+    class LuaScriptsSystem : public EntitySystem
+    {
+        using EntitySystem::EntitySystem;
 
-    EntityEngine *engine;
+        EntityEngine *engine;
 
-  protected:
-    void init(EntityEngine *) override;
+      protected:
+        void init(EntityEngine *) override;
 
-    void update(double deltaTime, EntityEngine *room) override;
+        void update(double deltaTime, EntityEngine *room) override;
 
-    void onDestroyed(entt::registry &, entt::entity);
+        void onDestroyed(entt::registry &, entt::entity);
 
-    ~LuaScriptsSystem() override;
+        ~LuaScriptsSystem() override;
 
-};
+    };
+}

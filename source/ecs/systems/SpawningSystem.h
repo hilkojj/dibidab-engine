@@ -3,12 +3,15 @@
 #include "../../level/room/Room.h"
 #include "../components/Spawning.dibidab.h"
 
-class SpawningSystem : public EntitySystem
+namespace dibidab::ecs
 {
-    using EntitySystem::EntitySystem;
+    class SpawningSystem : public EntitySystem
+    {
+        using EntitySystem::EntitySystem;
 
-    EntityEngine *room = nullptr;
+        EntityEngine *room = nullptr;
 
-  protected:
-    void update(double deltaTime, EntityEngine *room) override;
-};
+      protected:
+        void update(double deltaTime, EntityEngine *room) override;
+    };
+}

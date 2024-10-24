@@ -4,11 +4,14 @@
 #include <string>
 #include <memory>
 
-struct Player
+namespace dibidab
 {
-  dibidab_expose(lua, json);
-    int id;
-    std::string name;
-};
+    struct Player
+    {
+        dibidab_expose(lua, json);
+        int id;
+        std::string name;
+    };
 
-typedef std::shared_ptr<Player> Player_ptr;
+    typedef std::shared_ptr<Player> Player_ptr;
+}

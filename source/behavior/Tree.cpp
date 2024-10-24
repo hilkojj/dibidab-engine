@@ -1,13 +1,13 @@
 
-#include "BehaviorTree.h"
+#include "Tree.h"
 
-#include "../../ecs/systems/TimeOutSystem.h"
-#include "../../level/room/Room.h"
-#include "../../level/Level.h"
+#include "ecs/systems/TimeOutSystem.h"
+#include "level/room/Room.h"
+#include "level/Level.h"
 
-#include <utils/string_utils.h>
+#include "utils/string_utils.h"
 
-#include <imgui.h>
+#include "imgui.h"
 
 std::string getNodeErrorInfo(BehaviorTree::Node *node)
 {
@@ -67,7 +67,7 @@ void BehaviorTree::Node::abort()
     bAborted = true;
 }
 
-void BehaviorTree::Node::finish(BehaviorTree::Node::Result result)
+void BehaviorTree::Node::finish(Tree::Node::Result result)
 {
 #ifndef NDEBUG
     if (!bEntered)
@@ -142,7 +142,7 @@ BehaviorTree::Node::Result BehaviorTree::Node::getLastResult() const
 }
 #endif
 
-void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
+void BehaviorTree::Node::registerAsParent(Tree::Node *child)
 {
     if (child->parent != nullptr)
     {
@@ -151,7 +151,7 @@ void BehaviorTree::Node::registerAsParent(BehaviorTree::Node *child)
     child->parent = this;
 }
 
-void BehaviorTree::CompositeNode::finish(BehaviorTree::Node::Result result)
+void BehaviorTree::CompositeNode::finish(Tree::Node::Result result)
 {
 #ifndef NDEBUG
     for (Node *child : children)
@@ -165,7 +165,7 @@ void BehaviorTree::CompositeNode::finish(BehaviorTree::Node::Result result)
     Node::finish(result);
 }
 
-BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(BehaviorTree::Node *child)
+BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(Tree::Node *child)
 {
     if (child == nullptr)
     {
@@ -224,7 +224,7 @@ void BehaviorTree::DecoratorNode::abort()
     }
 }
 
-void BehaviorTree::DecoratorNode::finish(BehaviorTree::Node::Result result)
+void BehaviorTree::DecoratorNode::finish(Tree::Node::Result result)
 {
     if (child != nullptr && child->isEntered())
     {
@@ -233,7 +233,7 @@ void BehaviorTree::DecoratorNode::finish(BehaviorTree::Node::Result result)
     Node::finish(result);
 }
 
-BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(BehaviorTree::Node *inChild)
+BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(Tree::Node *inChild)
 {
     if (child != nullptr)
     {
@@ -284,7 +284,7 @@ void BehaviorTree::SequenceNode::enter()
     {
         throw gu_err("Already entered this SequenceNode: " + getNodeErrorInfo(this));
     }
-    BehaviorTree::Node::enter();
+    Tree::Node::enter();
 
     if (getChildren().empty())
     {
@@ -299,7 +299,7 @@ void BehaviorTree::SequenceNode::enter()
 
 void BehaviorTree::SequenceNode::abort()
 {
-    BehaviorTree::Node::abort();
+    Tree::Node::abort();
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
@@ -309,10 +309,10 @@ void BehaviorTree::SequenceNode::abort()
     getChildren().at(currentChildIndex)->abort();
 }
 
-void BehaviorTree::SequenceNode::finish(BehaviorTree::Node::Result result)
+void BehaviorTree::SequenceNode::finish(Tree::Node::Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
-    BehaviorTree::CompositeNode::finish(result);
+    Tree::CompositeNode::finish(result);
 }
 
 const char *BehaviorTree::SequenceNode::getName() const
@@ -342,9 +342,9 @@ void checkCorrectChildFinished(BehaviorTree::Node *parent, const std::vector<Beh
 
 }
 
-void BehaviorTree::SequenceNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void BehaviorTree::SequenceNode::onChildFinished(Tree::Node *child, Tree::Node::Result result)
 {
-    BehaviorTree::CompositeNode::onChildFinished(child, result);
+    Tree::CompositeNode::onChildFinished(child, result);
 
     const std::vector<Node *> &children = getChildren();
 
@@ -379,7 +379,7 @@ void BehaviorTree::SelectorNode::enter()
     {
         throw gu_err("Already entered this SelectorNode: " + getNodeErrorInfo(this));
     }
-    BehaviorTree::Node::enter();
+    Tree::Node::enter();
 
     if (getChildren().empty())
     {
@@ -395,7 +395,7 @@ void BehaviorTree::SelectorNode::enter()
 
 void BehaviorTree::SelectorNode::abort()
 {
-    BehaviorTree::Node::abort();
+    Tree::Node::abort();
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
@@ -405,10 +405,10 @@ void BehaviorTree::SelectorNode::abort()
     getChildren().at(currentChildIndex)->abort();
 }
 
-void BehaviorTree::SelectorNode::finish(BehaviorTree::Node::Result result)
+void BehaviorTree::SelectorNode::finish(Tree::Node::Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
-    BehaviorTree::CompositeNode::finish(result);
+    Tree::CompositeNode::finish(result);
 }
 
 const char *BehaviorTree::SelectorNode::getName() const
@@ -416,7 +416,7 @@ const char *BehaviorTree::SelectorNode::getName() const
     return "Selector";
 }
 
-void BehaviorTree::SelectorNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void BehaviorTree::SelectorNode::onChildFinished(Tree::Node *child, Tree::Node::Result result)
 {
     Node::onChildFinished(child, result);
 

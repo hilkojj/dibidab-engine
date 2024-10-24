@@ -4,19 +4,22 @@
 
 #include <dibidab_header.h>
 
-struct KeyListener
+namespace dibidab::ecs
 {
-  dibidab_component;
-    std::map<std::string, KeyInput::Key *> keys;
-};
+    struct KeyListener
+    {
+        dibidab_component;
+        std::map<std::string, KeyInput::Key *> keys;
+    };
 
 
-struct GamepadListener
-{
-  dibidab_component;
-  dibidab_expose(lua, json);
-    uint gamepad;
+    struct GamepadListener
+    {
+        dibidab_component;
+        dibidab_expose(lua, json);
+        uint gamepad;
 
-  dibidab_expose();
-    std::map<std::string, GamepadInput::Button *> buttons;
-};
+        dibidab_expose();
+        std::map<std::string, GamepadInput::Button *> buttons;
+    };
+}

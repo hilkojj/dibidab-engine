@@ -1,86 +1,94 @@
 #pragma once
 #include "room/Room.h"
 
-/**
- * A level contains one or more Rooms.
- */
-class Level
+namespace dibidab::level
 {
-    double time = 0;
-    bool bPaused = false;
-    std::vector<Room *> rooms;
-
-    bool updating = false, initialized = false;
-    float updateAccumulator = 0;
-    constexpr static int    // todo, make this overridable:
-        MAX_UPDATES_PER_SEC = 60,
-        MIN_UPDATES_PER_SEC = 60,
-        MAX_UPDATES_PER_FRAME = 1;
-
-    friend void to_json(json& j, const Level& lvl);
-    friend void from_json(const json& j, Level& lvl);
-
-  public:
-
     /**
-     * By default a Level loads Rooms by doing `r = new Room(); r->fromJson(j);`
-     *
-     * If you want to use (a) custom room type(s) in your game however,
-     * you can set `customRoomLoader` to a function that returns a new room of your type.
-     *
-     * You should use the given json object for calling `fromJson()` on your newly created room.
+     * A level contains one or more Rooms.
      */
-    static std::function<Room *(const json &)> customRoomLoader;
+    class Level
+    {
+        double time = 0;
+        bool bPaused = false;
+        std::vector<Room *> rooms;
 
-    const std::string loadedFromFile;
-    bool bSaveOnDestruct = true;
+        bool updating = false, initialized = false;
+        float updateAccumulator = 0;
+        constexpr static int    // todo, make this overridable:
+            MAX_UPDATES_PER_SEC = 60,
+            MIN_UPDATES_PER_SEC = 60,
+            MAX_UPDATES_PER_FRAME = 1;
 
-    std::string spawnRoom;
+        friend void to_json(json &j, const Level &lvl);
 
-    Level() = default;
+        friend void from_json(const json &j, Level &lvl);
 
-    Level(const char *filePath);
+      public:
 
-    delegate<void(Room *, int playerId)> onPlayerEnteredRoom, onPlayerLeftRoom;
-    delegate<void(Room *)> beforeRoomDeletion;
+        /**
+         * By default a Level loads Rooms by doing `r = new Room(); r->fromJson(j);`
+         *
+         * If you want to use (a) custom room type(s) in your game however,
+         * you can set `customRoomLoader` to a function that returns a new room of your type.
+         *
+         * You should use the given json object for calling `fromJson()` on your newly created room.
+         */
+        static std::function<Room *(const json &)> customRoomLoader;
 
-    int getNrOfRooms() const { return rooms.size(); }
+        const std::string loadedFromFile;
+        bool bSaveOnDestruct = true;
 
-    Room &getRoom(int i);
+        std::string spawnRoom;
 
-    const Room &getRoom(int i) const;
+        Level() = default;
 
-    Room *getRoomByName(const char *);
+        Level(const char *filePath);
 
-    const Room *getRoomByName(const char *) const;
+        delegate<void(Room *, int playerId)> onPlayerEnteredRoom, onPlayerLeftRoom;
+        delegate<void(Room *)> beforeRoomDeletion;
 
-    void deleteRoom(int i);
+        int getNrOfRooms() const
+        { return rooms.size(); }
 
-    void addRoom(Room *);
+        Room &getRoom(int i);
 
-    double getTime() const { return time; }
+        const Room &getRoom(int i) const;
 
-    bool isPaused() const { return bPaused; }
+        Room *getRoomByName(const char *);
 
-    void setPaused(bool bPaused);
+        const Room *getRoomByName(const char *) const;
 
-    bool isUpdating() const { return updating; }
+        void deleteRoom(int i);
 
-    void initialize();
+        void addRoom(Room *);
 
-    /**
-     * Updates the level and it's Rooms.
-     *
-     * @param deltaTime Time passed since previous update
-     */
-    void update(double deltaTime);
+        double getTime() const
+        { return time; }
 
-    void save(const char *path) const;
+        bool isPaused() const
+        { return bPaused; }
 
-    ~Level();
+        void setPaused(bool bPaused);
 
-};
+        bool isUpdating() const
+        { return updating; }
 
-void to_json(json& j, const Level& lvl);
+        void initialize();
 
-void from_json(const json& j, Level& lvl);
+        /**
+         * Updates the level and it's Rooms.
+         *
+         * @param deltaTime Time passed since previous update
+         */
+        void update(double deltaTime);
+
+        void save(const char *path) const;
+
+        ~Level();
+
+    };
+
+    void to_json(json &j, const Level &lvl);
+
+    void from_json(const json &j, Level &lvl);
+}

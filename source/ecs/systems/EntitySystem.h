@@ -1,32 +1,37 @@
 #pragma once
 #include <string>
 
-class EntityEngine;
-
-/**
- * Base class for all entity systems.
- *
- * An entity system should be used for updating components of entities.
- */
-class EntitySystem
+namespace dibidab::ecs
 {
-  public:
-    const std::string name;
+    class EntityEngine;
 
-    bool bUpdatesEnabled = true;
+    /**
+     * Base class for all entity systems.
+     *
+     * An entity system should be used for updating components of entities.
+     */
+    class EntitySystem
+    {
+      public:
+        const std::string name;
 
-    EntitySystem(std::string name) : name(std::move(name)) {}
+        bool bUpdatesEnabled = true;
 
-  protected:
-    friend EntityEngine;
+        EntitySystem(std::string name) : name(std::move(name))
+        {}
 
-    int updateFrequency = 0; // update this system n times per second. if n = 0 then update(deltaTime) is called, else update(1/n)
-    float updateAccumulator = 0;
+      protected:
+        friend EntityEngine;
 
-    virtual void init(EntityEngine *) {};
+        int updateFrequency = 0; // update this system n times per second. if n = 0 then update(deltaTime) is called, else update(1/n)
+        float updateAccumulator = 0;
 
-    virtual void update(double deltaTime, EntityEngine *) = 0;
+        virtual void init(EntityEngine *)
+        {}
 
-    virtual ~EntitySystem() = default;
+        virtual void update(double deltaTime, EntityEngine *) = 0;
 
-};
+        virtual ~EntitySystem() = default;
+
+    };
+}

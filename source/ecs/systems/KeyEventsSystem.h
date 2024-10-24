@@ -1,13 +1,16 @@
 #pragma once
 #include "EntitySystem.h"
 
-class KeyEventsSystem : public EntitySystem
+namespace dibidab::ecs
 {
-    using EntitySystem::EntitySystem;
+    class KeyEventsSystem : public EntitySystem
+    {
+        using EntitySystem::EntitySystem;
 
-  protected:
-    void init(EntityEngine *engine) override;
+      protected:
+        void init(EntityEngine *engine) override;
 
-    void update(double deltaTime, EntityEngine *engine) override;
+        void update(double deltaTime, EntityEngine *engine) override;
 
-};
+    };
+}

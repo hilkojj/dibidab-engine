@@ -2,7 +2,7 @@
 #include "BehaviorTreeSystem.h"
 
 #include "../EntityEngine.h"
-#include "../../ai/behavior_trees/BehaviorTree.h"
+#include "../../ai/behavior_trees/Tree.h"
 
 #include "../components/Brain.dibidab.h"
 

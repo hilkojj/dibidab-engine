@@ -1,36 +1,39 @@
 #pragma once
 
-#include <entt/entity/registry.hpp>
+#include <entt/entity/fwd.hpp>
 
 #include <string>
 
-
-class EntityEngine;
-
-/**
- * Abstract class.
- *
- * Entity templates are used to construct one (or more) entities with a collection of components.
- */
-class EntityTemplate
+namespace dibidab::ecs
 {
-  private:
-    friend class EntityEngine;
-    int templateHash = -1;
+    class EntityEngine;
 
-  protected:
-    EntityEngine *engine = nullptr;
+    /**
+     * Abstract class.
+     *
+     * Entity templates are used to construct one (or more) entities with a collection of components.
+     */
+    class EntityTemplate
+    {
+      private:
+        friend class EntityEngine;
 
-  public:
+        int templateHash = -1;
 
-    virtual const std::string &getDescription() const;
+      protected:
+        EntityEngine *engine = nullptr;
 
-    entt::entity create(bool persistent=false);
+      public:
 
-    virtual void createComponents(entt::entity, bool persistent=false) = 0;
+        virtual const std::string &getDescription() const;
 
-  protected:
+        entt::entity create(bool persistent = false);
 
-    virtual ~EntityTemplate() = default;
+        virtual void createComponents(entt::entity, bool persistent = false) = 0;
 
-};
+      protected:
+
+        virtual ~EntityTemplate() = default;
+
+    };
+}

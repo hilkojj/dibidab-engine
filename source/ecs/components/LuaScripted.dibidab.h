@@ -3,30 +3,33 @@
 
 #include <dibidab_header.h>
 
-struct TimeoutFunc
+namespace dibidab::ecs
 {
-    sol::safe_function func;
-    float timer;
-};
+    struct TimeoutFunc
+    {
+        sol::safe_function func;
+        float timer;
+    };
 
 
-struct LuaScripted
-{
-  dibidab_component;
-  dibidab_expose(lua, json);
-    float updateAccumulator = 0.0f;
-    float updateFrequency = 0.0f;
+    struct LuaScripted
+    {
+      dibidab_component;
+      dibidab_expose(lua, json);
+        float updateAccumulator = 0.0f;
+        float updateFrequency = 0.0f;
 
-  dibidab_expose();
-    LuaEntityTemplate *usedTemplate = nullptr;
+      dibidab_expose();
+        LuaEntityTemplate *usedTemplate = nullptr;
 
-    sol::safe_function updateFunc;
-    sol::safe_function onDestroyFunc;
+        sol::safe_function updateFunc;
+        sol::safe_function onDestroyFunc;
 
-    std::list<TimeoutFunc> timeoutFuncs;
+        std::list<TimeoutFunc> timeoutFuncs;
 
-    asset<luau::Script> updateFuncScript;
-    asset<luau::Script> onDestroyFuncScript;
+        asset<luau::Script> updateFuncScript;
+        asset<luau::Script> onDestroyFuncScript;
 
-    sol::table saveData;
-};
+        sol::table saveData;
+    };
+}

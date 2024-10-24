@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(dibidab)
 
-# --- Options:
-
-# TODO GU OPTIONS
-add_compile_definitions(PUT_A_SOCK_IN_IT)   # disable verbose logging of external/gu
-
 # ---Dibidab Header Tool---:
 include(${CMAKE_CURRENT_LIST_DIR}/external/dibidab-header/tool/dibidab_header.cmake)
 process_dibidab_headers(

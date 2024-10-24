@@ -6,68 +6,79 @@
 
 #include <set>
 
-class Level;
-struct Persistent;
-
-/**
- * A room is part of a level.
- */
-class Room : public EntityEngine
+namespace dibidab::ecs
 {
-  public:
+    struct Persistent;
+}
 
-    Level &getLevel() const { return *level; };
+namespace dibidab::level
+{
+    class Level;
 
-    int getIndexInLevel() const { return roomI; };
+    /**
+     * A room is part of a level.
+     */
+    class Room : public ecs::EntityEngine
+    {
+      public:
 
-    void update(double deltaTime) override;
+        Level &getLevel() const
+        { return *level; };
 
-    bool isLoadingPersistentEntities() const;
+        int getIndexInLevel() const
+        { return roomI; };
 
-    int getNumPersistentEntities() const;
+        void update(double deltaTime) override;
 
-    void setPersistent(bool bPersistent);
+        bool isLoadingPersistentEntities() const;
 
-    bool isPersistent() const;
+        int getNumPersistentEntities() const;
 
-    virtual void exportJsonData(json &);
+        void setPersistent(bool bPersistent);
 
-    virtual void loadJsonData(const json &);
+        bool isPersistent() const;
 
-    virtual void exportBinaryData(std::vector<unsigned char> &dataOut) {};
+        virtual void exportJsonData(json &);
 
-    virtual void loadBinaryData(const unsigned char *data, uint64 dataLength) {};
+        virtual void loadJsonData(const json &);
 
-    std::string name;
+        virtual void exportBinaryData(std::vector<unsigned char> &dataOut)
+        {};
 
-    delegate<void()> afterLoad;
+        virtual void loadBinaryData(const unsigned char *data, uint64 dataLength)
+        {};
 
-  protected:
+        std::string name;
 
-    virtual void preLoadInitialize();
+        delegate<void()> afterLoad;
 
-    virtual void postLoadInitialize();
+      protected:
 
-    std::list<EntitySystem *> getSystemsToUpdate() const override;
+        virtual void preLoadInitialize();
 
-    std::set<EntitySystem *> systemsToUpdateDuringPause;
+        virtual void postLoadInitialize();
 
-  private:
+        std::list<ecs::EntitySystem *> getSystemsToUpdate() const override;
 
-    void initialize(Level *lvl);
+        std::set<ecs::EntitySystem *> systemsToUpdateDuringPause;
 
-    void loadPersistentEntities();
+      private:
 
-    void persistentEntityToJson(entt::entity, const Persistent &, json &j) const;
+        void initialize(Level *lvl);
 
-    Level *level = nullptr;
-    int roomI = -1;
+        void loadPersistentEntities();
 
-    bool bIsPersistent = true;
+        void persistentEntityToJson(entt::entity, const ecs::Persistent &, json &j) const;
 
-    json persistentEntitiesToLoad, revivableEntitiesToSave;
-    bool bLoadingPersistentEntities = false;
+        Level *level = nullptr;
+        int roomI = -1;
 
-    friend void from_json(const json &j, Level &lvl);
-    friend Level;
-};
+        bool bIsPersistent = true;
+
+        json persistentEntitiesToLoad, revivableEntitiesToSave;
+        bool bLoadingPersistentEntities = false;
+
+        friend void from_json(const json &j, Level &lvl);
+        friend Level;
+    };
+}

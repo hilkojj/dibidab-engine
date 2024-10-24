@@ -1,9 +1,9 @@
 #pragma once
-#include "luau.h"
+#include "lua/luau.h"
 
-#include <entt/entity/registry.hpp>
 #include <assets/asset.h>
 #include <json.hpp>
+#include <entt/entity/registry.hpp>
 
 /////////// asset<>
 

@@ -1,20 +1,20 @@
 
-#include "BehaviorTreeInspector.h"
+#include "TreeInspector.h"
 
-#include "../../ecs/components/Brain.dibidab.h"
+#include "ecs/components/Brain.dibidab.h"
 
-#include <utils/string_utils.h>
+#include "utils/string_utils.h"
 
-#include <imgui.h>
+#include "imgui.h"
 
-BehaviorTreeInspector::BehaviorTreeInspector(EntityEngine &engine, entt::entity entity) :
+TreeInspector::TreeInspector(EntityEngine &engine, entt::entity entity) :
     engine(&engine),
     entity(entity)
 {
 
 }
 
-bool BehaviorTreeInspector::drawGUI()
+bool TreeInspector::drawGUI()
 {
     if (!engine->entities.valid(entity) || !engine->entities.has<Brain>(entity))
     {
@@ -61,7 +61,7 @@ bool BehaviorTreeInspector::drawGUI()
     return bOpen;
 }
 
-void BehaviorTreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
+void TreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
 {
     ImGui::PushID(node);
     ImGui::AlignTextToFramePadding();
