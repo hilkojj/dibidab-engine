@@ -1,15 +1,14 @@
-
-#include "../../game/SaveGame.h"
-#include "LuaEntityTemplate.h"
+#include "LuaTemplate.h"
 #include "../components/LuaScripted.dibidab.h"
+#include "../../game/SaveGame.h"
 
 #include <assets/AssetManager.h>
 #include <utils/string_utils.h>
 
-
-LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *engine_)
-    : script(assetName), name(name),
-      luaEnvironment(engine_->luaEnvironment.lua_state(), sol::create, engine_->luaEnvironment)
+dibidab::ecs::LuaTemplate::LuaTemplate(const char *assetName, const char *name, Engine *engine_) :
+    script(assetName),
+    name(name),
+    luaEnvironment(engine_->luaEnvironment.lua_state(), sol::create, engine_->luaEnvironment)
 {
     this->engine = engine_; // DONT RENAME engine_ to engine!!!, lambdas should use this->engine.
     luaEnvironment["TEMPLATE_NAME"] = name;
@@ -65,7 +64,7 @@ LuaEntityTemplate::LuaEntityTemplate(const char *assetName, const char *name, En
     runScript();
 }
 
-void LuaEntityTemplate::runScript()
+void dibidab::ecs::LuaTemplate::runScript()
 {
     try
     {
@@ -86,7 +85,7 @@ void LuaEntityTemplate::runScript()
     }
 }
 
-void LuaEntityTemplate::createComponents(entt::entity e, bool persistent)
+void dibidab::ecs::LuaTemplate::createComponents(entt::entity e, bool persistent)
 {
     auto *p = persistent ? engine->entities.try_get<Persistent>(e) : nullptr;
     if (p)
@@ -95,7 +94,7 @@ void LuaEntityTemplate::createComponents(entt::entity e, bool persistent)
         createComponentsWithLuaArguments(e, sol::optional<sol::table>(), persistent);
 }
 
-void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::optional<sol::table> arguments, bool persistent)
+void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e, sol::optional<sol::table> arguments, bool persistent)
 {
     if (script.hasReloaded())
         runScript();
@@ -128,7 +127,7 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
 
         if (persistent)
         {
-            PersistentEntityID persistentEntityID;
+            PersistentID persistentEntityID;
             std::string previousAppliedTemplate;
             if (const Persistent *pOld = engine->entities.try_get<Persistent>(e))
             {
@@ -177,12 +176,12 @@ void LuaEntityTemplate::createComponentsWithLuaArguments(entt::entity e, sol::op
     }
 }
 
-const std::string &LuaEntityTemplate::getDescription() const
+const std::string &dibidab::ecs::LuaTemplate::getDescription() const
 {
     return description;
 }
 
-json LuaEntityTemplate::getDefaultArgs()
+json dibidab::ecs::LuaTemplate::getDefaultArgs()
 {
     if (script.hasReloaded())
         runScript();
@@ -191,7 +190,7 @@ json LuaEntityTemplate::getDefaultArgs()
     return j;
 }
 
-void LuaEntityTemplate::createComponentsWithJsonArguments(entt::entity e, const json &arguments, bool persistent)
+void dibidab::ecs::LuaTemplate::createComponentsWithJsonArguments(entt::entity e, const json &arguments, bool persistent)
 {
     auto table = sol::table::create(luaEnvironment.lua_state());
     if (arguments.is_structured())
@@ -199,12 +198,12 @@ void LuaEntityTemplate::createComponentsWithJsonArguments(entt::entity e, const 
     createComponentsWithLuaArguments(e, table, persistent);
 }
 
-std::string LuaEntityTemplate::getUniqueID()
+std::string dibidab::ecs::LuaTemplate::getUniqueID()
 {
     return name + "_" + su::randomAlphanumeric(24);
 }
 
-sol::environment &LuaEntityTemplate::getTemplateEnvironment()
+sol::environment &dibidab::ecs::LuaTemplate::getTemplateEnvironment()
 {
     return luaEnvironment;
 }

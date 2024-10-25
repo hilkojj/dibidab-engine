@@ -1,23 +1,25 @@
 #pragma once
 #include "Tree.h"
 
-namespace dibidab
+namespace dibidab::ecs
 {
-class EntityEngine;
+    class Engine;
+}
 
-class TreeInspector
+namespace dibidab::behavior
 {
-  public:
-    TreeInspector(EntityEngine &engine, entt::entity entity);
+    class TreeInspector
+    {
+      public:
+        TreeInspector(ecs::Engine &engine, entt::entity entity);
 
-    bool drawGUI();
+        bool drawGUI();
 
-  private:
+      private:
 
-    void drawNode(Tree::Node *node, uint depth);
+        void drawNode(Tree::Node *node, uint depth);
 
-    EntityEngine *engine;
-    entt::entity entity;
-};
-
+        ecs::Engine *engine;
+        entt::entity entity;
+    };
 }

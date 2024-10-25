@@ -1,6 +1,5 @@
 #pragma once
 #include "EventEmitter.h"
-#include "entity_templates/EntityTemplate.h"
 
 #include "lua/luau.h"
 
@@ -19,22 +18,23 @@ namespace dibidab
 
 namespace dibidab::ecs
 {
-    class EntitySystem;
-    class EntityObserver;
+    class System;
+    class Template;
+    class Observer;
     class TimeOutSystem;
 
-    class EntityEngine
+    class Engine
     {
         bool bInitialized = false, bUpdating = false, bDestructing = false;
 
         TimeOutSystem *timeOutSystem;
 
-        std::map<const dibidab::ComponentInfo *, EntityObserver *> observerPerComponent;
+        std::map<const ComponentInfo *, Observer *> observerPerComponent;
 
       protected:
 
-        std::list<EntitySystem *> systems;
-        std::map<int, EntityTemplate *> entityTemplates;
+        std::list<System *> systems;
+        std::map<int, Template *> entityTemplates;
         std::vector<std::string> entityTemplateNames;
         std::string templateDirectoryPath = "scripts/entities/";
 
@@ -51,9 +51,9 @@ namespace dibidab::ecs
 
         void initialize();
 
-        void addSystem(EntitySystem *sys, bool pushFront = false);
+        void addSystem(System *sys, bool pushFront = false);
 
-        std::list<EntitySystem *> getSystems()
+        std::list<System *> getSystems()
         { return systems; }
 
         template<class EntitySystem_>
@@ -78,14 +78,14 @@ namespace dibidab::ecs
 
         // TODO: remove: not used:
         template<class EntityTemplate_>
-        EntityTemplate &getTemplate()
+        Template &getTemplate()
         {
             return getTemplate(typename_utils::getTypeName<EntityTemplate_>());
         }
 
-        EntityTemplate &getTemplate(std::string name);
+        Template &getTemplate(std::string name);
 
-        EntityTemplate &getTemplate(int templateHash);
+        Template &getTemplate(int templateHash);
 
         const std::vector<std::string> &getTemplateNames() const;
 
@@ -105,7 +105,7 @@ namespace dibidab::ecs
         const std::unordered_map<std::string, entt::entity> &getNamedEntities() const
         { return namedEntities; };
 
-        EntityObserver &getObserverForComponent(const dibidab::ComponentInfo &component);
+        Observer &getObserverForComponent(const ComponentInfo &component);
 
         template<typename type>
         void emitEntityEvent(entt::entity e, const type &event, const char *customEventName = nullptr)
@@ -114,7 +114,7 @@ namespace dibidab::ecs
                 emitter->emit(event, customEventName);
         }
 
-        virtual ~EntityEngine();
+        virtual ~Engine();
 
         bool isDestructing() const;
 
@@ -124,7 +124,7 @@ namespace dibidab::ecs
 
       protected:
 
-        virtual std::list<EntitySystem *> getSystemsToUpdate() const;
+        virtual std::list<System *> getSystemsToUpdate() const;
 
         template<class EntityTemplate>
         void registerEntityTemplate()
@@ -135,7 +135,7 @@ namespace dibidab::ecs
 
         void registerLuaEntityTemplate(const char *assetPath);
 
-        void addEntityTemplate(const std::string &name, EntityTemplate *);
+        void addEntityTemplate(const std::string &name, Template *);
 
       private:
         void onChildCreation(entt::registry &, entt::entity);

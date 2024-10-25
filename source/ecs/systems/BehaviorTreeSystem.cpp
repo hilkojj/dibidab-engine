@@ -1,19 +1,19 @@
 
 #include "BehaviorTreeSystem.h"
 
-#include "../EntityEngine.h"
-#include "../../ai/behavior_trees/Tree.h"
+#include "../Engine.h"
+#include "../../behavior/Tree.h"
 
 #include "../components/Brain.dibidab.h"
 
 struct BrainPendingActivation
 {};
 
-void BehaviorTreeSystem::init(EntityEngine *engine)
+void dibidab::ecs::BehaviorTreeSystem::init(Engine *engine)
 {
-    EntitySystem::init(engine);
+    System::init(engine);
 
-    engine->luaEnvironment["component"]["Brain"]["setBehaviorTreeFor"] = [engine] (entt::entity e, BehaviorTree::Node *node)
+    engine->luaEnvironment["component"]["Brain"]["setBehaviorTreeFor"] = [engine] (entt::entity e, behavior::Tree::Node *node)
     {
         if (!engine->entities.valid(e))
         {
@@ -25,13 +25,13 @@ void BehaviorTreeSystem::init(EntityEngine *engine)
     };
 }
 
-void BehaviorTreeSystem::update(double deltaTime, EntityEngine *engine)
+void dibidab::ecs::BehaviorTreeSystem::update(double deltaTime, Engine *engine)
 {
     engine->entities.view<BrainPendingActivation>().each([&] (entt::entity e, auto)
     {
         if (Brain *brain = engine->entities.try_get<Brain>(e))
         {
-            if (BehaviorTree::Node *rootNode = brain->behaviorTree.getRootNode())
+            if (behavior::Tree::Node *rootNode = brain->behaviorTree.getRootNode())
             {
                 rootNode->enter();
             }

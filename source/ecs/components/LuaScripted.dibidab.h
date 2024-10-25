@@ -1,5 +1,5 @@
 #pragma once
-#include "../entity_templates/LuaEntityTemplate.h"
+#include "../templates/LuaTemplate.h"
 
 #include <dibidab_header.h>
 
@@ -20,7 +20,7 @@ namespace dibidab::ecs
         float updateFrequency = 0.0f;
 
       dibidab_expose();
-        LuaEntityTemplate *usedTemplate = nullptr;
+        LuaTemplate *usedTemplate = nullptr;
 
         sol::safe_function updateFunc;
         sol::safe_function onDestroyFunc;

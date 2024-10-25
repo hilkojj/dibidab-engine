@@ -2,7 +2,7 @@
 #include "reflection/StructInfo.h"
 #include "game/dibidab.h"
 #include "game/session/SingleplayerSession.h"
-#include "ecs/EntityInspector.h"
+#include "ecs/Inspector.h"
 
 #include <gu/game_utils.h>
 #include <gu/game_config.h>
@@ -15,18 +15,18 @@ int main(int argc, char *argv[])
 
     std::cout << dibidab::findStructInfo("dibidab::EngineSettings")->id << std::endl;
 
-    SingleplayerSession session(nullptr);
+    dibidab::SingleplayerSession session(nullptr);
     dibidab::setCurrentSession(&session);
     session.join("yoooooooooooooo");
 
-    Level level;
+    dibidab::level::Level level;
     level.bSaveOnDestruct = false;
-    Room *room = new Room;
+    dibidab::level::Room *room = new dibidab::level::Room;
     level.addRoom(room);
 
     session.setLevel(&level);
 
-    EntityInspector inspector(*room);
+    dibidab::ecs::Inspector inspector(*room);
 
     auto renderInspector = gu::beforeRender += [&] (double deltaTime)
     {

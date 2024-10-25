@@ -1,18 +1,20 @@
-#include "EntityInspector.h"
+#include "Inspector.h"
 
-#include "EntityEngine.h"
+#include "Engine.h"
 
-#include "systems/EntitySystem.h"
+#include "systems/System.h"
 #include "components/Inspecting.dibidab.h"
 #include "components/LuaScripted.dibidab.h"
 #include "components/Children.dibidab.h"
 #include "components/Brain.dibidab.h"
-#include "entity_templates/EntityTemplateArgs.dibidab.h"
+#include "templates/TemplateArgs.dibidab.h"
+#include "templates/LuaTemplate.h"
 
-#include "../ai/behavior_trees/TreeInspector.h"
+#include "../behavior/TreeInspector.h"
 #include "../game/dibidab.h"
-#include "../dibidab/utils/StructEditor.h"
-#include "../dibidab/StructInfo.h"
+#include "../reflection/StructInspector.h"
+#include "../reflection/StructInfo.h"
+
 #include "../generated/registry.struct_json.h"
 
 #include <assets/AssetManager.h>
@@ -25,7 +27,7 @@
 #include <json.hpp>
 #include <imgui_internal.h>
 
-namespace
+namespace dibidab::ecs
 {
     struct AddingComponent
     {
@@ -35,17 +37,17 @@ namespace
     };
 }
 
-EntityMover::EntityMover(entt::entity entity) :
+dibidab::ecs::Mover::Mover(entt::entity entity) :
     entity(entity)
 {
 }
 
-EntityInspector::EntityInspector(EntityEngine &engine) :
+dibidab::ecs::Inspector::Inspector(Engine &engine) :
     engine(&engine)
 {
 }
 
-void EntityInspector::draw()
+void dibidab::ecs::Inspector::draw()
 {
     gu::profiler::Zone profilerZone("EntityInspector");
 
@@ -86,23 +88,23 @@ void EntityInspector::draw()
     drawBehaviorTreeInspectors();
 }
 
-EntityInspector::~EntityInspector()
+dibidab::ecs::Inspector::~Inspector()
 {
     delete picker;
     delete mover;
 }
 
-EntityPicker *EntityInspector::createPicker()
+dibidab::ecs::Picker *dibidab::ecs::Inspector::createPicker()
 {
     return nullptr;
 }
 
-EntityMover *EntityInspector::createMover(const entt::entity entityToMove)
+dibidab::ecs::Mover *dibidab::ecs::Inspector::createMover(const entt::entity entityToMove)
 {
     return nullptr;
 }
 
-const char *EntityInspector::getUsedTemplateName(entt::entity entity) const
+const char *dibidab::ecs::Inspector::getUsedTemplateName(entt::entity entity) const
 {
     if (const LuaScripted *scripted = engine->entities.try_get<LuaScripted>(entity))
     {
@@ -114,16 +116,16 @@ const char *EntityInspector::getUsedTemplateName(entt::entity entity) const
     return nullptr;
 }
 
-const loaded_asset *EntityInspector::getAssetForTemplate(const EntityTemplate &entityTemplate) const
+const loaded_asset *dibidab::ecs::Inspector::getAssetForTemplate(const Template &entityTemplate) const
 {
-    if (const LuaEntityTemplate *luaEntityTemplate = dynamic_cast<const LuaEntityTemplate *>(&entityTemplate))
+    if (const LuaTemplate *luaEntityTemplate = dynamic_cast<const LuaTemplate *>(&entityTemplate))
     {
         return luaEntityTemplate->script.getLoadedAsset();
     }
     return nullptr;
 }
 
-void EntityInspector::editTemplateAsset(const loaded_asset &templateAsset)
+void dibidab::ecs::Inspector::editTemplateAsset(const loaded_asset &templateAsset)
 {
     CodeEditor::Tab &codeTab = CodeEditor::tabs.emplace_back();
     codeTab.title = templateAsset.fullPath;
@@ -140,7 +142,7 @@ void EntityInspector::editTemplateAsset(const loaded_asset &templateAsset)
     };
 }
 
-void EntityInspector::updatePicking()
+void dibidab::ecs::Inspector::updatePicking()
 {
     const entt::entity pickedEntity = picker->tryPick();
     if (engine->entities.valid(pickedEntity))
@@ -157,7 +159,7 @@ void EntityInspector::updatePicking()
     }
 }
 
-void EntityInspector::updateMoving()
+void dibidab::ecs::Inspector::updateMoving()
 {
     if (!mover->update())
     {
@@ -166,7 +168,7 @@ void EntityInspector::updateMoving()
     }
 }
 
-void EntityInspector::drawInspectWindows()
+void dibidab::ecs::Inspector::drawInspectWindows()
 {
     std::vector<entt::entity> toInspect;
     engine->entities.view<Inspecting>().each([&] (const entt::entity e, Inspecting &inspecting)
@@ -197,7 +199,7 @@ void EntityInspector::drawInspectWindows()
     }
 }
 
-void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity)
+void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspecting &inspecting, bool &bKeepInspecting, bool &bDestroyEntity)
 {
     if (inspecting.nextWindowPos.has_value())
     {
@@ -232,7 +234,7 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
     ImGui::SameLine();
     bDestroyEntity = ImGui::Button("Destroy");
 
-    if (EntityTemplate *usedTemplate = getUsedTemplate(entity))
+    if (Template *usedTemplate = getUsedTemplate(entity))
     {
         ImGui::SameLine();
         if (ImGui::Button("Regenerate"))
@@ -246,9 +248,9 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
     if (engine->entities.has<Brain>(entity))
     {
         ImGui::SameLine();
-        if (ImGui::Button("Inspect brain") && !engine->entities.has<TreeInspector>(entity))
+        if (ImGui::Button("Inspect brain") && !engine->entities.has<behavior::TreeInspector>(entity))
         {
-            engine->entities.assign<TreeInspector>(entity, *engine, entity);
+            engine->entities.assign<behavior::TreeInspector>(entity, *engine, entity);
         }
     }
     ImGui::EndChild();
@@ -285,23 +287,28 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
 
     for (const dibidab::ComponentInfo *component : ownedComponents)
     {
-        if (component->structId == typename_utils::getTypeName<Inspecting>())
+        if (component->structId == typename_utils::getTypeName<Inspecting>(false))
         {
             // Do not draw the component that makes this window appear.
             // Note that it would allow for deleting the component, to which we have a reference here: `inspecting`
             continue;
         }
         bool bKeepComponent = true;
-        if (ImGui::CollapsingHeader(component->name, &bKeepComponent))
+        bool bComponentOpened = ImGui::CollapsingHeader(component->name, &bKeepComponent);
+        if (ImGui::IsItemHovered() && strcmp(component->name, component->structId) != 0)
+        {
+            ImGui::SetTooltip("%s", component->structId);
+        }
+        if (bComponentOpened)
         {
             if (const dibidab::StructInfo *structInfo = dibidab::findStructInfo(component->structId))
             {
-                if (inspecting.componentEditors.find(component) == inspecting.componentEditors.end())
+                if (inspecting.componentInspectors.find(component) == inspecting.componentInspectors.end())
                 {
-                    inspecting.componentEditors.insert({ component, StructInspector(*structInfo) });
-                    addCustomDrawFunctions(inspecting.componentEditors.at(component));
+                    inspecting.componentInspectors.insert({ component, StructInspector(*structInfo) });
+                    addCustomDrawFunctions(inspecting.componentInspectors.at(component));
                 }
-                StructInspector &editor = inspecting.componentEditors.at(component);
+                StructInspector &editor = inspecting.componentInspectors.at(component);
                 json componentJson;
                 component->getJsonObject(entity, engine->entities, componentJson);
                 if (editor.draw(componentJson))
@@ -326,7 +333,7 @@ void EntityInspector::drawInspectWindow(const entt::entity entity, Inspecting &i
     ImGui::End();
 }
 
-void EntityInspector::drawEntityNameField(const entt::entity entity)
+void dibidab::ecs::Inspector::drawEntityNameField(const entt::entity entity)
 {
     std::string currentName;
     if (const char *name = engine->getName(entity))
@@ -345,7 +352,7 @@ void EntityInspector::drawEntityNameField(const entt::entity entity)
     delete[] buffer;
 }
 
-const dibidab::ComponentInfo *EntityInspector::drawComponentSelect(const std::set<const dibidab::ComponentInfo *> *exclude) const
+const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const std::set<const dibidab::ComponentInfo *> *exclude) const
 {
     static ImGuiTextFilter filter;
     if (ImGui::IsWindowAppearing())
@@ -425,7 +432,7 @@ const dibidab::ComponentInfo *EntityInspector::drawComponentSelect(const std::se
     return componentToReturn;
 }
 
-void EntityInspector::drawAddComponents()
+void dibidab::ecs::Inspector::drawAddComponents()
 {
     engine->entities.view<AddingComponent>().each([&] (entt::entity e, AddingComponent &)
     {
@@ -433,7 +440,7 @@ void EntityInspector::drawAddComponents()
     });
 }
 
-void EntityInspector::drawAddComponent(const entt::entity entity)
+void dibidab::ecs::Inspector::drawAddComponent(const entt::entity entity)
 {
     AddingComponent &addingComponent = engine->entities.get<AddingComponent>(entity);
 
@@ -469,7 +476,7 @@ void EntityInspector::drawAddComponent(const entt::entity entity)
     }
 }
 
-void EntityInspector::drawMainMenuItem()
+void dibidab::ecs::Inspector::drawMainMenuItem()
 {
     ImGui::BeginMainMenuBar();
     if (ImGui::BeginMenu("Inspect"))
@@ -497,7 +504,7 @@ void EntityInspector::drawMainMenuItem()
 
         if (ImGui::BeginMenu("Enabled Systems"))
         {
-            for (const EntitySystem *system : engine->getSystems())
+            for (const System *system : engine->getSystems())
             {
                 ImGui::MenuItem(system->name.c_str(), nullptr, system->bUpdatesEnabled);
             }
@@ -509,7 +516,7 @@ void EntityInspector::drawMainMenuItem()
     ImGui::EndMainMenuBar();
 }
 
-void EntityInspector::drawEntityTemplateSelect()
+void dibidab::ecs::Inspector::drawEntityTemplateSelect()
 {
     static ImGuiTextFilter templateFilter;
     if (ImGui::IsWindowAppearing())
@@ -537,7 +544,7 @@ void EntityInspector::drawEntityTemplateSelect()
         {
             continue;
         }
-        EntityTemplate &entityTemplate = engine->getTemplate(templateName);
+        Template &entityTemplate = engine->getTemplate(templateName);
         const loaded_asset *loadedAsset = getAssetForTemplate(entityTemplate);
 
         std::vector<std::string> categoryPath;
@@ -602,7 +609,7 @@ void EntityInspector::drawEntityTemplateSelect()
 }
 
 
-void EntityInspector::drawEntityRegistryTree()
+void dibidab::ecs::Inspector::drawEntityRegistryTree()
 {
     drawInspectById();
 
@@ -701,7 +708,7 @@ void EntityInspector::drawEntityRegistryTree()
     }
 }
 
-void EntityInspector::drawInspectById()
+void dibidab::ecs::Inspector::drawInspectById()
 {
     bool bHovered = false;
 
@@ -747,9 +754,9 @@ void EntityInspector::drawInspectById()
     }
 }
 
-void EntityInspector::drawCreateEntityFromTemplate()
+void dibidab::ecs::Inspector::drawCreateEntityFromTemplate()
 {
-    LuaEntityTemplate *luaTemplate = dynamic_cast<LuaEntityTemplate *>(creatingEntity.fromTemplate);
+    LuaTemplate *luaTemplate = dynamic_cast<LuaTemplate *>(creatingEntity.fromTemplate);
     if (luaTemplate == nullptr || luaTemplate->getDefaultArgs().empty())
     {
         creatingEntity.fromTemplate->create(creatingEntity.bPersistent);
@@ -757,9 +764,9 @@ void EntityInspector::drawCreateEntityFromTemplate()
         return;
     }
 
-    static EntityTemplateArgs args;
+    static TemplateArgs args;
 
-    static LuaEntityTemplate *prevLuaTemplate = nullptr;
+    static LuaTemplate *prevLuaTemplate = nullptr;
     if (prevLuaTemplate != luaTemplate)
     {
         prevLuaTemplate = luaTemplate;
@@ -774,7 +781,7 @@ void EntityInspector::drawCreateEntityFromTemplate()
     if (ImGui::Begin(title.c_str(), &bOpen, ImGuiWindowFlags_NoSavedSettings))
     {
         // TODO: Ideally there is a Json editor, so we do not need the wrapper struct..
-        static StructInspector editor(*dibidab::findStructInfo(typename_utils::getTypeName<EntityTemplateArgs>(false).c_str()));
+        static StructInspector editor(*dibidab::findStructInfo(typename_utils::getTypeName<TemplateArgs>(false).c_str()));
         json jsonArgs = args;
         if (editor.draw(jsonArgs))
         {
@@ -807,25 +814,25 @@ void EntityInspector::drawCreateEntityFromTemplate()
     }
 }
 
-void EntityInspector::drawBehaviorTreeInspectors()
+void dibidab::ecs::Inspector::drawBehaviorTreeInspectors()
 {
-    engine->entities.view<InspectingBrain>(entt::exclude<TreeInspector>).each([&] (entt::entity entity, auto)
+    engine->entities.view<InspectingBrain>(entt::exclude<behavior::TreeInspector>).each([&] (entt::entity entity, auto)
     {
-        engine->entities.assign<TreeInspector>(entity, *engine, entity);
+        engine->entities.assign<behavior::TreeInspector>(entity, *engine, entity);
     });
 
-    engine->entities.view<TreeInspector>().each([&] (entt::entity entity, TreeInspector &inspector)
+    engine->entities.view<behavior::TreeInspector>().each([&] (entt::entity entity, behavior::TreeInspector &inspector)
     {
         engine->entities.get_or_assign<InspectingBrain>(entity);
         if (!inspector.drawGUI())
         {
-            engine->entities.remove<TreeInspector>(entity);
+            engine->entities.remove<behavior::TreeInspector>(entity);
             engine->entities.remove<InspectingBrain>(entity);
         }
     });
 }
 
-EntityTemplate *EntityInspector::getUsedTemplate(entt::entity entity) const
+dibidab::ecs::Template *dibidab::ecs::Inspector::getUsedTemplate(entt::entity entity) const
 {
     if (const LuaScripted *scripted = engine->entities.try_get<LuaScripted>(entity))
     {
@@ -837,7 +844,7 @@ EntityTemplate *EntityInspector::getUsedTemplate(entt::entity entity) const
     return nullptr;
 }
 
-std::set<const dibidab::ComponentInfo *> EntityInspector::getComponentsForEntity(entt::entity entity) const
+std::set<const dibidab::ComponentInfo *> dibidab::ecs::Inspector::getComponentsForEntity(entt::entity entity) const
 {
     std::set<const dibidab::ComponentInfo *> infos;
     for (const auto &[name, info] : dibidab::getAllComponentInfos())
@@ -850,7 +857,7 @@ std::set<const dibidab::ComponentInfo *> EntityInspector::getComponentsForEntity
     return infos;
 }
 
-void EntityInspector::addCustomDrawFunctions(StructInspector &structEditor)
+void dibidab::ecs::Inspector::addCustomDrawFunctions(StructInspector &structEditor)
 {
     structEditor.customFieldDraw[typename_utils::getTypeName<entt::entity>(false)] = [&] (json &entityJson)
     {
@@ -890,9 +897,9 @@ void EntityInspector::addCustomDrawFunctions(StructInspector &structEditor)
         }
         return bEdited;
     };
-    structEditor.customFieldDraw[typename_utils::getTypeName<PersistentEntityRef>(false)] = [&] (json &refJson)
+    structEditor.customFieldDraw[typename_utils::getTypeName<PersistentRef>(false)] = [&] (json &refJson)
     {
-        PersistentEntityRef ref = refJson;
+        PersistentRef ref = refJson;
         entt::entity resolvedEntity = entt::null;
         const bool bResolved = ref.tryResolve(engine->entities, resolvedEntity);
 

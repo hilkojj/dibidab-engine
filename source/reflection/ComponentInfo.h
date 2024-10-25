@@ -8,11 +8,13 @@
 
 #include <map>
 
-class EntityObserver;
-
-
 namespace dibidab
 {
+    namespace ecs
+    {
+        class Observer;
+    }
+
     struct ComponentInfo
     {
         const char *name;
@@ -24,7 +26,7 @@ namespace dibidab
         void (*addComponent)(entt::entity, entt::registry &);
         void (*removeComponent)(entt::entity, entt::registry &);
 
-        EntityObserver *(*createObserver)(entt::registry &);
+        ecs::Observer *(*createObserver)(entt::registry &);
 
         void (*getJsonObject)(entt::entity, const entt::registry &, json &outObject);
         void (*getJsonArray)(entt::entity, const entt::registry &, json &outArray);

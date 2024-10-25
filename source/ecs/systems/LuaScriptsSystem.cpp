@@ -1,22 +1,24 @@
 
 #include "LuaScriptsSystem.h"
 
+#include "../Engine.h"
+
 #include <assets/AssetManager.h>
 
 // https://github.com/skypjack/entt/issues/17
 
-void LuaScriptsSystem::init(EntityEngine *room)
+void dibidab::ecs::LuaScriptsSystem::init(Engine *room)
 {
     engine = room;
     room->entities.on_destroy<LuaScripted>().connect<&LuaScriptsSystem::onDestroyed>(this);
 }
 
-void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
+void dibidab::ecs::LuaScriptsSystem::update(double deltaTime, Engine *room)
 {
     std::vector<std::tuple<double, entt::entity, sol::safe_function>> updatesToCall;
     std::vector<std::pair<entt::entity, sol::safe_function>> timeoutsToCall;
 
-    room->entities.view<LuaScripted>().each([&](auto e, LuaScripted &scripted)
+    room->entities.view<LuaScripted>().each([&] (auto e, LuaScripted &scripted)
     {
         if (scripted.updateFunc.lua_state() && scripted.updateFunc.valid() && !scripted.updateFunc.is<sol::nil_t>())
         {
@@ -69,11 +71,13 @@ void LuaScriptsSystem::update(double deltaTime, EntityEngine *room)
     }
 }
 
-void LuaScriptsSystem::onDestroyed(entt::registry &reg, entt::entity e)
+void dibidab::ecs::LuaScriptsSystem::onDestroyed(entt::registry &reg, entt::entity e)
 {
     LuaScripted &scripted = reg.get<LuaScripted>(e);
     if (!scripted.onDestroyFunc.lua_state() || !scripted.onDestroyFunc.valid() || scripted.onDestroyFunc.is<sol::nil_t>())
+    {
         return;
+    }
 
     try
     {
@@ -91,9 +95,10 @@ void LuaScriptsSystem::onDestroyed(entt::registry &reg, entt::entity e)
     }
 }
 
-LuaScriptsSystem::~LuaScriptsSystem()
+dibidab::ecs::LuaScriptsSystem::~LuaScriptsSystem()
 {
-    engine->entities.view<LuaScripted>().each([&] (auto e, auto) {
+    engine->entities.view<LuaScripted>().each([&] (auto e, auto)
+    {
         onDestroyed(engine->entities, e);
     });
 }

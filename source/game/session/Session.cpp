@@ -1,14 +1,15 @@
 
 #include "Session.h"
+#include "../../ecs/templates/Template.h"
 #include "../../ecs/components/PlayerControlled.dibidab.h"
 
-const Player_ptr &Session::getPlayerById(int id) const
+const dibidab::Player_ptr &dibidab::Session::getPlayerById(int id) const
 {
     for (auto &p : players) if (p->id == id) return p;
     throw gu_err("Player " + std::to_string(id) + " does not exist!");
 }
 
-void Session::validateUsername(const std::string &name, std::string &declineReason) const
+void dibidab::Session::validateUsername(const std::string &name, std::string &declineReason) const
 {
     for (const char &c : name)
         if (c < ' ' || c > '~') // http://www.asciitable.com/
@@ -22,7 +23,7 @@ void Session::validateUsername(const std::string &name, std::string &declineReas
             declineReason = "Username already taken. :(";
 }
 
-Player_ptr Session::deletePlayer(int pId, std::list<Player_ptr> &players)
+dibidab::Player_ptr dibidab::Session::deletePlayer(int pId, std::list<Player_ptr> &players)
 {
     Player_ptr deletedPlayer;
     players.remove_if([&](auto &p) {
@@ -37,13 +38,13 @@ Player_ptr Session::deletePlayer(int pId, std::list<Player_ptr> &players)
     return deletedPlayer;
 }
 
-Player_ptr Session::getPlayer(int id) const
+dibidab::Player_ptr dibidab::Session::getPlayer(int id) const
 {
     for (auto &p : players) if (p->id == id) return p;
     return nullptr;
 }
 
-Session::Session(const char *saveGamePath)
+dibidab::Session::Session(const char *saveGamePath)
 #ifndef DIBIDAB_NO_SAVE_GAME
     : saveGame(saveGamePath)
 #endif
@@ -51,46 +52,45 @@ Session::Session(const char *saveGamePath)
 
 }
 
-void Session::spawnPlayerEntities()
+void dibidab::Session::spawnPlayerEntities()
 {
     assert(level != nullptr);
     for (auto &player : players)
         spawnPlayerEntity(player);
 }
 
-void Session::spawnPlayerEntity(Player_ptr &p)
+void dibidab::Session::spawnPlayerEntity(Player_ptr &p)
 {
     if (level->getNrOfRooms() >= 1)
     {
-        Room *spawnRoom = level->getRoomByName(level->spawnRoom.c_str());
+        dibidab::level::Room *spawnRoom = level->getRoomByName(level->spawnRoom.c_str());
         if (!spawnRoom)
             spawnRoom = &level->getRoom(0);
 
         auto &templ = spawnRoom->getTemplate("Player");
         auto e = templ.create();
-        PlayerControlled pc;
+        dibidab::ecs::PlayerControlled pc;
         pc.playerId = p->id;
-        spawnRoom->entities.assign<PlayerControlled>(e, pc);
+        spawnRoom->entities.assign<ecs::PlayerControlled>(e, pc);
         if (p == localPlayer)
-            spawnRoom->entities.assign<LocalPlayer>(e);
+            spawnRoom->entities.assign<ecs::LocalPlayer>(e);
     }
     else throw gu_err("Cant spawn Player entity in an empty Level!");
 }
 
-
-void Session::removePlayerEntities(int playerId)
+void dibidab::Session::removePlayerEntities(int playerId)
 {
     for (int i = 0; i < level->getNrOfRooms(); i++)
     {
-        Room &r = level->getRoom(i);
-        r.entities.view<PlayerControlled>().each([&] (entt::entity e, PlayerControlled &pC) {
+        level::Room &r = level->getRoom(i);
+        r.entities.view<ecs::PlayerControlled>().each([&] (entt::entity e, ecs::PlayerControlled &pC) {
             if (pC.playerId == playerId)
                 r.entities.destroy(e);
         });
     }
 }
 
-Session::~Session()
+dibidab::Session::~Session()
 {
     delete level;
 #ifndef DIBIDAB_NO_SAVE_GAME

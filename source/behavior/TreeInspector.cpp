@@ -7,21 +7,21 @@
 
 #include "imgui.h"
 
-TreeInspector::TreeInspector(EntityEngine &engine, entt::entity entity) :
+dibidab::behavior::TreeInspector::TreeInspector(ecs::Engine &engine, entt::entity entity) :
     engine(&engine),
     entity(entity)
 {
 
 }
 
-bool TreeInspector::drawGUI()
+bool dibidab::behavior::TreeInspector::drawGUI()
 {
-    if (!engine->entities.valid(entity) || !engine->entities.has<Brain>(entity))
+    if (!engine->entities.valid(entity) || !engine->entities.has<ecs::Brain>(entity))
     {
         return false;
     }
-    Brain &brain = engine->entities.get<Brain>(entity);
-    BehaviorTree &tree = brain.behaviorTree;
+    ecs::Brain &brain = engine->entities.get<ecs::Brain>(entity);
+    Tree &tree = brain.behaviorTree;
 
     bool bOpen = true;
 
@@ -38,7 +38,7 @@ bool TreeInspector::drawGUI()
             }
             if (ImGui::BeginTabItem(tabName.c_str(), &bOpen))
             {
-                if (BehaviorTree::Node *root = tree.getRootNode())
+                if (dibidab::behavior::Tree::Node *root = tree.getRootNode())
                 {
                     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.back()); // small default font
                     ImGui::Columns(3);
@@ -61,13 +61,13 @@ bool TreeInspector::drawGUI()
     return bOpen;
 }
 
-void TreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
+void dibidab::behavior::TreeInspector::drawNode(Tree::Node *node, uint depth)
 {
     ImGui::PushID(node);
     ImGui::AlignTextToFramePadding();
 
     ImGuiTreeNodeFlags nodeFlags = 0;
-    if (BehaviorTree::LeafNode *leafNode = dynamic_cast<BehaviorTree::LeafNode *>(node))
+    if (Tree::LeafNode *leafNode = dynamic_cast<Tree::LeafNode *>(node))
     {
         nodeFlags |= ImGuiTreeNodeFlags_Leaf;
     }
@@ -83,7 +83,7 @@ void TreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
     std::string nodeName = node->getName();
     if (node->parent)
     {
-        if (BehaviorTree::ComponentObserverNode *observerParent = dynamic_cast<BehaviorTree::ComponentObserverNode *>(node->parent))
+        if (Tree::ComponentObserverNode *observerParent = dynamic_cast<Tree::ComponentObserverNode *>(node->parent))
         {
             bool bNodeIsFulfilledBranch = false;
             if (observerParent->fulfilledNodeIndex >= 0)
@@ -122,13 +122,13 @@ void TreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
     {
         switch (node->getLastResult())
         {
-            case BehaviorTree::Node::Result::SUCCESS:
+            case Tree::Node::Result::SUCCESS:
                 ImGui::TextDisabled("[SUCCESS]");
                 break;
-            case BehaviorTree::Node::Result::FAILURE:
+            case Tree::Node::Result::FAILURE:
                 ImGui::TextDisabled("[FAILURE]");
                 break;
-            case BehaviorTree::Node::Result::ABORTED:
+            case Tree::Node::Result::ABORTED:
                 ImGui::TextDisabled("[ABORTED]");
                 break;
         }
@@ -143,16 +143,16 @@ void TreeInspector::drawNode(BehaviorTree::Node *node, uint depth)
 
     if (bNodeOpen)
     {
-        if (BehaviorTree::CompositeNode *composite = dynamic_cast<BehaviorTree::CompositeNode *>(node))
+        if (Tree::CompositeNode *composite = dynamic_cast<Tree::CompositeNode *>(node))
         {
-            for (BehaviorTree::Node *child : composite->getChildren())
+            for (Tree::Node *child : composite->getChildren())
             {
                 drawNode(child, depth + 1u);
             }
         }
-        else if (BehaviorTree::DecoratorNode *decorator = dynamic_cast<BehaviorTree::DecoratorNode *>(node))
+        else if (Tree::DecoratorNode *decorator = dynamic_cast<Tree::DecoratorNode *>(node))
         {
-            if (BehaviorTree::Node *child = decorator->getChild())
+            if (Tree::Node *child = decorator->getChild())
             {
                 drawNode(child, depth + 1u);
             }

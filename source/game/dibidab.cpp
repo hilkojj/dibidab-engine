@@ -3,16 +3,14 @@
 
 #include "dibidab.h"
 
-#include "../ecs/EntityInspector.h"
+#include "../ecs/Inspector.h"
 #include "../rendering/ImGuiStyle.h"
-
-#include <graphics/textures/texture.h>
-#include <assets/AssetManager.h>
 
 #include <gu/game_utils.h>
 #include <gu/game_config.h>
 #include <gu/profiler.h>
-
+#include <graphics/textures/texture.h>
+#include <assets/AssetManager.h>
 #include <files/file_utils.h>
 #include <files/FileWatcher.h>
 #include <code_editor/CodeEditor.h>
@@ -24,7 +22,7 @@ dibidab::EngineSettings dibidab::settings;
 
 std::map<std::string, std::string> dibidab::startupArgs;
 
-Session &dibidab::getCurrentSession()
+dibidab::Session &dibidab::getCurrentSession()
 {
     auto *s = tryGetCurrentSession();
     if (s == nullptr)
@@ -33,9 +31,9 @@ Session &dibidab::getCurrentSession()
 }
 
 delegate<void()> dibidab::onSessionChange;
-Session *currSession = nullptr;
+dibidab::Session *currSession = nullptr;
 
-Session *dibidab::tryGetCurrentSession()
+dibidab::Session *dibidab::tryGetCurrentSession()
 {
     return currSession;
 }

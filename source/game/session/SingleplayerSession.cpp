@@ -1,7 +1,12 @@
 
 #include "SingleplayerSession.h"
 
-void SingleplayerSession::join(std::string username)
+dibidab::SingleplayerSession::SingleplayerSession(const char *saveGamePath) :
+    Session(saveGamePath)
+{
+}
+
+void dibidab::SingleplayerSession::join(std::string username)
 {
     std::string declineReason;
     validateUsername(username, declineReason);
@@ -19,13 +24,13 @@ void SingleplayerSession::join(std::string username)
     players.push_back(localPlayer);
 }
 
-void SingleplayerSession::update(double deltaTime)
+void dibidab::SingleplayerSession::update(double deltaTime)
 {
     if (level)
         level->update(deltaTime);
 }
 
-void SingleplayerSession::setLevel(Level *newLevel)
+void dibidab::SingleplayerSession::setLevel(level::Level *newLevel)
 {
     if (level && level->isUpdating())
         throw gu_err("cant set a level while updating");

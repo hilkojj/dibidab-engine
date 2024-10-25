@@ -1,5 +1,5 @@
 #pragma once
-#include "EntityTemplate.h"
+#include "Template.h"
 
 #include <utility>
 #include "../../level/room/Room.h"
@@ -8,14 +8,14 @@
 
 namespace dibidab::ecs
 {
-    class LuaEntityTemplate : public EntityTemplate
+    class LuaTemplate : public Template
     {
       public:
         const std::string name;
 
         asset<luau::Script> script;
 
-        LuaEntityTemplate(const char *assetName, const char *name, EntityEngine *);
+        LuaTemplate(const char *assetName, const char *name, Engine *);
 
         const std::string &getDescription() const override;
 

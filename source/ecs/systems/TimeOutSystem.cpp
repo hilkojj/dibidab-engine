@@ -6,7 +6,7 @@ struct TimeOuts
     std::list<std::pair<float, delegate<void()>>> timeOutList;
 };
 
-delegate_method TimeOutSystem::unsafeCallAfter(float seconds, entt::entity waitingEntity,
+delegate_method dibidab::ecs::TimeOutSystem::unsafeCallAfter(float seconds, entt::entity waitingEntity,
     const std::function<void()> &callback)
 {
     if (!engine)
@@ -22,13 +22,13 @@ delegate_method TimeOutSystem::unsafeCallAfter(float seconds, entt::entity waiti
     return timeOut.second += callback;
 }
 
-void TimeOutSystem::init(EntityEngine *inEngine)
+void dibidab::ecs::TimeOutSystem::init(Engine *inEngine)
 {
-    EntitySystem::init(inEngine);
+    System::init(inEngine);
     engine = inEngine;
 }
 
-void TimeOutSystem::update(double deltaTimeDouble, EntityEngine *)
+void dibidab::ecs::TimeOutSystem::update(double deltaTimeDouble, Engine *)
 {
     nextUpdate();
     nextUpdate = delegate<void()>();

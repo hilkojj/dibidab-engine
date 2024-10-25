@@ -1,14 +1,14 @@
 #pragma once
-#include "EntitySystem.h"
-#include "../EntityEngine.h"
+#include "System.h"
+#include "../Engine.h"
 
 #include <utils/delegate.h>
 
 namespace dibidab::ecs
 {
-    class TimeOutSystem : public EntitySystem
+    class TimeOutSystem : public System
     {
-        using EntitySystem::EntitySystem;
+        using System::System;
 
       public:
 
@@ -23,11 +23,11 @@ namespace dibidab::ecs
         delegate<void()> nextUpdate;
 
       protected:
-        void init(EntityEngine *engine) override;
+        void init(Engine *engine) override;
 
-        void update(double deltaTime, EntityEngine *engine) override;
+        void update(double deltaTime, Engine *engine) override;
 
       private:
-        EntityEngine *engine = nullptr;
+        Engine *engine = nullptr;
     };
 }

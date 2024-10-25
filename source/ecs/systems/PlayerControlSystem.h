@@ -1,23 +1,23 @@
 #pragma once
+#include "System.h"
 #include "../components/PlayerControlled.dibidab.h"
 #include "../../level/Level.h"
-#include "EntitySystem.h"
 
 namespace dibidab::ecs
 {
     /**
      * responsible for noticing when a player enters or leaves a room.
      */
-    class PlayerControlSystem : public EntitySystem
+    class PlayerControlSystem : public System
     {
-        using EntitySystem::EntitySystem;
+        using System::System;
       protected:
 
-        Room *room = nullptr;
+        level::Room *room = nullptr;
 
-        void init(EntityEngine *r) override
+        void init(Engine *r) override
         {
-            room = (Room *) r;
+            room = (level::Room *) r;
             room->entities.on_construct<PlayerControlled>().connect<&PlayerControlSystem::onCreated>(this);
             room->entities.on_destroy<PlayerControlled>().connect<&PlayerControlSystem::onDestroyed>(this);
         }
@@ -40,7 +40,7 @@ namespace dibidab::ecs
             room->getLevel().onPlayerLeftRoom(room, pC.playerId);
         }
 
-        void update(double deltaTime, EntityEngine *) override
+        void update(double deltaTime, Engine *) override
         {}
 
         ~PlayerControlSystem() override

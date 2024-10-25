@@ -1,11 +1,12 @@
-
-#include "PersistentEntityRef.h"
+#include "PersistentRef.h"
 
 #include "ecs/components/Saving.dibidab.h"
 
 #include <utils/gu_error.h>
 
-PersistentEntityRef::PersistentEntityRef() :
+#include <entt/entity/registry.hpp>
+
+dibidab::ecs::PersistentRef::PersistentRef() :
     resolved(true),
     entity(entt::null),
     persistentEntityId(0)
@@ -13,7 +14,7 @@ PersistentEntityRef::PersistentEntityRef() :
 
 }
 
-void PersistentEntityRef::set(entt::entity e, const entt::registry &reg)
+void dibidab::ecs::PersistentRef::set(entt::entity e, const entt::registry &reg)
 {
     if (reg.valid(e))
     {
@@ -34,7 +35,7 @@ void PersistentEntityRef::set(entt::entity e, const entt::registry &reg)
     entity = e;
 }
 
-entt::entity PersistentEntityRef::resolve(const entt::registry &reg) const
+entt::entity dibidab::ecs::PersistentRef::resolve(const entt::registry &reg) const
 {
     if (resolved || tryResolve(reg, entity))
     {
@@ -43,7 +44,7 @@ entt::entity PersistentEntityRef::resolve(const entt::registry &reg) const
     throw gu_err("Failed to resolve a PersistentEntityRef (id = " + std::to_string(persistentEntityId) + ").\nIs the level still loading?");
 }
 
-bool PersistentEntityRef::tryResolve(const entt::registry &reg, entt::entity &outEntity) const
+bool dibidab::ecs::PersistentRef::tryResolve(const entt::registry &reg, entt::entity &outEntity) const
 {
     if (persistentEntityId == 0)
     {
@@ -67,27 +68,27 @@ bool PersistentEntityRef::tryResolve(const entt::registry &reg, entt::entity &ou
     return false;
 }
 
-PersistentEntityID PersistentEntityRef::getId() const
+dibidab::ecs::PersistentID dibidab::ecs::PersistentRef::getId() const
 {
     return persistentEntityId;
 }
 
-bool PersistentEntityRef::operator==(const PersistentEntityRef &other) const
+bool dibidab::ecs::PersistentRef::operator==(const PersistentRef &other) const
 {
     return persistentEntityId == other.persistentEntityId;
 }
 
-bool PersistentEntityRef::operator<(const PersistentEntityRef &other) const
+bool dibidab::ecs::PersistentRef::operator<(const PersistentRef &other) const
 {
     return persistentEntityId < other.persistentEntityId;
 }
 
-void to_json(json &j, const PersistentEntityRef &v)
+void dibidab::ecs::to_json(json &j, const dibidab::ecs::PersistentRef &v)
 {
     j = v.persistentEntityId;
 }
 
-void from_json(const json &j, PersistentEntityRef &v)
+void dibidab::ecs::from_json(const json &j, dibidab::ecs::PersistentRef &v)
 {
     v.persistentEntityId = j;
     v.resolved = false;

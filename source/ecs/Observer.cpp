@@ -1,15 +1,15 @@
 
-#include "EntityObserver.h"
+#include "Observer.h"
 
 #include <utils/gu_error.h>
 
-entt::entity EntityObserver::Handle::getEntity() const
+entt::entity dibidab::ecs::Observer::Handle::getEntity() const
 {
     return entity;
 }
 
-EntityObserver::Handle::Handle(
-    const std::shared_ptr<EntityObserver::Callback> &callback,
+dibidab::ecs::Observer::Handle::Handle(
+    const std::shared_ptr<Callback> &callback,
     bool bOnConstruct,
     entt::entity e
 ) :
@@ -19,7 +19,7 @@ EntityObserver::Handle::Handle(
 {
 }
 
-EntityObserver::Handle EntityObserver::onConstruct(entt::entity e, std::function<void()> callback)
+dibidab::ecs::Observer::Handle dibidab::ecs::Observer::onConstruct(entt::entity e, std::function<void()> callback)
 {
     std::list<std::shared_ptr<Callback>> *callbacks = getOrCreateOnConstructCallbacks(registry, e);
     callbacks->push_back(std::make_shared<Callback>(Callback { std::move(callback) }));
@@ -30,7 +30,7 @@ EntityObserver::Handle EntityObserver::onConstruct(entt::entity e, std::function
     };
 }
 
-EntityObserver::Handle EntityObserver::onDestroy(entt::entity e, std::function<void()> callback)
+dibidab::ecs::Observer::Handle dibidab::ecs::Observer::onDestroy(entt::entity e, std::function<void()> callback)
 {
     std::list<std::shared_ptr<Callback>> *callbacks = getOrCreateOnDestroyCallbacks(registry, e);
     callbacks->push_back(std::make_shared<Callback>(Callback { std::move(callback) }));
@@ -41,14 +41,14 @@ EntityObserver::Handle EntityObserver::onDestroy(entt::entity e, std::function<v
     };
 }
 
-void EntityObserver::unregister(EntityObserver::Handle &handle)
+void dibidab::ecs::Observer::unregister(Handle &handle)
 {
     std::list<std::shared_ptr<Callback>> *callbacks = (handle.bOnConstruct ? tryGetOnConstructCallbacks : tryGetOnDestroyCallbacks)(
         registry, handle.entity
     );
     if (callbacks)
     {
-        callbacks->remove_if([&] (const std::shared_ptr<EntityObserver::Callback> &callback)
+        callbacks->remove_if([&] (const std::shared_ptr<Callback> &callback)
         {
             return callback.get() == handle.callback.get();
         });
@@ -56,26 +56,26 @@ void EntityObserver::unregister(EntityObserver::Handle &handle)
     }
 }
 
-void EntityObserver::onComponentConstructed(entt::registry &, entt::entity entity)
+void dibidab::ecs::Observer::onComponentConstructed(entt::registry &, entt::entity entity)
 {
-    if (std::list<std::shared_ptr<EntityObserver::Callback>> *callbacks = tryGetOnConstructCallbacks(registry, entity))
+    if (std::list<std::shared_ptr<Callback>> *callbacks = tryGetOnConstructCallbacks(registry, entity))
     {
         callCallbacks(*callbacks, entity);
     }
 }
 
-void EntityObserver::onComponentDestroyed(entt::registry &, entt::entity entity)
+void dibidab::ecs::Observer::onComponentDestroyed(entt::registry &, entt::entity entity)
 {
-    if (std::list<std::shared_ptr<EntityObserver::Callback>> *callbacks = tryGetOnDestroyCallbacks(registry, entity))
+    if (std::list<std::shared_ptr<Callback>> *callbacks = tryGetOnDestroyCallbacks(registry, entity))
     {
         callCallbacks(*callbacks, entity);
     }
 }
 
-void EntityObserver::callCallbacks(std::list<std::shared_ptr<Callback>> &callbacks, entt::entity entity)
+void dibidab::ecs::Observer::callCallbacks(std::list<std::shared_ptr<Callback>> &callbacks, entt::entity entity)
 {
-    std::list<std::shared_ptr<EntityObserver::Callback>> callbacksCopy = callbacks;
-    for (std::shared_ptr<EntityObserver::Callback> &callback : callbacksCopy)
+    std::list<std::shared_ptr<Callback>> callbacksCopy = callbacks;
+    for (std::shared_ptr<Callback> &callback : callbacksCopy)
     {
         if (!callback->bUnregistered)
         {

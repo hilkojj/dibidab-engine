@@ -1,15 +1,15 @@
 #pragma once
-#include "EntitySystem.h"
+#include "System.h"
 
 namespace dibidab::ecs
 {
-    class BehaviorTreeSystem : public EntitySystem
+    class BehaviorTreeSystem : public System
     {
-        using EntitySystem::EntitySystem;
+        using System::System;
 
       protected:
-        void init(EntityEngine *engine) override;
+        void init(Engine *engine) override;
 
-        void update(double deltaTime, EntityEngine *engine) override;
+        void update(double deltaTime, Engine *engine) override;
     };
 }

@@ -1,10 +1,11 @@
 #include "luau.h"
 
-#include "dibidab/StructInfo.h"
-#include "ai/behavior_trees/Tree.h"
-#include "ecs/PersistentEntityRef.h"
-#include "game/session/SingleplayerSession.h"
-#include "game/dibidab.h"
+#include "../reflection/StructInfo.h"
+#include "../behavior/Tree.h"
+#include "../ecs/PersistentRef.h"
+#include "../level/Level.h"
+#include "../game/session/SingleplayerSession.h"
+#include "../game/dibidab.h"
 
 #include "input/gamepad_input.h"
 #include "gu/game_utils.h"
@@ -111,24 +112,28 @@ sol::state &luau::getLuaState()
 
         auto &env = lua->globals();
 
-        env["getGameStartupArgs"] = [] {
+        env["getGameStartupArgs"] = []
+        {
             return &dibidab::startupArgs;
         };
-        env["tryCloseGame"] = [] {
+        env["tryCloseGame"] = []
+        {
             gu::setShouldClose(true);
         };
 
-        env["endCurrentSession"] = [] {
+        env["endCurrentSession"] = []
+        {
             dibidab::setCurrentSession(nullptr);
         };
 
-        env["startSinglePlayerSession"] = [] (const sol::optional<std::string> &saveGamePath) {
-            dibidab::setCurrentSession(new SingleplayerSession(saveGamePath.has_value() ? saveGamePath->c_str() : nullptr));
+        env["startSinglePlayerSession"] = [] (const sol::optional<std::string> &saveGamePath)
+        {
+            dibidab::setCurrentSession(new dibidab::SingleplayerSession(saveGamePath.has_value() ? saveGamePath->c_str() : nullptr));
         };
         // todo: startMultiplayerServerSession and startMultiplayerClientsession
 
-        env["joinSession"] = [] (const char *username, const sol::function& onJoinRequestDeclined) {
-
+        env["joinSession"] = [] (const char *username, const sol::function& onJoinRequestDeclined)
+        {
             auto &session = dibidab::getCurrentSession();
 
             session.onJoinRequestDeclined = [onJoinRequestDeclined] (auto reason) {
@@ -140,16 +145,16 @@ sol::state &luau::getLuaState()
             session.join(username);
         };
 
-        env["loadOrCreateLevel"] = [](const sol::optional<std::string> &path)
+        env["loadOrCreateLevel"] = [] (const sol::optional<std::string> &path)
         {
             auto &session = dibidab::getCurrentSession();
-            auto singleplayerSession = dynamic_cast<SingleplayerSession *>(&session);
+            auto singleplayerSession = dynamic_cast<dibidab::SingleplayerSession *>(&session);
             if (singleplayerSession)
-                singleplayerSession->setLevel(path.has_value() ? new Level(path.value().c_str()) : nullptr);
+                singleplayerSession->setLevel(path.has_value() ? new dibidab::level::Level(path.value().c_str()) : nullptr);
         };
 
-        env["include"] = [&] (const char *scriptPath, const sol::this_environment &currentEnv) -> sol::environment {
-
+        env["include"] = [&] (const char *scriptPath, const sol::this_environment &currentEnv) -> sol::environment
+        {
             auto newEnv = sol::environment(getLuaState(), sol::create, currentEnv.env.value_or(env));
 
             asset<Script> toBeIncluded(scriptPath);
@@ -179,42 +184,54 @@ sol::state &luau::getLuaState()
         sol::usertype<quat> qut = lua->new_usertype<quat>("quat");
 
         for (int axis = 0; axis < 3; axis++)
-            qut[axis == 0 ? "x" : (axis == 1 ? "y" : "z")] = sol::property([axis](quat &q) {
-                return glm::eulerAngles(q)[axis] * mu::RAD_TO_DEGREES;
-            }, [axis](quat &q, float x) {
-                vec3 euler = glm::eulerAngles(q);
-                euler[axis] = x * mu::DEGREES_TO_RAD;
-                q = quat(euler);
-            });
-        qut["setIdentity"] = [] (quat &q) -> quat & {
+        {
+            qut[axis == 0 ? "x" : (axis == 1 ? "y" : "z")] = sol::property(
+                [axis] (quat &q)
+                {
+                    return glm::eulerAngles(q)[axis] * mu::RAD_TO_DEGREES;
+                },
+                [axis] (quat &q, float x)
+                {
+                    vec3 euler = glm::eulerAngles(q);
+                    euler[axis] = x * mu::DEGREES_TO_RAD;
+                    q = quat(euler);
+                }
+            );
+        }
+        qut["setIdentity"] = [] (quat &q) -> quat &
+        {
             q = quat(1, 0, 0, 0);
             return q;
         };
         qut["getAngle"] = [] (quat &q) -> float { return angle(q) * mu::RAD_TO_DEGREES; };
         qut["getAxis"] = [] (quat &q) -> vec3 { return axis(q); };
-        qut["setFromAngleAndAxis"] = [] (quat &q, float angle, vec3 axis) {
+        qut["setFromAngleAndAxis"] = [] (quat &q, float angle, vec3 axis)
+        {
             q = angleAxis(angle * mu::DEGREES_TO_RAD, axis);
         };
 
         // register KeyInput::Key
         sol::usertype<KeyInput::Key> key = lua->new_usertype<KeyInput::Key>("Key");
-        key["getName"] = [] (KeyInput::Key &key) {
+        key["getName"] = [] (KeyInput::Key &key)
+        {
             return KeyInput::getKeyName(key);
         };
 
         // register GamepadInput::Button
         sol::usertype<GamepadInput::Button> gpb = lua->new_usertype<GamepadInput::Button>("GamepadButton");
-        gpb["getName"] = [](GamepadInput::Button &key) {
+        gpb["getName"] = [] (GamepadInput::Button &key)
+        {
             return GamepadInput::getButtonName(key);
         };
 
         // register GamepadInput::Axis
         sol::usertype<GamepadInput::Axis> gpa = lua->new_usertype<GamepadInput::Axis>("GamepadAxis");
-        gpa["getName"] = [](GamepadInput::Axis &key) {
+        gpa["getName"] = [] (GamepadInput::Axis &key)
+        {
             return GamepadInput::getAxisName(key);
         };
 
-        BehaviorTree::addToLuaEnvironment(lua);
+        dibidab::behavior::Tree::addToLuaEnvironment(lua);
     }
     return *lua;
 }

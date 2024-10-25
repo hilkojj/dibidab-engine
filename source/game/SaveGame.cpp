@@ -3,13 +3,13 @@
 
 #include "dibidab.h"
 
-#include "dibidab/converters/lua_converters.h"
+#include "../lua/lua_converters.h"
 
 #include <files/file_utils.h>
 
 #ifndef DIBIDAB_NO_SAVE_GAME
 
-SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
+dibidab::SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
 {
     luaTable = sol::table::create(luau::getLuaState().lua_state());
 
@@ -23,7 +23,7 @@ SaveGame::SaveGame(const char *path) : loadedFromPath(path ? path : "")
 
 const char *SAVE_GAME_ENTITIES_TABLE_NAME = "saveGameEntities";
 
-void SaveGame::save(const char *path)
+void dibidab::SaveGame::save(const char *path)
 {
     if (path == nullptr && loadedFromPath.empty())
     {
@@ -48,7 +48,7 @@ void SaveGame::save(const char *path)
     fu::writeBinary(path == nullptr ? loadedFromPath.c_str() : path, (char *) data.data(), data.size());
 }
 
-sol::table SaveGame::getSaveDataForEntity(const std::string &entitySaveGameID, bool temporary)
+sol::table dibidab::SaveGame::getSaveDataForEntity(const std::string &entitySaveGameID, bool temporary)
 {
     if (temporary)
         return luau::getLuaState()["tempSaveGameEntities"].get_or_create<sol::table>()[entitySaveGameID].get_or_create<sol::table>();

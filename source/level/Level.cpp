@@ -1,4 +1,3 @@
-
 #include <files/file_utils.h>
 #include <gu/game_utils.h>
 #include <gu/profiler.h>
@@ -12,14 +11,14 @@
 #include "../ecs/components/PlayerControlled.dibidab.h"
 #include "../game/dibidab.h"
 
-std::function<Room *(const json &)> Level::customRoomLoader;
+std::function<dibidab::level::Room *(const json &)> dibidab::level::Level::customRoomLoader;
 
-void Level::setPaused(bool bInPaused)
+void dibidab::level::Level::setPaused(bool bInPaused)
 {
     bPaused = bInPaused;
 }
 
-void Level::initialize()
+void dibidab::level::Level::initialize()
 {
     int i = 0;
     for (auto &room : rooms)
@@ -30,7 +29,7 @@ void Level::initialize()
     initialized = true;
 }
 
-void Level::update(double deltaTime)
+void dibidab::level::Level::update(double deltaTime)
 {
     gu::profiler::Zone levelUpdateZone("level update");
     updating = true;
@@ -48,7 +47,7 @@ void Level::update(double deltaTime)
             for (int i = 0; i < rooms.size(); i++)
             {
                 auto room = rooms[i];
-                if (!skippedRoom[i] || room->entities.empty<PlayerControlled>())
+                if (!skippedRoom[i] || room->entities.empty<ecs::PlayerControlled>())
                 {
                     skippedRoom[i] = true;
                     continue;
@@ -96,7 +95,7 @@ void Level::update(double deltaTime)
 
 #define DEFAULT_LEVEL_PATH "assets/default_level.lvl"
 
-Level::~Level()
+dibidab::level::Level::~Level()
 {
     if (bSaveOnDestruct)
         save(loadedFromFile.empty() ? DEFAULT_LEVEL_PATH : loadedFromFile.c_str());
@@ -107,19 +106,19 @@ Level::~Level()
         delete r;
 }
 
-Room &Level::getRoom(int i)
+dibidab::level::Room &dibidab::level::Level::getRoom(int i)
 {
     if (i < 0 || i >= rooms.size()) throw gu_err("index out of bounds");
     return *rooms[i];
 }
 
-const Room &Level::getRoom(int i) const
+const dibidab::level::Room &dibidab::level::Level::getRoom(int i) const
 {
     if (i < 0 || i >= rooms.size()) throw gu_err("index out of bounds");
     return *rooms[i];
 }
 
-void to_json(json &j, const Level &lvl)
+void dibidab::level::to_json(json &j, const Level &lvl)
 {
     j = json::object({{"spawnRoom", lvl.spawnRoom}, {"rooms", json::array()}});
     for (auto room : lvl.rooms)
@@ -133,7 +132,7 @@ void to_json(json &j, const Level &lvl)
     }
 }
 
-void from_json(const json &j, Level &lvl)
+void dibidab::level::from_json(const json &j, Level &lvl)
 {
     lvl.spawnRoom = j.at("spawnRoom");
     const json &roomsJson = j.at("rooms");
@@ -151,7 +150,7 @@ void from_json(const json &j, Level &lvl)
     }
 }
 
-void Level::deleteRoom(int i)
+void dibidab::level::Level::deleteRoom(int i)
 {
     assert(i < rooms.size());
 
@@ -167,7 +166,7 @@ void Level::deleteRoom(int i)
 
 typedef uint64 level_data_length_type;
 
-void Level::save(const char *path) const
+void dibidab::level::Level::save(const char *path) const
 {
     std::vector<unsigned char> data(sizeof(level_data_length_type), 0u);
 
@@ -204,7 +203,7 @@ void Level::save(const char *path) const
     fu::writeBinary(path ? path : loadedFromFile.c_str(), (char *) compressedData.data(), compressedData.size());
 }
 
-Level::Level(const char *filePath) : loadedFromFile(filePath)
+dibidab::level::Level::Level(const char *filePath) : loadedFromFile(filePath)
 {
     if (!fu::exists(filePath))
     {
@@ -276,7 +275,7 @@ Level::Level(const char *filePath) : loadedFromFile(filePath)
     }
 }
 
-Room *Level::getRoomByName(const char *n)
+dibidab::level::Room *dibidab::level::Level::getRoomByName(const char *n)
 {
     for (auto &r : rooms)
         if (r->name == n)
@@ -284,12 +283,12 @@ Room *Level::getRoomByName(const char *n)
     return nullptr;
 }
 
-const Room *Level::getRoomByName(const char *n) const
+const dibidab::level::Room *dibidab::level::Level::getRoomByName(const char *n) const
 {
     return ((Level *) this)->getRoomByName(n);
 }
 
-void Level::addRoom(Room *r)
+void dibidab::level::Level::addRoom(Room *r)
 {
     assert(r->level == nullptr);
 

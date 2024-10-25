@@ -9,7 +9,7 @@
 
 #include "imgui.h"
 
-std::string getNodeErrorInfo(BehaviorTree::Node *node)
+std::string getNodeErrorInfo(dibidab::behavior::Tree::Node *node)
 {
     std::string info = node->getName();
     if (node->hasLuaDebugInfo())
@@ -24,7 +24,7 @@ std::string getNodeErrorInfo(BehaviorTree::Node *node)
     return info;
 }
 
-BehaviorTree::Node::Node() :
+dibidab::behavior::Tree::Node::Node() :
     parent(nullptr),
     bEntered(false),
     bAborted(false),
@@ -41,7 +41,7 @@ BehaviorTree::Node::Node() :
     }
 }
 
-void BehaviorTree::Node::enter()
+void dibidab::behavior::Tree::Node::enter()
 {
     bEntered = true;
 #ifndef NDEBUG
@@ -52,7 +52,7 @@ void BehaviorTree::Node::enter()
 #endif
 }
 
-void BehaviorTree::Node::abort()
+void dibidab::behavior::Tree::Node::abort()
 {
 #ifndef NDEBUG
     if (!bEntered)
@@ -67,7 +67,7 @@ void BehaviorTree::Node::abort()
     bAborted = true;
 }
 
-void BehaviorTree::Node::finish(Tree::Node::Result result)
+void dibidab::behavior::Tree::Node::finish(Result result)
 {
 #ifndef NDEBUG
     if (!bEntered)
@@ -94,17 +94,17 @@ void BehaviorTree::Node::finish(Tree::Node::Result result)
     }
 }
 
-bool BehaviorTree::Node::isEntered() const
+bool dibidab::behavior::Tree::Node::isEntered() const
 {
     return bEntered;
 }
 
-bool BehaviorTree::Node::isAborted() const
+bool dibidab::behavior::Tree::Node::isAborted() const
 {
     return bAborted;
 }
 
-bool BehaviorTree::Node::getEnteredDescription(std::vector<const char *> &descriptions) const
+bool dibidab::behavior::Tree::Node::getEnteredDescription(std::vector<const char *> &descriptions) const
 {
     if (!isEntered() || description.empty())
     {
@@ -114,35 +114,35 @@ bool BehaviorTree::Node::getEnteredDescription(std::vector<const char *> &descri
     return true;
 }
 
-BehaviorTree::Node *BehaviorTree::Node::setDescription(const char *inDescription)
+dibidab::behavior::Tree::Node *dibidab::behavior::Tree::Node::setDescription(const char *inDescription)
 {
     description = inDescription;
     return this;
 }
 
-bool BehaviorTree::Node::hasLuaDebugInfo() const
+bool dibidab::behavior::Tree::Node::hasLuaDebugInfo() const
 {
     return bHasLuaDebugInfo;
 }
 
-const lua_Debug &BehaviorTree::Node::getLuaDebugInfo() const
+const lua_Debug &dibidab::behavior::Tree::Node::getLuaDebugInfo() const
 {
     return luaDebugInfo;
 }
 
 #ifndef NDEBUG
-bool BehaviorTree::Node::hasFinishedAtLeastOnce() const
+bool dibidab::behavior::Tree::Node::hasFinishedAtLeastOnce() const
 {
     return bFinishedAtLeastOnce;
 }
 
-BehaviorTree::Node::Result BehaviorTree::Node::getLastResult() const
+dibidab::behavior::Tree::Node::Result dibidab::behavior::Tree::Node::getLastResult() const
 {
     return lastResult;
 }
 #endif
 
-void BehaviorTree::Node::registerAsParent(Tree::Node *child)
+void dibidab::behavior::Tree::Node::registerAsParent(Node *child)
 {
     if (child->parent != nullptr)
     {
@@ -151,7 +151,7 @@ void BehaviorTree::Node::registerAsParent(Tree::Node *child)
     child->parent = this;
 }
 
-void BehaviorTree::CompositeNode::finish(Tree::Node::Result result)
+void dibidab::behavior::Tree::CompositeNode::finish(Result result)
 {
 #ifndef NDEBUG
     for (Node *child : children)
@@ -165,7 +165,7 @@ void BehaviorTree::CompositeNode::finish(Tree::Node::Result result)
     Node::finish(result);
 }
 
-BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(Tree::Node *child)
+dibidab::behavior::Tree::CompositeNode *dibidab::behavior::Tree::CompositeNode::addChild(Node *child)
 {
     if (child == nullptr)
     {
@@ -176,12 +176,12 @@ BehaviorTree::CompositeNode *BehaviorTree::CompositeNode::addChild(Tree::Node *c
     return this;
 }
 
-const std::vector<BehaviorTree::Node *> &BehaviorTree::CompositeNode::getChildren() const
+const std::vector<dibidab::behavior::Tree::Node *> &dibidab::behavior::Tree::CompositeNode::getChildren() const
 {
     return children;
 }
 
-BehaviorTree::CompositeNode::~CompositeNode()
+dibidab::behavior::Tree::CompositeNode::~CompositeNode()
 {
     for (Node *child : children)
     {
@@ -190,7 +190,7 @@ BehaviorTree::CompositeNode::~CompositeNode()
     children.clear();
 }
 
-bool BehaviorTree::CompositeNode::getEnteredDescription(std::vector<const char *> &descriptions) const
+bool dibidab::behavior::Tree::CompositeNode::getEnteredDescription(std::vector<const char *> &descriptions) const
 {
     if (!isEntered())
     {
@@ -211,7 +211,7 @@ bool BehaviorTree::CompositeNode::getEnteredDescription(std::vector<const char *
     return bHasAnyChildDescription;
 }
 
-void BehaviorTree::DecoratorNode::abort()
+void dibidab::behavior::Tree::DecoratorNode::abort()
 {
     Node::abort();
     if (child && child->isEntered())
@@ -224,7 +224,7 @@ void BehaviorTree::DecoratorNode::abort()
     }
 }
 
-void BehaviorTree::DecoratorNode::finish(Tree::Node::Result result)
+void dibidab::behavior::Tree::DecoratorNode::finish(Result result)
 {
     if (child != nullptr && child->isEntered())
     {
@@ -233,7 +233,7 @@ void BehaviorTree::DecoratorNode::finish(Tree::Node::Result result)
     Node::finish(result);
 }
 
-BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(Tree::Node *inChild)
+dibidab::behavior::Tree::DecoratorNode *dibidab::behavior::Tree::DecoratorNode::setChild(Node *inChild)
 {
     if (child != nullptr)
     {
@@ -248,12 +248,12 @@ BehaviorTree::DecoratorNode *BehaviorTree::DecoratorNode::setChild(Tree::Node *i
     return this;
 }
 
-BehaviorTree::Node *BehaviorTree::DecoratorNode::getChild() const
+dibidab::behavior::Tree::Node *dibidab::behavior::Tree::DecoratorNode::getChild() const
 {
     return child;
 }
 
-bool BehaviorTree::DecoratorNode::getEnteredDescription(std::vector<const char *> &descriptions) const
+bool dibidab::behavior::Tree::DecoratorNode::getEnteredDescription(std::vector<const char *> &descriptions) const
 {
     if (!isEntered())
     {
@@ -266,19 +266,19 @@ bool BehaviorTree::DecoratorNode::getEnteredDescription(std::vector<const char *
     return Node::getEnteredDescription(descriptions);
 }
 
-BehaviorTree::DecoratorNode::~DecoratorNode()
+dibidab::behavior::Tree::DecoratorNode::~DecoratorNode()
 {
     delete child;
 }
 
 constexpr static int INVALID_CHILD_INDEX = -1;
 
-BehaviorTree::SequenceNode::SequenceNode() :
+dibidab::behavior::Tree::SequenceNode::SequenceNode() :
     currentChildIndex(INVALID_CHILD_INDEX)
 {
 }
 
-void BehaviorTree::SequenceNode::enter()
+void dibidab::behavior::Tree::SequenceNode::enter()
 {
     if (currentChildIndex != INVALID_CHILD_INDEX)
     {
@@ -297,7 +297,7 @@ void BehaviorTree::SequenceNode::enter()
     }
 }
 
-void BehaviorTree::SequenceNode::abort()
+void dibidab::behavior::Tree::SequenceNode::abort()
 {
     Tree::Node::abort();
 #ifndef NDEBUG
@@ -309,19 +309,19 @@ void BehaviorTree::SequenceNode::abort()
     getChildren().at(currentChildIndex)->abort();
 }
 
-void BehaviorTree::SequenceNode::finish(Tree::Node::Result result)
+void dibidab::behavior::Tree::SequenceNode::finish(Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
     Tree::CompositeNode::finish(result);
 }
 
-const char *BehaviorTree::SequenceNode::getName() const
+const char *dibidab::behavior::Tree::SequenceNode::getName() const
 {
     return "Sequence";
 }
 
-void checkCorrectChildFinished(BehaviorTree::Node *parent, const std::vector<BehaviorTree::Node *> &children,
-    int currentChildIndex, BehaviorTree::Node *finishedChild)
+void checkCorrectChildFinished(dibidab::behavior::Tree::Node *parent, const std::vector<dibidab::behavior::Tree::Node *> &children,
+    int currentChildIndex, dibidab::behavior::Tree::Node *finishedChild)
 {
     if (currentChildIndex == INVALID_CHILD_INDEX || !parent->isEntered())
     {
@@ -342,7 +342,7 @@ void checkCorrectChildFinished(BehaviorTree::Node *parent, const std::vector<Beh
 
 }
 
-void BehaviorTree::SequenceNode::onChildFinished(Tree::Node *child, Tree::Node::Result result)
+void dibidab::behavior::Tree::SequenceNode::onChildFinished(Node *child, Result result)
 {
     Tree::CompositeNode::onChildFinished(child, result);
 
@@ -368,12 +368,12 @@ void BehaviorTree::SequenceNode::onChildFinished(Tree::Node *child, Tree::Node::
     }
 }
 
-BehaviorTree::SelectorNode::SelectorNode() :
+dibidab::behavior::Tree::SelectorNode::SelectorNode() :
     currentChildIndex(INVALID_CHILD_INDEX)
 {
 }
 
-void BehaviorTree::SelectorNode::enter()
+void dibidab::behavior::Tree::SelectorNode::enter()
 {
     if (currentChildIndex != INVALID_CHILD_INDEX)
     {
@@ -393,7 +393,7 @@ void BehaviorTree::SelectorNode::enter()
     }
 }
 
-void BehaviorTree::SelectorNode::abort()
+void dibidab::behavior::Tree::SelectorNode::abort()
 {
     Tree::Node::abort();
 #ifndef NDEBUG
@@ -405,18 +405,18 @@ void BehaviorTree::SelectorNode::abort()
     getChildren().at(currentChildIndex)->abort();
 }
 
-void BehaviorTree::SelectorNode::finish(Tree::Node::Result result)
+void dibidab::behavior::Tree::SelectorNode::finish(Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
     Tree::CompositeNode::finish(result);
 }
 
-const char *BehaviorTree::SelectorNode::getName() const
+const char *dibidab::behavior::Tree::SelectorNode::getName() const
 {
     return "Selector";
 }
 
-void BehaviorTree::SelectorNode::onChildFinished(Tree::Node *child, Tree::Node::Result result)
+void dibidab::behavior::Tree::SelectorNode::onChildFinished(Node *child, Result result)
 {
     Node::onChildFinished(child, result);
 
@@ -442,13 +442,13 @@ void BehaviorTree::SelectorNode::onChildFinished(Tree::Node *child, Tree::Node::
     }
 }
 
-BehaviorTree::ParallelNode::ParallelNode() :
+dibidab::behavior::Tree::ParallelNode::ParallelNode() :
     numChildrenFinished(0)
 {
 
 }
 
-void BehaviorTree::ParallelNode::enter()
+void dibidab::behavior::Tree::ParallelNode::enter()
 {
     CompositeNode::enter();
     if (getChildren().empty())
@@ -463,7 +463,7 @@ void BehaviorTree::ParallelNode::enter()
     }
 }
 
-void BehaviorTree::ParallelNode::abort()
+void dibidab::behavior::Tree::ParallelNode::abort()
 {
     CompositeNode::abort();
     // Abort all entered children.
@@ -476,12 +476,12 @@ void BehaviorTree::ParallelNode::abort()
     }
 }
 
-const char *BehaviorTree::ParallelNode::getName() const
+const char *dibidab::behavior::Tree::ParallelNode::getName() const
 {
     return "Parallel";
 }
 
-void BehaviorTree::ParallelNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::ParallelNode::onChildFinished(Node *child, Node::Result result)
 {
     // Finish if all children are finished.
     if (++numChildrenFinished == getChildren().size())
@@ -490,69 +490,69 @@ void BehaviorTree::ParallelNode::onChildFinished(BehaviorTree::Node *child, Beha
     }
 }
 
-void BehaviorTree::InverterNode::enter()
+void dibidab::behavior::Tree::InverterNode::enter()
 {
     Node *child = getChild();
     if (child == nullptr)
     {
         throw gu_err("InverterNode has no child: " + getNodeErrorInfo(this));
     }
-    BehaviorTree::Node::enter();
+    Tree::Node::enter();
     child->enter();
 }
 
-const char *BehaviorTree::InverterNode::getName() const
+const char *dibidab::behavior::Tree::InverterNode::getName() const
 {
     return "Inverter";
 }
 
-void BehaviorTree::InverterNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::InverterNode::onChildFinished(Node *child, Result result)
 {
-    if (result == Node::Result::ABORTED)
+    if (result == Result::ABORTED)
     {
-        finish(Node::Result::ABORTED);
+        finish(Result::ABORTED);
         return;
     }
-    finish(result == Node::Result::SUCCESS ? Node::Result::FAILURE : Node::Result::SUCCESS);
+    finish(result == Result::SUCCESS ? Result::FAILURE : Result::SUCCESS);
 }
 
-void BehaviorTree::SucceederNode::enter()
+void dibidab::behavior::Tree::SucceederNode::enter()
 {
     Node *child = getChild();
     if (child == nullptr)
     {
         throw gu_err("SucceederNode has no child: " + getNodeErrorInfo(this));
     }
-    BehaviorTree::Node::enter();
+    Node::enter();
     child->enter();
 }
 
-const char *BehaviorTree::SucceederNode::getName() const
+const char *dibidab::behavior::Tree::SucceederNode::getName() const
 {
     return "Succeeder";
 }
 
-void BehaviorTree::SucceederNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::SucceederNode::onChildFinished(Node *child, Result result)
 {
     Node::onChildFinished(child, result);
-    if (result == Node::Result::ABORTED)
+    if (result == Result::ABORTED)
     {
-        finish(Node::Result::ABORTED);
+        finish(Result::ABORTED);
         return;
     }
-    finish(Node::Result::SUCCESS);
+    finish(Result::SUCCESS);
 }
 
-void BehaviorTree::RepeaterNode::enter()
+void dibidab::behavior::Tree::RepeaterNode::enter()
 {
 #ifndef NDEBUG
     timesRepeated = 0;
 #endif
-    BehaviorTree::Node::enter();
+    Node::enter();
     enterChild();
 }
 
-void BehaviorTree::RepeaterNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::RepeaterNode::onChildFinished(Node *child, Result result)
 {
     Node::onChildFinished(child, result);
     switch (result)
@@ -564,15 +564,15 @@ void BehaviorTree::RepeaterNode::onChildFinished(BehaviorTree::Node *child, Beha
             enterChild();
             break;
         case Result::FAILURE:
-            finish(Node::Result::SUCCESS);
+            finish(Result::SUCCESS);
             break;
         case Result::ABORTED:
-            finish(Node::Result::ABORTED);
+            finish(Result::ABORTED);
             break;
     }
 }
 
-void BehaviorTree::RepeaterNode::enterChild()
+void dibidab::behavior::Tree::RepeaterNode::enterChild()
 {
     Node *child = getChild();
     if (child == nullptr)
@@ -582,12 +582,12 @@ void BehaviorTree::RepeaterNode::enterChild()
     child->enter();
 }
 
-const char *BehaviorTree::RepeaterNode::getName() const
+const char *dibidab::behavior::Tree::RepeaterNode::getName() const
 {
     return "Repeater";
 }
 
-void BehaviorTree::RepeaterNode::drawDebugInfo() const
+void dibidab::behavior::Tree::RepeaterNode::drawDebugInfo() const
 {
     Node::drawDebugInfo();
 #ifndef NDEBUG
@@ -595,8 +595,8 @@ void BehaviorTree::RepeaterNode::drawDebugInfo() const
 #endif
 }
 
-void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component)
+void dibidab::behavior::Tree::ComponentDecoratorNode::addWhileEntered(ecs::Engine *engine, entt::entity entity,
+    const ComponentInfo *component)
 {
     if (engine == nullptr)
     {
@@ -613,8 +613,8 @@ void BehaviorTree::ComponentDecoratorNode::addWhileEntered(EntityEngine *engine,
     toAddWhileEntered.push_back({engine, entity, component});
 }
 
-void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component)
+void dibidab::behavior::Tree::ComponentDecoratorNode::addOnEnter(ecs::Engine *engine, entt::entity entity,
+    const ComponentInfo *component)
 {
     if (engine == nullptr)
     {
@@ -631,8 +631,8 @@ void BehaviorTree::ComponentDecoratorNode::addOnEnter(EntityEngine *engine, entt
     toAddOnEnter.push_back({engine, entity, component});
 }
 
-void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component)
+void dibidab::behavior::Tree::ComponentDecoratorNode::removeOnFinish(ecs::Engine *engine, entt::entity entity,
+    const ComponentInfo *component)
 {
     if (engine == nullptr)
     {
@@ -649,7 +649,7 @@ void BehaviorTree::ComponentDecoratorNode::removeOnFinish(EntityEngine *engine, 
     toRemoveOnFinish.push_back({engine, entity, component});
 }
 
-void BehaviorTree::ComponentDecoratorNode::enter()
+void dibidab::behavior::Tree::ComponentDecoratorNode::enter()
 {
     Node *child = getChild();
     if (child == nullptr)
@@ -674,7 +674,7 @@ void BehaviorTree::ComponentDecoratorNode::enter()
     child->enter();
 }
 
-void BehaviorTree::ComponentDecoratorNode::finish(BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::ComponentDecoratorNode::finish(Result result)
 {
     for (const std::vector<EntityComponent> &entityComponentsToRemove : { toAddWhileEntered, toRemoveOnFinish })
     {
@@ -690,12 +690,12 @@ void BehaviorTree::ComponentDecoratorNode::finish(BehaviorTree::Node::Result res
     DecoratorNode::finish(result);
 }
 
-const char *BehaviorTree::ComponentDecoratorNode::getName() const
+const char *dibidab::behavior::Tree::ComponentDecoratorNode::getName() const
 {
     return "ComponentDecorator";
 }
 
-void BehaviorTree::ComponentDecoratorNode::drawDebugInfo() const
+void dibidab::behavior::Tree::ComponentDecoratorNode::drawDebugInfo() const
 {
     Node::drawDebugInfo();
     for (int i = 0; i < toAddWhileEntered.size(); i++)
@@ -732,13 +732,13 @@ void BehaviorTree::ComponentDecoratorNode::drawDebugInfo() const
     }
 }
 
-void BehaviorTree::ComponentDecoratorNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::ComponentDecoratorNode::onChildFinished(Node *child, Result result)
 {
     Node::onChildFinished(child, result);
     finish(result);
 }
 
-BehaviorTree::WaitNode::WaitNode() :
+dibidab::behavior::Tree::WaitNode::WaitNode() :
     seconds(-1.0f),
     waitingEntity(entt::null),
     engine(nullptr)
@@ -748,8 +748,8 @@ BehaviorTree::WaitNode::WaitNode() :
 #endif
 {}
 
-BehaviorTree::WaitNode *BehaviorTree::WaitNode::finishAfter(const float inSeconds, const entt::entity inWaitingEntity,
-    EntityEngine *inEngine)
+dibidab::behavior::Tree::WaitNode *dibidab::behavior::Tree::WaitNode::finishAfter(const float inSeconds, const entt::entity inWaitingEntity,
+    ecs::Engine *inEngine)
 {
     seconds = inSeconds;
     waitingEntity = inWaitingEntity;
@@ -767,7 +767,7 @@ BehaviorTree::WaitNode *BehaviorTree::WaitNode::finishAfter(const float inSecond
     return this;
 }
 
-void BehaviorTree::WaitNode::enter()
+void dibidab::behavior::Tree::WaitNode::enter()
 {
     Node::enter();
     if (seconds >= 0.0f && engine != nullptr)
@@ -781,7 +781,7 @@ void BehaviorTree::WaitNode::enter()
             finish(Node::Result::SUCCESS);
         });
 #ifndef NDEBUG
-        if (Room *room = dynamic_cast<Room *>(engine))
+        if (level::Room *room = dynamic_cast<level::Room *>(engine))
         {
             timeStarted = float(room->getLevel().getTime());
         }
@@ -789,24 +789,24 @@ void BehaviorTree::WaitNode::enter()
     }
 }
 
-void BehaviorTree::WaitNode::abort()
+void dibidab::behavior::Tree::WaitNode::abort()
 {
     Node::abort();
     finish(Node::Result::ABORTED);
 }
 
-void BehaviorTree::WaitNode::finish(BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::WaitNode::finish(Node::Result result)
 {
     onWaitFinished.reset();
     Node::finish(result);
 }
 
-const char *BehaviorTree::WaitNode::getName() const
+const char *dibidab::behavior::Tree::WaitNode::getName() const
 {
     return "Wait";
 }
 
-void BehaviorTree::WaitNode::drawDebugInfo() const
+void dibidab::behavior::Tree::WaitNode::drawDebugInfo() const
 {
     Node::drawDebugInfo();
     const bool bUsingTime = seconds >= 0.0f && engine != nullptr;
@@ -835,7 +835,7 @@ void BehaviorTree::WaitNode::drawDebugInfo() const
 #ifndef NDEBUG
     if (bUsingTime && isEntered())
     {
-        if (Room *room = dynamic_cast<Room *>(engine))
+        if (level::Room *room = dynamic_cast<level::Room *>(engine))
         {
             ImGui::SameLine();
             const float timeElapsed = float(room->getLevel().getTime()) - timeStarted;
@@ -847,7 +847,7 @@ void BehaviorTree::WaitNode::drawDebugInfo() const
 
 }
 
-BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
+dibidab::behavior::Tree::ComponentObserverNode::ComponentObserverNode() :
     bUseSafetyDelay(true),
     fulfilledNodeIndex(INVALID_CHILD_INDEX),
     unfulfilledNodeIndex(INVALID_CHILD_INDEX),
@@ -856,15 +856,15 @@ BehaviorTree::ComponentObserverNode::ComponentObserverNode() :
 {
 }
 
-void BehaviorTree::ComponentObserverNode::enter()
+void dibidab::behavior::Tree::ComponentObserverNode::enter()
 {
-    BehaviorTree::CompositeNode::enter();
+    CompositeNode::enter();
     enterChild();
 }
 
-void BehaviorTree::ComponentObserverNode::abort()
+void dibidab::behavior::Tree::ComponentObserverNode::abort()
 {
-    BehaviorTree::CompositeNode::abort();
+    CompositeNode::abort();
     if (currentNodeIndex != INVALID_CHILD_INDEX)
     {
         getChildren().at(currentNodeIndex)->abort();
@@ -875,13 +875,13 @@ void BehaviorTree::ComponentObserverNode::abort()
     }
 }
 
-void BehaviorTree::ComponentObserverNode::finish(BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::ComponentObserverNode::finish(Result result)
 {
     currentNodeIndex = INVALID_CHILD_INDEX;
     Node::finish(result);
 }
 
-BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withoutSafetyDelay()
+dibidab::behavior::Tree::ComponentObserverNode *dibidab::behavior::Tree::ComponentObserverNode::withoutSafetyDelay()
 {
     if (!observerHandles.empty())
     {
@@ -891,19 +891,19 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::withou
     return this;
 }
 
-void BehaviorTree::ComponentObserverNode::has(EntityEngine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component)
+void dibidab::behavior::Tree::ComponentObserverNode::has(ecs::Engine *engine, entt::entity entity,
+    const ComponentInfo *component)
 {
     observe(engine, entity, component, true, false);
 }
 
-void BehaviorTree::ComponentObserverNode::exclude(EntityEngine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component)
+void dibidab::behavior::Tree::ComponentObserverNode::exclude(ecs::Engine *engine, entt::entity entity,
+    const ComponentInfo *component)
 {
     observe(engine, entity, component, false, true);
 }
 
-BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnFulfilledNode(Node *child)
+dibidab::behavior::Tree::ComponentObserverNode *dibidab::behavior::Tree::ComponentObserverNode::setOnFulfilledNode(Node *child)
 {
     if (fulfilledNodeIndex != INVALID_CHILD_INDEX)
     {
@@ -914,7 +914,7 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnF
     return this;
 }
 
-BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnUnfulfilledNode(Node *child)
+dibidab::behavior::Tree::ComponentObserverNode *dibidab::behavior::Tree::ComponentObserverNode::setOnUnfulfilledNode(Node *child)
 {
     if (unfulfilledNodeIndex != INVALID_CHILD_INDEX)
     {
@@ -925,17 +925,17 @@ BehaviorTree::ComponentObserverNode *BehaviorTree::ComponentObserverNode::setOnU
     return this;
 }
 
-BehaviorTree::CompositeNode *BehaviorTree::ComponentObserverNode::addChild(BehaviorTree::Node *child)
+dibidab::behavior::Tree::CompositeNode *dibidab::behavior::Tree::ComponentObserverNode::addChild(Node *child)
 {
     throw gu_err("Do not call addChild on this node: " + getNodeErrorInfo(this));
 }
 
-const char *BehaviorTree::ComponentObserverNode::getName() const
+const char *dibidab::behavior::Tree::ComponentObserverNode::getName() const
 {
     return "ComponentObserver";
 }
 
-void BehaviorTree::ComponentObserverNode::drawDebugInfo() const
+void dibidab::behavior::Tree::ComponentObserverNode::drawDebugInfo() const
 {
     Node::drawDebugInfo();
     // TODO/WARNING: this debug info relies heavily on the implementation details.
@@ -976,7 +976,7 @@ void BehaviorTree::ComponentObserverNode::drawDebugInfo() const
     }
 }
 
-void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *child, BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::ComponentObserverNode::onChildFinished(Node *child, Result result)
 {
     Node::onChildFinished(child, result);
     if (result == Node::Result::ABORTED)
@@ -1000,7 +1000,7 @@ void BehaviorTree::ComponentObserverNode::onChildFinished(BehaviorTree::Node *ch
     }
 }
 
-void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::entity entity,
+void dibidab::behavior::Tree::ComponentObserverNode::observe(ecs::Engine *engine, entt::entity entity,
     const dibidab::ComponentInfo *component, const bool presentValue, const bool absentValue)
 {
     if (isEntered())
@@ -1014,7 +1014,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     }
     if (engine == nullptr)
     {
-        throw gu_err("No EntityEngine was given: " + getNodeErrorInfo(this));
+        throw gu_err("No Engine was given: " + getNodeErrorInfo(this));
     }
     if (!engine->entities.valid(entity))
     {
@@ -1022,7 +1022,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     }
 #endif
     // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
-    EntityObserver &observer = engine->getObserverForComponent(*component);
+    ecs::Observer &observer = engine->getObserverForComponent(*component);
     const int conditionIndex = int(conditions.size());
 
     std::function<void()> onConstructCallback = [this, engine, entity, conditionIndex, presentValue]
@@ -1031,7 +1031,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
         onConditionsChanged(engine, entity);
     };
 
-    EntityObserver::Handle onConstructHandle = observer.onConstruct(entity,
+    ecs::Observer::Handle onConstructHandle = observer.onConstruct(entity,
         bUseSafetyDelay ? [this, engine, onConstructCallback, conditionIndex]
         {
             observerHandles[conditionIndex * 2ul].latestConditionChangedDelay =
@@ -1047,7 +1047,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
         onConditionsChanged(engine, entity);
     };
 
-    EntityObserver::Handle onDestroyHandle = observer.onDestroy(entity,
+    ecs::Observer::Handle onDestroyHandle = observer.onDestroy(entity,
         bUseSafetyDelay ? [this, engine, onDestroyCallback, conditionIndex]
         {
             observerHandles[conditionIndex * 2ul + 1ul].latestConditionChangedDelay =
@@ -1067,7 +1067,7 @@ void BehaviorTree::ComponentObserverNode::observe(EntityEngine *engine, entt::en
     bFulFilled = allConditionsFulfilled();
 }
 
-bool BehaviorTree::ComponentObserverNode::allConditionsFulfilled() const
+bool dibidab::behavior::Tree::ComponentObserverNode::allConditionsFulfilled() const
 {
     for (const bool condition : conditions)
     {
@@ -1078,7 +1078,7 @@ bool BehaviorTree::ComponentObserverNode::allConditionsFulfilled() const
     }
     return true;
 }
-void BehaviorTree::ComponentObserverNode::onConditionsChanged(EntityEngine *engine, entt::entity entity)
+void dibidab::behavior::Tree::ComponentObserverNode::onConditionsChanged(ecs::Engine *engine, entt::entity entity)
 {
     bool bNewFulfilled = allConditionsFulfilled();
 
@@ -1104,12 +1104,12 @@ void BehaviorTree::ComponentObserverNode::onConditionsChanged(EntityEngine *engi
     }
 }
 
-int BehaviorTree::ComponentObserverNode::getChildIndexToEnter() const
+int dibidab::behavior::Tree::ComponentObserverNode::getChildIndexToEnter() const
 {
     return bFulFilled ? fulfilledNodeIndex : unfulfilledNodeIndex;
 }
 
-void BehaviorTree::ComponentObserverNode::enterChild()
+void dibidab::behavior::Tree::ComponentObserverNode::enterChild()
 {
     int toEnterIndex = getChildIndexToEnter();
     if (toEnterIndex == INVALID_CHILD_INDEX)
@@ -1123,7 +1123,7 @@ void BehaviorTree::ComponentObserverNode::enterChild()
     }
 }
 
-BehaviorTree::ComponentObserverNode::~ComponentObserverNode()
+dibidab::behavior::Tree::ComponentObserverNode::~ComponentObserverNode()
 {
     for (ObserverHandle &observerHandle : observerHandles)
     {
@@ -1137,13 +1137,13 @@ BehaviorTree::ComponentObserverNode::~ComponentObserverNode()
     }
 }
 
-BehaviorTree::LuaLeafNode::LuaLeafNode() :
+dibidab::behavior::Tree::LuaLeafNode::LuaLeafNode() :
     bInEnterFunction(false)
 {}
 
-void BehaviorTree::LuaLeafNode::enter()
+void dibidab::behavior::Tree::LuaLeafNode::enter()
 {
-    BehaviorTree::Node::enter();
+    Node::enter();
     if (luaEnterFunction.valid())
     {
         bInEnterFunction = true;
@@ -1174,16 +1174,16 @@ void BehaviorTree::LuaLeafNode::enter()
     }
 }
 
-void BehaviorTree::LuaLeafNode::abort()
+void dibidab::behavior::Tree::LuaLeafNode::abort()
 {
-    BehaviorTree::Node::abort();
+    Node::abort();
     if (!bInEnterFunction)
     {
         finishAborted();
     }
 }
 
-void BehaviorTree::LuaLeafNode::finish(BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::LuaLeafNode::finish(Result result)
 {
     if (bInEnterFunction && isAborted())
     {
@@ -1193,12 +1193,12 @@ void BehaviorTree::LuaLeafNode::finish(BehaviorTree::Node::Result result)
     Node::finish(result);
 }
 
-const char *BehaviorTree::LuaLeafNode::getName() const
+const char *dibidab::behavior::Tree::LuaLeafNode::getName() const
 {
     return "LuaLeaf";
 }
 
-void BehaviorTree::LuaLeafNode::finishAborted()
+void dibidab::behavior::Tree::LuaLeafNode::finishAborted()
 {
     if (luaAbortFunction.valid())
     {
@@ -1220,25 +1220,27 @@ void BehaviorTree::LuaLeafNode::finishAborted()
     }
 }
 
-BehaviorTree::FunctionalLeafNode::FunctionalLeafNode() :
+dibidab::behavior::Tree::FunctionalLeafNode::FunctionalLeafNode() :
     bInEnterFunction(false)
 {}
 
-BehaviorTree::FunctionalLeafNode *
-BehaviorTree::FunctionalLeafNode::setOnEnter(std::function<void(FunctionalLeafNode &)> function)
+dibidab::behavior::Tree::FunctionalLeafNode *dibidab::behavior::Tree::FunctionalLeafNode::setOnEnter(
+    std::function<void(FunctionalLeafNode &)> function
+)
 {
     onEnter = std::move(function);
     return this;
 }
 
-BehaviorTree::FunctionalLeafNode *
-BehaviorTree::FunctionalLeafNode::setOnAbort(std::function<void(FunctionalLeafNode &)> function)
+dibidab::behavior::Tree::FunctionalLeafNode *dibidab::behavior::Tree::FunctionalLeafNode::setOnAbort(
+    std::function<void(FunctionalLeafNode &)> function
+)
 {
     onAbort = std::move(function);
     return this;
 }
 
-void BehaviorTree::FunctionalLeafNode::enter()
+void dibidab::behavior::Tree::FunctionalLeafNode::enter()
 {
     Node::enter();
     if (onEnter)
@@ -1253,11 +1255,11 @@ void BehaviorTree::FunctionalLeafNode::enter()
     }
     else
     {
-        finish(BehaviorTree::Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
     }
 }
 
-void BehaviorTree::FunctionalLeafNode::abort()
+void dibidab::behavior::Tree::FunctionalLeafNode::abort()
 {
     Node::abort();
     if (!bInEnterFunction)
@@ -1266,7 +1268,7 @@ void BehaviorTree::FunctionalLeafNode::abort()
     }
 }
 
-void BehaviorTree::FunctionalLeafNode::finish(BehaviorTree::Node::Result result)
+void dibidab::behavior::Tree::FunctionalLeafNode::finish(Result result)
 {
     if (bInEnterFunction && isAborted())
     {
@@ -1276,12 +1278,12 @@ void BehaviorTree::FunctionalLeafNode::finish(BehaviorTree::Node::Result result)
     Node::finish(result);
 }
 
-const char *BehaviorTree::FunctionalLeafNode::getName() const
+const char *dibidab::behavior::Tree::FunctionalLeafNode::getName() const
 {
     return "FunctionalLeaf";
 }
 
-void BehaviorTree::FunctionalLeafNode::finishAborted()
+void dibidab::behavior::Tree::FunctionalLeafNode::finishAborted()
 {
     if (onAbort)
     {
@@ -1289,17 +1291,17 @@ void BehaviorTree::FunctionalLeafNode::finishAborted()
     }
     else
     {
-        finish(BehaviorTree::Node::Result::ABORTED);
+        finish(Result::ABORTED);
     }
 }
 
-BehaviorTree::BehaviorTree() :
+dibidab::behavior::Tree::Tree() :
     rootNode(nullptr)
 {
 
 }
 
-void BehaviorTree::setRootNode(BehaviorTree::Node *root)
+void dibidab::behavior::Tree::setRootNode(Node *root)
 {
     if (rootNode)
     {
@@ -1308,212 +1310,212 @@ void BehaviorTree::setRootNode(BehaviorTree::Node *root)
     rootNode = std::shared_ptr<Node>(root);
 }
 
-BehaviorTree::Node *BehaviorTree::getRootNode() const
+dibidab::behavior::Tree::Node *dibidab::behavior::Tree::getRootNode() const
 {
     return rootNode.get();
 }
 
-void BehaviorTree::addToLuaEnvironment(sol::state *lua)
+void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
 {
     lua->new_enum(
         "BTResult",
-        "SUCCESS", BehaviorTree::Node::Result::SUCCESS,
-        "FAILURE", BehaviorTree::Node::Result::FAILURE,
-        "ABORTED", BehaviorTree::Node::Result::ABORTED
+        "SUCCESS", Node::Result::SUCCESS,
+        "FAILURE", Node::Result::FAILURE,
+        "ABORTED", Node::Result::ABORTED
     );
 
     // ------------------------ Abstract Node classes: -------------------------- //
 
-    sol::usertype<BehaviorTree::Node> nodeType = lua->new_usertype<BehaviorTree::Node>(
+    sol::usertype<Node> nodeType = lua->new_usertype<Node>(
         "BTNode",
 
-        "finish", &BehaviorTree::Node::finish,
-        "setDescription", &BehaviorTree::Node::setDescription
+        "finish", &Node::finish,
+        "setDescription", &Node::setDescription
     );
 
-    sol::usertype<BehaviorTree::CompositeNode> compositeNodeType = lua->new_usertype<BehaviorTree::CompositeNode>(
+    sol::usertype<CompositeNode> compositeNodeType = lua->new_usertype<CompositeNode>(
         "BTCompositeNode",
         sol::base_classes,
-        sol::bases<BehaviorTree::Node>(),
+        sol::bases<Node>(),
 
-        "addChild", &BehaviorTree::CompositeNode::addChild
+        "addChild", &CompositeNode::addChild
     );
 
-    sol::usertype<BehaviorTree::DecoratorNode> decoratorNodeType = lua->new_usertype<BehaviorTree::DecoratorNode>(
+    sol::usertype<DecoratorNode> decoratorNodeType = lua->new_usertype<DecoratorNode>(
         "BTDecoratorNode",
         sol::base_classes,
-        sol::bases<BehaviorTree::Node>(),
+        sol::bases<Node>(),
 
-        "setChild", &BehaviorTree::DecoratorNode::setChild
+        "setChild", &DecoratorNode::setChild
     );
 
     // ------------------------ Basic Node classes: -------------------------- //
 
-    sol::usertype<BehaviorTree::SequenceNode> sequenceNodeType = lua->new_usertype<BehaviorTree::SequenceNode>(
+    sol::usertype<SequenceNode> sequenceNodeType = lua->new_usertype<SequenceNode>(
         "BTSequenceNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::SequenceNode();
+            return new SequenceNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>()
+        sol::bases<Node, CompositeNode>()
     );
 
-    sol::usertype<BehaviorTree::SelectorNode> selectorNodeType = lua->new_usertype<BehaviorTree::SelectorNode>(
+    sol::usertype<SelectorNode> selectorNodeType = lua->new_usertype<SelectorNode>(
         "BTSelectorNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::SelectorNode();
+            return new SelectorNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>()
+        sol::bases<Node, CompositeNode>()
     );
 
-    sol::usertype<BehaviorTree::ParallelNode> parallelNodeType = lua->new_usertype<BehaviorTree::ParallelNode>(
+    sol::usertype<ParallelNode> parallelNodeType = lua->new_usertype<ParallelNode>(
         "BTParallelNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::ParallelNode();
+            return new ParallelNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>()
+        sol::bases<Node, CompositeNode>()
     );
 
-    sol::usertype<BehaviorTree::InverterNode> inverterNodeType = lua->new_usertype<BehaviorTree::InverterNode>(
+    sol::usertype<InverterNode> inverterNodeType = lua->new_usertype<InverterNode>(
         "BTInverterNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::InverterNode();
+            return new InverterNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
+        sol::bases<Node, DecoratorNode>()
     );
 
-    sol::usertype<BehaviorTree::SucceederNode> succeederNodeType = lua->new_usertype<BehaviorTree::SucceederNode>(
+    sol::usertype<SucceederNode> succeederNodeType = lua->new_usertype<SucceederNode>(
         "BTSucceederNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::SucceederNode();
+            return new SucceederNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
+        sol::bases<Node, DecoratorNode>()
     );
 
-    sol::usertype<BehaviorTree::RepeaterNode> repeaterNodeType = lua->new_usertype<BehaviorTree::RepeaterNode>(
+    sol::usertype<RepeaterNode> repeaterNodeType = lua->new_usertype<RepeaterNode>(
         "BTRepeaterNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::RepeaterNode();
+            return new RepeaterNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>()
+        sol::bases<Node, DecoratorNode>()
     );
 
-    sol::usertype<BehaviorTree::ComponentDecoratorNode> componentDecoratorNodeType = lua->new_usertype<BehaviorTree::ComponentDecoratorNode>(
+    sol::usertype<ComponentDecoratorNode> componentDecoratorNodeType = lua->new_usertype<ComponentDecoratorNode>(
         "BTComponentDecoratorNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::ComponentDecoratorNode();
+            return new ComponentDecoratorNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::DecoratorNode>(),
+        sol::bases<Node, DecoratorNode>(),
 
-        "addWhileEntered", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+        "addWhileEntered", [] (ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
-        -> BehaviorTree::ComponentDecoratorNode &
+        -> ComponentDecoratorNode &
         {
             const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
-            node.addWhileEntered(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
+            node.addWhileEntered(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
-        "addOnEnter", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+        "addOnEnter", [] (ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
-        -> BehaviorTree::ComponentDecoratorNode &
+        -> ComponentDecoratorNode &
         {
             const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
-            node.addOnEnter(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
+            node.addOnEnter(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
-        "removeOnFinish", [] (BehaviorTree::ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+        "removeOnFinish", [] (ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
-        -> BehaviorTree::ComponentDecoratorNode &
+        -> ComponentDecoratorNode &
         {
             const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
-            node.removeOnFinish(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
+            node.removeOnFinish(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         }
     );
 
-    sol::usertype<BehaviorTree::WaitNode> waitNodeType = lua->new_usertype<BehaviorTree::WaitNode>(
+    sol::usertype<WaitNode> waitNodeType = lua->new_usertype<WaitNode>(
         "BTWaitNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::WaitNode();
+            return new WaitNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>(),
+        sol::bases<Node, LeafNode>(),
 
-        "finishAfter", [] (BehaviorTree::WaitNode &node, float seconds, entt::entity waitingEntity,
+        "finishAfter", [] (WaitNode &node, float seconds, entt::entity waitingEntity,
             const sol::this_environment &currentEnv)
-            -> BehaviorTree::WaitNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
+            -> WaitNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
-            node.finishAfter(seconds, waitingEntity, currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME));
+            node.finishAfter(seconds, waitingEntity, currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME));
             return node;
         }
     );
 
     // ------------------------ Event-based Node classes: -------------------------- //
 
-    sol::usertype<BehaviorTree::ComponentObserverNode> componentObserverNodeType = lua->new_usertype<BehaviorTree::ComponentObserverNode>(
+    sol::usertype<ComponentObserverNode> componentObserverNodeType = lua->new_usertype<ComponentObserverNode>(
         "BTComponentObserverNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::ComponentObserverNode();
+            return new ComponentObserverNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::CompositeNode>(),
+        sol::bases<Node, CompositeNode>(),
 
-        "withoutSafetyDelay", &BehaviorTree::ComponentObserverNode::withoutSafetyDelay,
+        "withoutSafetyDelay", &ComponentObserverNode::withoutSafetyDelay,
 
-        "has", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
+        "has", [] (ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
-            -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
+            -> ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
-            node.has(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
+            node.has(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
-        "exclude", [] (BehaviorTree::ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
+        "exclude", [] (ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
-            -> BehaviorTree::ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
+            -> ComponentObserverNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
-            node.exclude(currentEnv.env.value().get<EntityEngine *>(EntityEngine::LUA_ENV_PTR_NAME), entity, component);
+            node.exclude(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
-        "fulfilled", &BehaviorTree::ComponentObserverNode::setOnFulfilledNode,
-        "unfulfilled", &BehaviorTree::ComponentObserverNode::setOnUnfulfilledNode
+        "fulfilled", &ComponentObserverNode::setOnFulfilledNode,
+        "unfulfilled", &ComponentObserverNode::setOnUnfulfilledNode
     );
 
     // ------------------------ Customization Node classes: -------------------------- //
 
-    sol::usertype<BehaviorTree::LuaLeafNode> luaLeafNodeType = lua->new_usertype<BehaviorTree::LuaLeafNode>(
+    sol::usertype<LuaLeafNode> luaLeafNodeType = lua->new_usertype<LuaLeafNode>(
         "BTLuaLeafNode",
         sol::factories([] ()
         {
-            return new BehaviorTree::LuaLeafNode();
+            return new LuaLeafNode();
         }),
         sol::base_classes,
-        sol::bases<BehaviorTree::Node, BehaviorTree::LeafNode>(),
+        sol::bases<Node, LeafNode>(),
 
         "setEnterFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
-            -> BehaviorTree::LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
+            -> LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             luaLeafNode.luaEnterFunction = function;
             return luaLeafNode;
         },
         "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
-            -> BehaviorTree::LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
+            -> LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             luaLeafNode.luaAbortFunction = function;
             return luaLeafNode;

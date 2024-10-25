@@ -34,7 +34,7 @@ namespace dibidab
 
     const std::map<std::string, StructInfo> &getAllStructInfos();
 
-    const StructInfo *findStructInfo(const char *structId);
+    const StructInfo *findStructInfo(const char *structNameOrId);
 
     void registerStructInfo(const StructInfo &);
 }

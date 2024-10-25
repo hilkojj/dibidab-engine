@@ -9,8 +9,7 @@ namespace dibidab
 
       public:
 
-        SingleplayerSession(const char *saveGamePath) : Session(saveGamePath)
-        {};
+        SingleplayerSession(const char *saveGamePath);;
 
         void join(std::string username) override;
 

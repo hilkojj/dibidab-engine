@@ -1,24 +1,25 @@
 #pragma once
-#include "EntitySystem.h"
-#include "../../level/room/Room.h"
+#include "System.h"
+
 #include "../components/LuaScripted.dibidab.h"
+
+#include <entt/entity/fwd.hpp>
 
 namespace dibidab::ecs
 {
-    class LuaScriptsSystem : public EntitySystem
+    class LuaScriptsSystem : public System
     {
-        using EntitySystem::EntitySystem;
+        using System::System;
 
-        EntityEngine *engine;
+        Engine *engine;
 
       protected:
-        void init(EntityEngine *) override;
+        void init(Engine *) override;
 
-        void update(double deltaTime, EntityEngine *room) override;
+        void update(double deltaTime, Engine *room) override;
 
         void onDestroyed(entt::registry &, entt::entity);
 
         ~LuaScriptsSystem() override;
-
     };
 }

@@ -1,17 +1,13 @@
 #pragma once
-#include "EntitySystem.h"
-#include "../../level/room/Room.h"
-#include "../components/Spawning.dibidab.h"
+#include "System.h"
 
 namespace dibidab::ecs
 {
-    class SpawningSystem : public EntitySystem
+    class SpawningSystem : public System
     {
-        using EntitySystem::EntitySystem;
-
-        EntityEngine *room = nullptr;
+        using System::System;
 
       protected:
-        void update(double deltaTime, EntityEngine *room) override;
+        void update(double deltaTime, Engine *engine) override;
     };
 }

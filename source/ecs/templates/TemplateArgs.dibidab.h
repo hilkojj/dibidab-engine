@@ -4,7 +4,7 @@
 
 namespace dibidab::ecs
 {
-    struct EntityTemplateArgs
+    struct TemplateArgs
     {
         dibidab_expose(json);
         json createFunctionArguments = json::object();

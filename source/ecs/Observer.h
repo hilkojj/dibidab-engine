@@ -5,7 +5,7 @@
 
 namespace dibidab::ecs
 {
-    class EntityObserver
+    class Observer
     {
         struct Callback
         {
@@ -27,7 +27,7 @@ namespace dibidab::ecs
             entt::entity getEntity() const;
 
           private:
-            friend EntityObserver;
+            friend Observer;
 
             Handle(const std::shared_ptr<Callback> &callback, bool bOnConstruct, entt::entity e);
 
@@ -37,11 +37,11 @@ namespace dibidab::ecs
         };
 
         template<class Component>
-        EntityObserver(std::in_place_type_t<Component>, entt::registry &registry) :
+        Observer(std::in_place_type_t<Component>, entt::registry &registry) :
             registry(registry)
         {
-            registry.on_construct<Component>().template connect<&EntityObserver::onComponentConstructed>(this);
-            registry.on_destroy<Component>().template connect<&EntityObserver::onComponentDestroyed>(this);
+            registry.on_construct<Component>().template connect<&Observer::onComponentConstructed>(this);
+            registry.on_destroy<Component>().template connect<&Observer::onComponentDestroyed>(this);
 
             tryGetOnConstructCallbacks = [](entt::registry &registry, entt::entity e) -> std::list<std::shared_ptr<Callback>> *
             {

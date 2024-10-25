@@ -1,5 +1,5 @@
 #pragma once
-#include "../../ecs/EntityEngine.h"
+#include "../../ecs/Engine.h"
 
 #include <utils/delegate.h>
 #include <json.hpp>
@@ -18,7 +18,7 @@ namespace dibidab::level
     /**
      * A room is part of a level.
      */
-    class Room : public ecs::EntityEngine
+    class Room : public ecs::Engine
     {
       public:
 
@@ -58,9 +58,9 @@ namespace dibidab::level
 
         virtual void postLoadInitialize();
 
-        std::list<ecs::EntitySystem *> getSystemsToUpdate() const override;
+        std::list<ecs::System *> getSystemsToUpdate() const override;
 
-        std::set<ecs::EntitySystem *> systemsToUpdateDuringPause;
+        std::set<ecs::System *> systemsToUpdateDuringPause;
 
       private:
 

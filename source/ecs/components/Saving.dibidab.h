@@ -1,5 +1,5 @@
 #pragma once
-#include "../PersistentEntityRef.h"
+#include "../PersistentRef.h"
 
 #include "dibidab_header.h"
 
@@ -9,7 +9,7 @@ namespace dibidab::ecs
     {
         dibidab_component;
         dibidab_expose(lua, json);
-        PersistentEntityID persistentId;
+        PersistentID persistentId;
         std::string applyTemplateOnLoad;
         json data = json::object();
 

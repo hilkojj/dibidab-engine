@@ -15,50 +15,50 @@ namespace dibidab
 
 namespace dibidab::ecs
 {
-    class EntityEngine;
-    class EntityTemplate;
+    class Engine;
+    class Template;
     struct Inspecting;
 
-    class EntityPicker
+    class Picker
     {
       public:
         virtual entt::entity tryPick() = 0;
 
-        virtual ~EntityPicker() = default;
+        virtual ~Picker() = default;
     };
 
 
-    class EntityMover
+    class Mover
     {
       public:
-        explicit EntityMover(entt::entity entity);
+        explicit Mover(entt::entity entity);
 
         virtual bool update() = 0;
 
-        virtual ~EntityMover() = default;
+        virtual ~Mover() = default;
 
       protected:
         const entt::entity entity;
     };
 
 
-    class EntityInspector
+    class Inspector
     {
       public:
-        explicit EntityInspector(EntityEngine &);
+        explicit Inspector(Engine &);
 
         void draw();
 
-        ~EntityInspector();
+        ~Inspector();
 
       protected:
-        virtual EntityPicker *createPicker();
+        virtual Picker *createPicker();
 
-        virtual EntityMover *createMover(entt::entity entityToMove);
+        virtual Mover *createMover(entt::entity entityToMove);
 
         virtual const char *getUsedTemplateName(entt::entity entity) const;
 
-        virtual const loaded_asset *getAssetForTemplate(const EntityTemplate &entityTemplate) const;
+        virtual const loaded_asset *getAssetForTemplate(const Template &entityTemplate) const;
 
         virtual void editTemplateAsset(const loaded_asset &templateAsset);
 
@@ -73,7 +73,7 @@ namespace dibidab::ecs
 
         void drawEntityNameField(entt::entity entity);
 
-        const dibidab::ComponentInfo * drawComponentSelect(const std::set<const dibidab::ComponentInfo *> *exclude = nullptr) const;
+        const ComponentInfo * drawComponentSelect(const std::set<const ComponentInfo *> *exclude = nullptr) const;
 
         void drawAddComponents();
 
@@ -91,20 +91,20 @@ namespace dibidab::ecs
 
         void drawBehaviorTreeInspectors();
 
-        EntityTemplate *getUsedTemplate(entt::entity entity) const;
+        Template *getUsedTemplate(entt::entity entity) const;
 
-        std::set<const dibidab::ComponentInfo *> getComponentsForEntity(entt::entity entity) const;
+        std::set<const ComponentInfo *> getComponentsForEntity(entt::entity entity) const;
 
         void addCustomDrawFunctions(StructInspector &structEditor);
 
       private:
-        EntityEngine *engine;
-        EntityPicker *picker = nullptr;
-        EntityMover *mover = nullptr;
+        Engine *engine;
+        Picker *picker = nullptr;
+        Mover *mover = nullptr;
 
         struct CreatingEntity
         {
-            EntityTemplate *fromTemplate = nullptr;
+            Template *fromTemplate = nullptr;
             bool bPersistent = false;
             bool bInspectOnCreate = false;
         }

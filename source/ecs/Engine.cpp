@@ -1,23 +1,22 @@
 
-#include "EntityEngine.h"
+#include "Engine.h"
 
-#include "EntityObserver.h"
+#include "Observer.h"
 
 #include "systems/KeyEventsSystem.h"
 #include "systems/TimeOutSystem.h"
-#include "entity_templates/LuaEntityTemplate.h"
-
+#include "templates/LuaTemplate.h"
 #include "components/Children.dibidab.h"
 #include "components/LuaScripted.dibidab.h"
 
-#include "../dibidab/ComponentInfo.h"
+#include "../reflection/ComponentInfo.h"
 
 #include <assets/AssetManager.h>
 #include <gu/profiler.h>
 #include <utils/string_utils.h>
 #include <utils/hashing.h>
 
-void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
+void dibidab::ecs::Engine::addSystem(System *sys, bool pushFront)
 {
     assert(!bInitialized);
     if (pushFront)
@@ -26,17 +25,17 @@ void EntityEngine::addSystem(EntitySystem *sys, bool pushFront)
         systems.push_back(sys);
 }
 
-TimeOutSystem *EntityEngine::getTimeOuts()
+dibidab::ecs::TimeOutSystem *dibidab::ecs::Engine::getTimeOuts()
 {
     return timeOutSystem;
 }
 
-const std::string &EntityEngine::getTemplateDirectoryPath() const
+const std::string &dibidab::ecs::Engine::getTemplateDirectoryPath() const
 {
     return templateDirectoryPath;
 }
 
-EntityTemplate &EntityEngine::getTemplate(std::string name)
+dibidab::ecs::Template &dibidab::ecs::Engine::getTemplate(std::string name)
 {
     try
     {
@@ -48,7 +47,7 @@ EntityTemplate &EntityEngine::getTemplate(std::string name)
     }
 }
 
-EntityTemplate &EntityEngine::getTemplate(int templateHash)
+dibidab::ecs::Template &dibidab::ecs::Engine::getTemplate(int templateHash)
 {
     auto t = entityTemplates[templateHash];
     if (!t)
@@ -56,12 +55,12 @@ EntityTemplate &EntityEngine::getTemplate(int templateHash)
     return *t;
 }
 
-const std::vector<std::string> &EntityEngine::getTemplateNames() const
+const std::vector<std::string> &dibidab::ecs::Engine::getTemplateNames() const
 {
     return entityTemplateNames;
 }
 
-entt::entity EntityEngine::getChildByName(entt::entity parent, const char *childName)
+entt::entity dibidab::ecs::Engine::getChildByName(entt::entity parent, const char *childName)
 {
     const Parent *p = entities.try_get<Parent>(parent);
     if (!p)
@@ -72,16 +71,16 @@ entt::entity EntityEngine::getChildByName(entt::entity parent, const char *child
     return it->second;
 }
 
-void EntityEngine::registerLuaEntityTemplate(const char *assetPath)
+void dibidab::ecs::Engine::registerLuaEntityTemplate(const char *assetPath)
 {
     auto name = su::split(assetPath, "/").back();
     if (su::startsWith(name, "_"))
         return;
 
-    addEntityTemplate(name, new LuaEntityTemplate(assetPath, name.c_str(), this));
+    addEntityTemplate(name, new LuaTemplate(assetPath, name.c_str(), this));
 }
 
-void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
+void dibidab::ecs::Engine::addEntityTemplate(const std::string &name, Template *t)
 {
     int hash = hashStringCrossPlatform(name);
 
@@ -96,10 +95,10 @@ void EntityEngine::addEntityTemplate(const std::string &name, EntityTemplate *t)
         entityTemplateNames.push_back(name);
 }
 
-EntityEngine::~EntityEngine()
+dibidab::ecs::Engine::~Engine()
 {
     bDestructing = true;
-    for (EntitySystem * system : systems)
+    for (System *system : systems)
     {
         delete system;
     }
@@ -113,16 +112,17 @@ EntityEngine::~EntityEngine()
     }
 }
 
-bool EntityEngine::isDestructing() const
+bool dibidab::ecs::Engine::isDestructing() const
 {
     return bDestructing;
 }
 
-struct Named {
+struct Named
+{
     std::string name_dont_change;
 };
 
-void EntityEngine::initialize()
+void dibidab::ecs::Engine::initialize()
 {
     assert(!bInitialized);
 
@@ -130,12 +130,12 @@ void EntityEngine::initialize()
     timeOutSystem = new TimeOutSystem("Timeouts");
     addSystem(timeOutSystem);
 
-    entities.on_construct<Child>().connect<&EntityEngine::onChildCreation>(this);
-    entities.on_destroy<Child>().connect<&EntityEngine::onChildDeletion>(this);
+    entities.on_construct<Child>().connect<&Engine::onChildCreation>(this);
+    entities.on_destroy<Child>().connect<&Engine::onChildDeletion>(this);
 
-    entities.on_destroy<Parent>().connect<&EntityEngine::onParentDeletion>(this);
+    entities.on_destroy<Parent>().connect<&Engine::onParentDeletion>(this);
 
-    entities.on_destroy<Named>().connect<&EntityEngine::onEntityDenaming>(this);
+    entities.on_destroy<Named>().connect<&Engine::onEntityDenaming>(this);
 
     initializeLuaEnvironment();
 
@@ -175,9 +175,9 @@ void setComponentFromLua(entt::entity entity, const sol::table &component, entt:
     }
 }
 
-void EntityEngine::initializeLuaEnvironment()
+void dibidab::ecs::Engine::initializeLuaEnvironment()
 {
-    // todo: functions might be called after EntityEngine is destructed
+    // todo: functions might be called after Engine is destructed
 
     luaEnvironment = sol::environment(luau::getLuaState(), sol::create, luau::getLuaState().globals());
     auto &env = luaEnvironment;
@@ -206,21 +206,21 @@ void EntityEngine::initializeLuaEnvironment()
     };
 
     // PersistentEntityRef
-    env["createPersistentRef"] = [&] (entt::entity e) -> PersistentEntityRef
+    env["createPersistentRef"] = [&] (entt::entity e) -> PersistentRef
     {
-        PersistentEntityRef ref;
+        PersistentRef ref;
         ref.set(e, entities);
         return ref;
     };
-    env["setPersistentRef"] = [&] (PersistentEntityRef &ref, entt::entity e)
+    env["setPersistentRef"] = [&] (PersistentRef &ref, entt::entity e)
     {
         ref.set(e, entities);
     };
-    env["resolvePersistentRef"] = [&] (PersistentEntityRef &ref)
+    env["resolvePersistentRef"] = [&] (PersistentRef &ref)
     {
         return ref.resolve(entities);
     };
-    env["tryResolvePersistentRef"] = [&] (PersistentEntityRef &ref)
+    env["tryResolvePersistentRef"] = [&] (PersistentRef &ref)
     {
         std::pair<bool, entt::entity> result;
         result.first = ref.tryResolve(entities, result.second);
@@ -260,7 +260,7 @@ void EntityEngine::initializeLuaEnvironment()
 
         bool makePersistent = persistent.value_or(false);
 
-        if (LuaEntityTemplate *luaEntityTemplate = dynamic_cast<LuaEntityTemplate *>(entityTemplate))
+        if (LuaTemplate *luaEntityTemplate = dynamic_cast<LuaTemplate *>(entityTemplate))
         {
             luaEntityTemplate->createComponentsWithLuaArguments(extendE, extendArgs, makePersistent);
         }
@@ -294,7 +294,7 @@ void EntityEngine::initializeLuaEnvironment()
     }
 }
 
-void EntityEngine::setParent(entt::entity child, entt::entity parent, const char *childName)
+void dibidab::ecs::Engine::setParent(entt::entity child, entt::entity parent, const char *childName)
 {
     Child c;
     c.parent = parent;
@@ -302,17 +302,17 @@ void EntityEngine::setParent(entt::entity child, entt::entity parent, const char
     entities.assign<Child>(child, c);
 }
 
-entt::entity EntityEngine::createChild(entt::entity parent, const char *childName)
+entt::entity dibidab::ecs::Engine::createChild(entt::entity parent, const char *childName)
 {
     entt::entity e = entities.create();
     setParent(e, parent, childName);
     return e;
 }
 
-void EntityEngine::update(double deltaTime)
+void dibidab::ecs::Engine::update(double deltaTime)
 {
     if (!bInitialized)
-        throw gu_err("Cannot update non-initialized EntityEngine!");
+        throw gu_err("Cannot update non-initialized Engine!");
 
     bUpdating = true;
 
@@ -335,12 +335,12 @@ void EntityEngine::update(double deltaTime)
     bUpdating = false;
 }
 
-bool EntityEngine::isUpdating() const
+bool dibidab::ecs::Engine::isUpdating() const
 {
     return bUpdating;
 }
 
-void EntityEngine::onChildCreation(entt::registry &reg, entt::entity entity)
+void dibidab::ecs::Engine::onChildCreation(entt::registry &reg, entt::entity entity)
 {
     Child &child = reg.get<Child>(entity);
 
@@ -351,7 +351,7 @@ void EntityEngine::onChildCreation(entt::registry &reg, entt::entity entity)
         parent.childrenByName[child.name] = entity;
 }
 
-void EntityEngine::onChildDeletion(entt::registry &reg, entt::entity entity)
+void dibidab::ecs::Engine::onChildDeletion(entt::registry &reg, entt::entity entity)
 {
     Child &child = reg.get<Child>(entity);
     Parent &parent = reg.get_or_assign<Parent>(child.parent);
@@ -369,7 +369,7 @@ void EntityEngine::onChildDeletion(entt::registry &reg, entt::entity entity)
     }
 }
 
-void EntityEngine::onParentDeletion(entt::registry &reg, entt::entity entity)
+void dibidab::ecs::Engine::onParentDeletion(entt::registry &reg, entt::entity entity)
 {
     Parent &parent = reg.get_or_assign<Parent>(entity);
 
@@ -384,7 +384,7 @@ void EntityEngine::onParentDeletion(entt::registry &reg, entt::entity entity)
             reg.remove<Child>(child);
 }
 
-entt::entity EntityEngine::getByName(const char *name) const
+entt::entity dibidab::ecs::Engine::getByName(const char *name) const
 {
     auto it = namedEntities.find(name);
     if (it == namedEntities.end())
@@ -392,7 +392,7 @@ entt::entity EntityEngine::getByName(const char *name) const
     return it->second;
 }
 
-bool EntityEngine::setName(entt::entity e, const char *name)
+bool dibidab::ecs::Engine::setName(entt::entity e, const char *name)
 {
     if (name)
     {
@@ -418,19 +418,19 @@ bool EntityEngine::setName(entt::entity e, const char *name)
     }
 }
 
-void EntityEngine::onEntityDenaming(entt::registry &, entt::entity e)
+void dibidab::ecs::Engine::onEntityDenaming(entt::registry &, entt::entity e)
 {
     namedEntities.erase(entities.get<Named>(e).name_dont_change);
 }
 
-const char *EntityEngine::getName(entt::entity e) const
+const char *dibidab::ecs::Engine::getName(entt::entity e) const
 {
     if (const Named *named = entities.try_get<Named>(e))
         return named->name_dont_change.c_str();
     else return nullptr;
 }
 
-EntityObserver &EntityEngine::getObserverForComponent(const dibidab::ComponentInfo &component)
+dibidab::ecs::Observer &dibidab::ecs::Engine::getObserverForComponent(const ComponentInfo &component)
 {
     auto it = observerPerComponent.find(&component);
     if (it == observerPerComponent.end())
@@ -440,10 +440,10 @@ EntityObserver &EntityEngine::getObserverForComponent(const dibidab::ComponentIn
     return *it->second;
 }
 
-std::list<EntitySystem *> EntityEngine::getSystemsToUpdate() const
+std::list<dibidab::ecs::System *> dibidab::ecs::Engine::getSystemsToUpdate() const
 {
-    std::list<EntitySystem *> systemsToUpdate;
-    for (EntitySystem *sys : systems)
+    std::list<System *> systemsToUpdate;
+    for (System *sys : systems)
     {
         if (sys->bUpdatesEnabled)
         {

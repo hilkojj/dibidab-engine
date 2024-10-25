@@ -6,22 +6,22 @@
 
 namespace dibidab::ecs
 {
-    class EntityEngine;
+    class Engine;
 
     /**
      * Abstract class.
      *
      * Entity templates are used to construct one (or more) entities with a collection of components.
      */
-    class EntityTemplate
+    class Template
     {
       private:
-        friend class EntityEngine;
+        friend class Engine;
 
         int templateHash = -1;
 
       protected:
-        EntityEngine *engine = nullptr;
+        Engine *engine = nullptr;
 
       public:
 
@@ -33,7 +33,7 @@ namespace dibidab::ecs
 
       protected:
 
-        virtual ~EntityTemplate() = default;
+        virtual ~Template() = default;
 
     };
 }

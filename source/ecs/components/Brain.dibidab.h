@@ -1,5 +1,5 @@
 #pragma once
-#include "../../ai/behavior_trees/Tree.h"
+#include "../../behavior/Tree.h"
 
 #include <dibidab_header.h>
 

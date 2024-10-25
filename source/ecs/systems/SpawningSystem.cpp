@@ -1,13 +1,16 @@
-
 #include "SpawningSystem.h"
-#include "../components/Spawning.dibidab.h"
 
-void SpawningSystem::update(double deltaTime, EntityEngine *room)
+#include "../components/Spawning.dibidab.h"
+#include "../Engine.h"
+
+void dibidab::ecs::SpawningSystem::update(double deltaTime, Engine *engine)
 {
-    this->room = room;
-    room->entities.view<DespawnAfter>().each([&](auto e, DespawnAfter &despawnAfter) {
+    engine->entities.view<DespawnAfter>().each([&] (auto e, DespawnAfter &despawnAfter)
+    {
         despawnAfter.timer += deltaTime;
         if (despawnAfter.timer >= despawnAfter.time)
-            room->entities.destroy(e);
+        {
+            engine->entities.destroy(e);
+        }
     });
 }
