@@ -73,7 +73,7 @@ namespace dibidab::ecs
 
         void drawEntityNameField(entt::entity entity);
 
-        const ComponentInfo * drawComponentSelect(const std::set<const ComponentInfo *> *exclude = nullptr) const;
+        const ComponentInfo *drawComponentSelect(const std::set<const ComponentInfo *> *exclude = nullptr) const;
 
         void drawAddComponents();
 
@@ -97,7 +97,6 @@ namespace dibidab::ecs
 
         void addCustomDrawFunctions(StructInspector &structEditor);
 
-      private:
         Engine *engine;
         Picker *picker = nullptr;
         Mover *mover = nullptr;

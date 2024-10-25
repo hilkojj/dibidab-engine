@@ -30,11 +30,17 @@ namespace dibidab
         json (*getDefaultJsonObject)();
 
         void (*registerLuaUserType)(sol::state &);
+
+        /**
+         * Prefer this function over dibidab::findStructInfo when dealing with typenames coming from VariableInfo::typeName.
+         * Because those can omit the namespaces of the type, if this struct is in the same namespace.
+         */
+        const StructInfo *findStructInfoInNamespace(const char *structId) const;
     };
 
     const std::map<std::string, StructInfo> &getAllStructInfos();
 
-    const StructInfo *findStructInfo(const char *structNameOrId);
+    const StructInfo *findStructInfo(const char *structId);
 
     void registerStructInfo(const StructInfo &);
 }

@@ -37,7 +37,7 @@ bool dibidab::StructInspector::draw(json &structJson)
         }
         json key = var.name;
         json &value = structJson.is_object() ? structJson[var.name] : structJson[varIndex];
-        bEdited |= drawKeyValue(key, value, "", var.typeName, false);
+        bEdited |= drawKeyValue(key, value, "", getGlobalTypename(var.typeName), false);
         ++varIndex;
     }
 
@@ -541,6 +541,7 @@ bool dibidab::StructInspector::inferArrayValueType(const std::string &fullArrayT
         if (su::startsWith(fullArrayType, arrayType + "<") && su::endsWith(fullArrayType, ">"))
         {
             outValueType = fullArrayType.substr(arrayType.size() + 1 /* < */, fullArrayType.size() - arrayType.size() - 2 /* < and > */);
+            outValueType = getGlobalTypename(outValueType);
             return true;
         }
     }
@@ -576,8 +577,8 @@ bool dibidab::StructInspector::inferMapKeyValueTypes(const std::string &fullMapT
         );
         if (templateTypes.size() == 2)
         {
-            outKeyType = templateTypes[0];
-            outValueType = templateTypes[1];
+            outKeyType = getGlobalTypename(templateTypes[0]);
+            outValueType = getGlobalTypename(templateTypes[1]);
             return true;
         }
     }
@@ -614,4 +615,13 @@ bool dibidab::StructInspector::isVecType(const std::string &type, int &outSize, 
         }
     }
     return false;
+}
+
+std::string dibidab::StructInspector::getGlobalTypename(const std::string &localTypename) const
+{
+    if (const dibidab::StructInfo *info = structInfo->findStructInfoInNamespace(localTypename.c_str()))
+    {
+        return info->id;
+    }
+    return localTypename;
 }

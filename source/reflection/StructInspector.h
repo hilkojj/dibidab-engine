@@ -47,6 +47,8 @@ namespace dibidab
 
         bool isVecType(const std::string &type, int &outSize, int &outImGuiDataType) const;
 
+        std::string getGlobalTypename(const std::string &localTypename) const;
+
         const dibidab::StructInfo *structInfo;
 
         // Struct Editors for values stored inside our struct. Key is latest ImGui ID from the window stack.
