@@ -7,12 +7,6 @@ namespace dibidab
 {
     class Session
     {
-      protected:
-        level::Level *level = nullptr;
-
-        std::list<Player_ptr> players;
-        Player_ptr localPlayer;
-
       public:
 
 #ifndef DIBIDAB_NO_SAVE_GAME
@@ -49,7 +43,6 @@ namespace dibidab
          */
         void validateUsername(const std::string &name, std::string &declineReason) const;
 
-
         Player_ptr deletePlayer(int id, std::list<Player_ptr> &players);
 
       protected:
@@ -63,5 +56,10 @@ namespace dibidab
         void spawnPlayerEntity(Player_ptr &);
 
         void removePlayerEntities(int playerId);
+
+        level::Level *level = nullptr;
+
+        std::list<Player_ptr> players;
+        Player_ptr localPlayer;
     };
 }

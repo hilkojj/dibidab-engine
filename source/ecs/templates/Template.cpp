@@ -1,4 +1,5 @@
 #include "Template.h"
+
 #include "../Engine.h"
 
 const std::string &dibidab::ecs::Template::getDescription() const

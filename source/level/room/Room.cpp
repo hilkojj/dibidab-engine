@@ -4,7 +4,7 @@
 #include "../../ecs/systems/PlayerControlSystem.h"
 #include "../../ecs/systems/SpawningSystem.h"
 #include "../../ecs/systems/LuaScriptsSystem.h"
-#include "../../ecs/components/Saving.dibidab.h"
+#include "../../ecs/components/Persistent.dibidab.h"
 #include "../../ecs/templates/Template.h"
 #include "../../reflection/ComponentInfo.h"
 

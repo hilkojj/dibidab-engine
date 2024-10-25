@@ -1,6 +1,6 @@
 #include "PersistentRef.h"
 
-#include "ecs/components/Saving.dibidab.h"
+#include "components/Persistent.dibidab.h"
 
 #include <utils/gu_error.h>
 

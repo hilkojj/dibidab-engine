@@ -13,7 +13,6 @@ namespace dibidab::ecs
         std::string applyTemplateOnLoad;
         json data = json::object();
 
-        // TODO: replace with ComponentInfo ptrs?
         std::vector<std::string> saveComponents;
 
         bool bSaveName = true;

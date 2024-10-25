@@ -1,8 +1,6 @@
 #pragma once
 #include "System.h"
 
-#include "../components/LuaScripted.dibidab.h"
-
 #include <entt/entity/fwd.hpp>
 
 namespace dibidab::ecs

@@ -1,5 +1,7 @@
 #include "LuaTemplate.h"
+
 #include "../components/LuaScripted.dibidab.h"
+
 #include "../../game/SaveGame.h"
 
 #include <assets/AssetManager.h>
@@ -20,7 +22,8 @@ dibidab::ecs::LuaTemplate::LuaTemplate(const char *assetName, const char *name, 
         TEMPLATE = luaEnvironment["TEMPLATE"] = 1 << 0,
         ARGS = luaEnvironment["ARGS"] = 1 << 1;
 
-    auto setPersistentMode = [&](int mode, sol::optional<std::vector<std::string>> componentsToSave) {
+    auto setPersistentMode = [&] (int mode, sol::optional<std::vector<std::string>> componentsToSave)
+    {
 
         persistency = Persistent();
         if (mode & TEMPLATE)
@@ -35,14 +38,17 @@ dibidab::ecs::LuaTemplate::LuaTemplate(const char *assetName, const char *name, 
     luaEnvironment["persistenceMode"] = setPersistentMode;
     setPersistentMode(TEMPLATE | ARGS, sol::optional<std::vector<std::string>>());
 
-    luaEnvironment["defaultArgs"] = [&](const sol::table &table) {
+    luaEnvironment["defaultArgs"] = [&] (const sol::table &table)
+    {
         defaultArgs = table;
     };
-    luaEnvironment["description"] = [&](const char *d) {
+    luaEnvironment["description"] = [&] (const char *d)
+    {
         description = d;
     };
-    luaEnvironment["setUpdateFunction"] = [&](entt::entity entity, float updateFrequency, const sol::safe_function &func, sol::optional<bool> randomAcummulationDelay) {
-
+    luaEnvironment["setUpdateFunction"] =
+        [&] (entt::entity entity, float updateFrequency, const sol::safe_function &func, sol::optional<bool> randomAcummulationDelay)
+    {
         LuaScripted &scripted = engine->entities.get_or_assign<LuaScripted>(entity);
         scripted.updateFrequency = updateFrequency;
 
@@ -54,8 +60,8 @@ dibidab::ecs::LuaTemplate::LuaTemplate(const char *assetName, const char *name, 
         scripted.updateFunc = func;
         scripted.updateFuncScript = script;
     };
-    luaEnvironment["setOnDestroyCallback"] = [&](entt::entity entity, const sol::safe_function &func) {
-
+    luaEnvironment["setOnDestroyCallback"] = [&] (entt::entity entity, const sol::safe_function &func)
+    {
         LuaScripted &scripted = engine->entities.get_or_assign<LuaScripted>(entity);
         scripted.onDestroyFunc = func;
         scripted.onDestroyFuncScript = script;

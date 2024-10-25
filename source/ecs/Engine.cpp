@@ -1,4 +1,3 @@
-
 #include "Engine.h"
 
 #include "Observer.h"
@@ -23,6 +22,11 @@ void dibidab::ecs::Engine::addSystem(System *sys, bool pushFront)
         systems.push_front(sys);
     else
         systems.push_back(sys);
+}
+
+std::list<dibidab::ecs::System *> dibidab::ecs::Engine::getSystems()
+{
+    return systems;
 }
 
 dibidab::ecs::TimeOutSystem *dibidab::ecs::Engine::getTimeOuts()
@@ -428,6 +432,11 @@ const char *dibidab::ecs::Engine::getName(entt::entity e) const
     if (const Named *named = entities.try_get<Named>(e))
         return named->name_dont_change.c_str();
     else return nullptr;
+}
+
+const std::unordered_map<std::string, entt::entity> &dibidab::ecs::Engine::getNamedEntities() const
+{
+    return namedEntities;
 }
 
 dibidab::ecs::Observer &dibidab::ecs::Engine::getObserverForComponent(const ComponentInfo &component)

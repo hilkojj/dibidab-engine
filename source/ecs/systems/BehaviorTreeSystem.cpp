@@ -1,9 +1,6 @@
-
 #include "BehaviorTreeSystem.h"
 
 #include "../Engine.h"
-#include "../../behavior/Tree.h"
-
 #include "../components/Brain.dibidab.h"
 
 struct BrainPendingActivation

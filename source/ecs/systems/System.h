@@ -13,11 +13,10 @@ namespace dibidab::ecs
     class System
     {
       public:
-        const std::string name;
-
-        bool bUpdatesEnabled = true;
-
         System(const std::string &name);
+
+        const std::string name;
+        bool bUpdatesEnabled = true;
 
       protected:
         friend Engine;

@@ -1,4 +1,3 @@
-
 #include "Observer.h"
 
 #include <utils/gu_error.h>

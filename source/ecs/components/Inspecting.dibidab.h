@@ -11,19 +11,19 @@
 namespace dibidab
 {
     struct ComponentInfo;
+}
 
-    namespace ecs
+namespace dibidab::ecs
+{
+    struct Inspecting
     {
-        struct Inspecting
-        {
-            dibidab_component;
-            std::optional<vec2> nextWindowPos;
-            std::map<const dibidab::ComponentInfo *, StructInspector> componentInspectors;
-        };
+        dibidab_component;
+        std::optional<vec2> nextWindowPos;
+        std::map<const dibidab::ComponentInfo *, StructInspector> componentInspectors;
+    };
 
-        struct InspectingBrain
-        {
-            dibidab_component;
-        };
-    }
+    struct InspectingBrain
+    {
+        dibidab_component;
+    };
 }

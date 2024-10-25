@@ -5,6 +5,8 @@
 
 namespace dibidab::ecs
 {
+    class LuaTemplate;
+
     struct TimeoutFunc
     {
         sol::safe_function func;

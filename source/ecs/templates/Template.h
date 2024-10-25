@@ -1,5 +1,4 @@
 #pragma once
-
 #include <entt/entity/fwd.hpp>
 
 #include <string>
@@ -15,14 +14,6 @@ namespace dibidab::ecs
      */
     class Template
     {
-      private:
-        friend class Engine;
-
-        int templateHash = -1;
-
-      protected:
-        Engine *engine = nullptr;
-
       public:
 
         virtual const std::string &getDescription() const;
@@ -35,5 +26,11 @@ namespace dibidab::ecs
 
         virtual ~Template() = default;
 
+        Engine *engine = nullptr;
+
+      private:
+        friend class Engine;
+
+        int templateHash = -1;
     };
 }

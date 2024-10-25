@@ -1,12 +1,11 @@
 #pragma once
 #include "EventEmitter.h"
 
-#include "lua/luau.h"
-
 #include <utils/type_name.h>
 #include <math/math_utils.h>
 
 #include <entt/entity/registry.hpp>
+#include <sol/sol.hpp>
 
 #include <map>
 #include <list>
@@ -25,63 +24,29 @@ namespace dibidab::ecs
 
     class Engine
     {
-        bool bInitialized = false, bUpdating = false, bDestructing = false;
-
-        TimeOutSystem *timeOutSystem;
-
-        std::map<const ComponentInfo *, Observer *> observerPerComponent;
-
-      protected:
-
-        std::list<System *> systems;
-        std::map<int, Template *> entityTemplates;
-        std::vector<std::string> entityTemplateNames;
-        std::string templateDirectoryPath = "scripts/entities/";
-
-        virtual void initializeLuaEnvironment();
-
       public:
-        constexpr static const char *LUA_ENV_PTR_NAME = "enginePtr";
-
-        sol::environment luaEnvironment;
-        entt::registry entities;
-        EventEmitter events;
-
-        ivec2 cursorPosition = ivec2(0);
-
         void initialize();
 
         void addSystem(System *sys, bool pushFront = false);
 
-        std::list<System *> getSystems()
-        { return systems; }
+        std::list<System *> getSystems();
 
-        template<class EntitySystem_>
-        EntitySystem_ *tryFindSystem()
+        template<class SystemType>
+        SystemType *tryFindSystem()
         {
-            auto it = std::find_if(
-                    std::begin(systems),
-                    std::end(systems),
-                    [](const auto sys)
-                    {
-                        return !!dynamic_cast<const EntitySystem_ *>(sys);
-                    }
-            );
-            if (it == systems.end())
-                return nullptr;
-            return (EntitySystem_ *) *it;
+            for (System *system : systems)
+            {
+                if (dynamic_cast<SystemType *>(system) != nullptr)
+                {
+                    return (SystemType *) system;
+                }
+            }
+            return nullptr;
         }
 
         TimeOutSystem *getTimeOuts();
 
         const std::string &getTemplateDirectoryPath() const;
-
-        // TODO: remove: not used:
-        template<class EntityTemplate_>
-        Template &getTemplate()
-        {
-            return getTemplate(typename_utils::getTypeName<EntityTemplate_>());
-        }
 
         Template &getTemplate(std::string name);
 
@@ -102,16 +67,17 @@ namespace dibidab::ecs
 
         const char *getName(entt::entity) const;
 
-        const std::unordered_map<std::string, entt::entity> &getNamedEntities() const
-        { return namedEntities; };
+        const std::unordered_map<std::string, entt::entity> &getNamedEntities() const;;
 
         Observer &getObserverForComponent(const ComponentInfo &component);
 
-        template<typename type>
-        void emitEntityEvent(entt::entity e, const type &event, const char *customEventName = nullptr)
+        template<typename EventType>
+        void emitEntityEvent(entt::entity e, const EventType &event, const char *customEventName = nullptr)
         {
             if (auto *emitter = entities.try_get<EventEmitter>(e))
+            {
                 emitter->emit(event, customEventName);
+            }
         }
 
         virtual ~Engine();
@@ -122,7 +88,16 @@ namespace dibidab::ecs
 
         bool isUpdating() const;
 
+        constexpr static const char *LUA_ENV_PTR_NAME = "enginePtr";
+
+        sol::environment luaEnvironment;
+        entt::registry entities;
+        EventEmitter events;
+        ivec2 cursorPosition = ivec2(0);
+
       protected:
+
+        virtual void initializeLuaEnvironment();
 
         virtual std::list<System *> getSystemsToUpdate() const;
 
@@ -137,6 +112,11 @@ namespace dibidab::ecs
 
         void addEntityTemplate(const std::string &name, Template *);
 
+        std::list<System *> systems;
+        std::map<int, Template *> entityTemplates;
+        std::vector<std::string> entityTemplateNames;
+        std::string templateDirectoryPath = "scripts/entities/";
+
       private:
         void onChildCreation(entt::registry &, entt::entity);
 
@@ -148,5 +128,10 @@ namespace dibidab::ecs
 
         void onEntityDenaming(entt::registry &, entt::entity);
 
+        bool bInitialized = false;
+        bool bUpdating = false;
+        bool bDestructing = false;
+        TimeOutSystem *timeOutSystem;
+        std::map<const ComponentInfo *, Observer *> observerPerComponent;
     };
 }

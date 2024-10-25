@@ -1,7 +1,7 @@
-
 #include "LuaScriptsSystem.h"
 
 #include "../Engine.h"
+#include "../components/LuaScripted.dibidab.h"
 
 #include <assets/AssetManager.h>
 
