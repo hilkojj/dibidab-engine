@@ -12,8 +12,8 @@
 
 #include "../behavior/TreeInspector.h"
 #include "../game/dibidab.h"
-#include "../reflection/StructInspector.h"
 #include "../reflection/StructInfo.h"
+#include "../reflection/ComponentInfo.h"
 
 #include "../generated/registry.struct_json.h"
 

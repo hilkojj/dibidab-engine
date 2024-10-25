@@ -1,42 +1,31 @@
-
 #include "Tree.h"
 
-#include "ecs/systems/TimeOutSystem.h"
-#include "level/room/Room.h"
-#include "level/Level.h"
+#include "nodes/ComponentDecoratorNode.h"
+#include "nodes/ComponentObserverNode.h"
+#include "nodes/LuaLeafNode.h"
+#include "nodes/WaitNode.h"
 
-#include "utils/string_utils.h"
+#include "../level/room/Room.h"
+#include "../reflection/ComponentInfo.h"
 
-#include "imgui.h"
+#include <utils/string_utils.h>
 
-std::string getNodeErrorInfo(dibidab::behavior::Tree::Node *node)
-{
-    std::string info = node->getName();
-    if (node->hasLuaDebugInfo())
-    {
-        const lua_Debug &debugInfo = node->getLuaDebugInfo();
-        std::vector<std::string> pathSplitted = su::split(debugInfo.source, "/");
-        if (!pathSplitted.empty())
-        {
-            info += "@" + pathSplitted.back() + ":" + std::to_string(debugInfo.currentline);
-        }
-    }
-    return info;
-}
+#include <sol/sol.hpp>
+#include <imgui.h>
 
 dibidab::behavior::Tree::Node::Node() :
     parent(nullptr),
     bEntered(false),
-    bAborted(false),
-    luaDebugInfo(),
-    bHasLuaDebugInfo(false)
+    bAborted(false)
 {
     lua_State *luaState = luau::getLuaState().lua_state();
+    lua_Debug luaDebugInfo;
     if (lua_getstack(luaState, 1, &luaDebugInfo))
     {
         if (lua_getinfo(luaState, "nSl", &luaDebugInfo))
         {
-            bHasLuaDebugInfo = true;
+            source.path = luaDebugInfo.source;
+            source.line = luaDebugInfo.currentline;
         }
     }
 }
@@ -57,11 +46,11 @@ void dibidab::behavior::Tree::Node::abort()
 #ifndef NDEBUG
     if (!bEntered)
     {
-        throw gu_err("Cannot abort a non-entered Node: " + getNodeErrorInfo(this));
+        throw gu_err("Cannot abort a non-entered Node: " + getReadableDebugInfo());
     }
     if (bAborted)
     {
-        throw gu_err("Cannot abort a Node again: " + getNodeErrorInfo(this));
+        throw gu_err("Cannot abort a Node again: " + getReadableDebugInfo());
     }
 #endif
     bAborted = true;
@@ -72,14 +61,14 @@ void dibidab::behavior::Tree::Node::finish(Result result)
 #ifndef NDEBUG
     if (!bEntered)
     {
-        throw gu_err("Cannot finish a non-entered Node: " + getNodeErrorInfo(this));
+        throw gu_err("Cannot finish a non-entered Node: " + getReadableDebugInfo());
     }
 #endif
     if (bAborted)
     {
         if (result != Result::ABORTED)
         {
-            throw gu_err("Cannot finish an aborted Node with an result other than ABORTED: " + getNodeErrorInfo(this));
+            throw gu_err("Cannot finish an aborted Node with an result other than ABORTED: " + getReadableDebugInfo());
         }
         bAborted = false;
     }
@@ -120,14 +109,18 @@ dibidab::behavior::Tree::Node *dibidab::behavior::Tree::Node::setDescription(con
     return this;
 }
 
-bool dibidab::behavior::Tree::Node::hasLuaDebugInfo() const
+std::string dibidab::behavior::Tree::Node::getReadableDebugInfo() const
 {
-    return bHasLuaDebugInfo;
-}
-
-const lua_Debug &dibidab::behavior::Tree::Node::getLuaDebugInfo() const
-{
-    return luaDebugInfo;
+    std::string info = getName();
+    if (source.path != nullptr)
+    {
+        std::vector<std::string> pathSplitted = su::split(source.path, "/");
+        if (!pathSplitted.empty())
+        {
+            info += "@" + pathSplitted.back() + ":" + std::to_string(source.line);
+        }
+    }
+    return info;
 }
 
 #ifndef NDEBUG
@@ -146,7 +139,7 @@ void dibidab::behavior::Tree::Node::registerAsParent(Node *child)
 {
     if (child->parent != nullptr)
     {
-        throw gu_err("Child already has a parent: " + getNodeErrorInfo(child));
+        throw gu_err("Child already has a parent: " + child->getReadableDebugInfo());
     }
     child->parent = this;
 }
@@ -158,7 +151,7 @@ void dibidab::behavior::Tree::CompositeNode::finish(Result result)
     {
         if (child->isEntered())
         {
-            throw gu_err(getNodeErrorInfo(this) + " wants to finish, but child " + getNodeErrorInfo(child) + " is entered!");
+            throw gu_err(getReadableDebugInfo() + " wants to finish, but child " + child->getReadableDebugInfo() + " is entered!");
         }
     }
 #endif
@@ -169,7 +162,7 @@ dibidab::behavior::Tree::CompositeNode *dibidab::behavior::Tree::CompositeNode::
 {
     if (child == nullptr)
     {
-        throw gu_err("Child is null: " + getNodeErrorInfo(this));
+        throw gu_err("Child is null: " + getReadableDebugInfo());
     }
     registerAsParent(child);
     children.push_back(child);
@@ -179,15 +172,6 @@ dibidab::behavior::Tree::CompositeNode *dibidab::behavior::Tree::CompositeNode::
 const std::vector<dibidab::behavior::Tree::Node *> &dibidab::behavior::Tree::CompositeNode::getChildren() const
 {
     return children;
-}
-
-dibidab::behavior::Tree::CompositeNode::~CompositeNode()
-{
-    for (Node *child : children)
-    {
-        delete child;
-    }
-    children.clear();
 }
 
 bool dibidab::behavior::Tree::CompositeNode::getEnteredDescription(std::vector<const char *> &descriptions) const
@@ -211,6 +195,37 @@ bool dibidab::behavior::Tree::CompositeNode::getEnteredDescription(std::vector<c
     return bHasAnyChildDescription;
 }
 
+dibidab::behavior::Tree::CompositeNode::~CompositeNode()
+{
+    for (Node *child : children)
+    {
+        delete child;
+    }
+    children.clear();
+}
+
+void dibidab::behavior::Tree::CompositeNode::checkCorrectChildFinished(
+    const int expectedChildIndex, const dibidab::behavior::Tree::Node *finishedChild
+) const
+{
+    if (expectedChildIndex == INVALID_CHILD_INDEX || !isEntered())
+    {
+        if (!isEntered())
+        {
+            throw gu_err("Child (" + finishedChild->getReadableDebugInfo() + ") finished, but parent (" + getReadableDebugInfo() + ") was not entered!");
+        }
+        else
+        {
+            throw gu_err("Child (" + finishedChild->getReadableDebugInfo() + ") finished, but parent (" + getReadableDebugInfo() + ") thinks no child was entered!");
+        }
+    }
+    if (finishedChild != children[expectedChildIndex])
+    {
+        throw gu_err("Child that finished is not the current child that was entered!\nFinished child: " + finishedChild->getReadableDebugInfo()
+            + "\nEntered child: " + children[expectedChildIndex]->getReadableDebugInfo() + "\nParent: " + getReadableDebugInfo());
+    }
+}
+
 void dibidab::behavior::Tree::DecoratorNode::abort()
 {
     Node::abort();
@@ -228,7 +243,7 @@ void dibidab::behavior::Tree::DecoratorNode::finish(Result result)
 {
     if (child != nullptr && child->isEntered())
     {
-        throw gu_err(getNodeErrorInfo(this) + " wants to finish, but child " + getNodeErrorInfo(child) + " is entered!");
+        throw gu_err(getReadableDebugInfo() + " wants to finish, but child " + child->getReadableDebugInfo() + " is entered!");
     }
     Node::finish(result);
 }
@@ -239,7 +254,7 @@ dibidab::behavior::Tree::DecoratorNode *dibidab::behavior::Tree::DecoratorNode::
     {
         if (isEntered())
         {
-            throw gu_err("Cannot set child on a Decorator Node that is currently entered: " + getNodeErrorInfo(this));
+            throw gu_err("Cannot set child on a Decorator Node that is currently entered: " + getReadableDebugInfo());
         }
         delete child;
     }
@@ -282,7 +297,7 @@ void dibidab::behavior::Tree::SequenceNode::enter()
 {
     if (currentChildIndex != INVALID_CHILD_INDEX)
     {
-        throw gu_err("Already entered this SequenceNode: " + getNodeErrorInfo(this));
+        throw gu_err("Already entered this SequenceNode: " + getReadableDebugInfo());
     }
     Tree::Node::enter();
 
@@ -303,7 +318,7 @@ void dibidab::behavior::Tree::SequenceNode::abort()
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
-        throw gu_err("Trying to abort a sequence that has not entered a child: " + getNodeErrorInfo(this));
+        throw gu_err("Trying to abort a sequence that has not entered a child: " + getReadableDebugInfo());
     }
 #endif
     getChildren().at(currentChildIndex)->abort();
@@ -320,35 +335,13 @@ const char *dibidab::behavior::Tree::SequenceNode::getName() const
     return "Sequence";
 }
 
-void checkCorrectChildFinished(dibidab::behavior::Tree::Node *parent, const std::vector<dibidab::behavior::Tree::Node *> &children,
-    int currentChildIndex, dibidab::behavior::Tree::Node *finishedChild)
-{
-    if (currentChildIndex == INVALID_CHILD_INDEX || !parent->isEntered())
-    {
-        if (!parent->isEntered())
-        {
-            throw gu_err("Child (" + getNodeErrorInfo(finishedChild) + ") finished, but parent (" + getNodeErrorInfo(parent) + ") was not entered!");
-        }
-        else
-        {
-            throw gu_err("Child (" + getNodeErrorInfo(finishedChild) + ") finished, but parent (" + getNodeErrorInfo(parent) + ") thinks no child was entered!");
-        }
-    }
-    if (finishedChild != children[currentChildIndex])
-    {
-        throw gu_err("Child that finished is not the current child that was entered!\nFinished child: " + getNodeErrorInfo(finishedChild)
-            + "\nEntered child: " + getNodeErrorInfo(children[currentChildIndex]) + "\nParent: " + getNodeErrorInfo(parent));
-    }
-
-}
-
 void dibidab::behavior::Tree::SequenceNode::onChildFinished(Node *child, Result result)
 {
     Tree::CompositeNode::onChildFinished(child, result);
 
     const std::vector<Node *> &children = getChildren();
 
-    checkCorrectChildFinished(this, children, currentChildIndex, child);
+    checkCorrectChildFinished(currentChildIndex, child);
 
     if (result == Node::Result::ABORTED)
     {
@@ -377,7 +370,7 @@ void dibidab::behavior::Tree::SelectorNode::enter()
 {
     if (currentChildIndex != INVALID_CHILD_INDEX)
     {
-        throw gu_err("Already entered this SelectorNode: " + getNodeErrorInfo(this));
+        throw gu_err("Already entered this SelectorNode: " + getReadableDebugInfo());
     }
     Tree::Node::enter();
 
@@ -399,7 +392,7 @@ void dibidab::behavior::Tree::SelectorNode::abort()
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
-        throw gu_err("Trying to abort a selector that has not entered a child: " + getNodeErrorInfo(this));
+        throw gu_err("Trying to abort a selector that has not entered a child: " + getReadableDebugInfo());
     }
 #endif
     getChildren().at(currentChildIndex)->abort();
@@ -422,7 +415,7 @@ void dibidab::behavior::Tree::SelectorNode::onChildFinished(Node *child, Result 
 
     const std::vector<Node *> &children = getChildren();
 
-    checkCorrectChildFinished(this, children, currentChildIndex, child);
+    checkCorrectChildFinished(currentChildIndex, child);
 
     if (result == Node::Result::ABORTED)
     {
@@ -495,7 +488,7 @@ void dibidab::behavior::Tree::InverterNode::enter()
     Node *child = getChild();
     if (child == nullptr)
     {
-        throw gu_err("InverterNode has no child: " + getNodeErrorInfo(this));
+        throw gu_err("InverterNode has no child: " + getReadableDebugInfo());
     }
     Tree::Node::enter();
     child->enter();
@@ -521,7 +514,7 @@ void dibidab::behavior::Tree::SucceederNode::enter()
     Node *child = getChild();
     if (child == nullptr)
     {
-        throw gu_err("SucceederNode has no child: " + getNodeErrorInfo(this));
+        throw gu_err("SucceederNode has no child: " + getReadableDebugInfo());
     }
     Node::enter();
     child->enter();
@@ -577,7 +570,7 @@ void dibidab::behavior::Tree::RepeaterNode::enterChild()
     Node *child = getChild();
     if (child == nullptr)
     {
-        throw gu_err("RepeaterNode has no child: " + getNodeErrorInfo(this));
+        throw gu_err("RepeaterNode has no child: " + getReadableDebugInfo());
     }
     child->enter();
 }
@@ -593,706 +586,6 @@ void dibidab::behavior::Tree::RepeaterNode::drawDebugInfo() const
 #ifndef NDEBUG
     ImGui::Text("%dx", timesRepeated);
 #endif
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::addWhileEntered(ecs::Engine *engine, entt::entity entity,
-    const ComponentInfo *component)
-{
-    if (engine == nullptr)
-    {
-        throw gu_err("Engine is a nullptr! " + getNodeErrorInfo(this));
-    }
-    if (!engine->entities.valid(entity))
-    {
-        throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
-    }
-    if (component == nullptr)
-    {
-        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getNodeErrorInfo(this));
-    }
-    toAddWhileEntered.push_back({engine, entity, component});
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::addOnEnter(ecs::Engine *engine, entt::entity entity,
-    const ComponentInfo *component)
-{
-    if (engine == nullptr)
-    {
-        throw gu_err("Engine is a nullptr! " + getNodeErrorInfo(this));
-    }
-    if (!engine->entities.valid(entity))
-    {
-        throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
-    }
-    if (component == nullptr)
-    {
-        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getNodeErrorInfo(this));
-    }
-    toAddOnEnter.push_back({engine, entity, component});
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::removeOnFinish(ecs::Engine *engine, entt::entity entity,
-    const ComponentInfo *component)
-{
-    if (engine == nullptr)
-    {
-        throw gu_err("Engine is a nullptr! " + getNodeErrorInfo(this));
-    }
-    if (!engine->entities.valid(entity))
-    {
-        throw gu_err("Entity is not valid! " + getNodeErrorInfo(this));
-    }
-    if (component == nullptr)
-    {
-        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getNodeErrorInfo(this));
-    }
-    toRemoveOnFinish.push_back({engine, entity, component});
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::enter()
-{
-    Node *child = getChild();
-    if (child == nullptr)
-    {
-        throw gu_err("ComponentDecoratorNode has no child: " + getNodeErrorInfo(this));
-    }
-    Node::enter();
-
-    for (const std::vector<EntityComponent> &toAddVector : { toAddWhileEntered, toAddOnEnter })
-    {
-        for (const EntityComponent entityComponent : toAddVector)
-        {
-            if (!entityComponent.engine->entities.valid(entityComponent.entity))
-            {
-                throw gu_err("Cannot add " + std::string(entityComponent.component->name) +
-                    " to an invalid entity while entering: " + getNodeErrorInfo(this));
-            }
-            entityComponent.component->addComponent(entityComponent.entity, entityComponent.engine->entities);
-        }
-    }
-
-    child->enter();
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::finish(Result result)
-{
-    for (const std::vector<EntityComponent> &entityComponentsToRemove : { toAddWhileEntered, toRemoveOnFinish })
-    {
-        for (const EntityComponent entityComponent : entityComponentsToRemove)
-        {
-            if (!entityComponent.engine->entities.valid(entityComponent.entity))
-            {
-                continue; // Ignore.
-            }
-            entityComponent.component->removeComponent(entityComponent.entity, entityComponent.engine->entities);
-        }
-    }
-    DecoratorNode::finish(result);
-}
-
-const char *dibidab::behavior::Tree::ComponentDecoratorNode::getName() const
-{
-    return "ComponentDecorator";
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::drawDebugInfo() const
-{
-    Node::drawDebugInfo();
-    for (int i = 0; i < toAddWhileEntered.size(); i++)
-    {
-        if (i > 0)
-        {
-            ImGui::TextDisabled(" | ");
-            ImGui::SameLine();
-        }
-        const EntityComponent &entityComponent = toAddWhileEntered[i];
-
-        ImGui::TextDisabled("Add ");
-        ImGui::SameLine();
-        ImGui::Text("%s", entityComponent.component->name);
-        ImGui::SameLine();
-        ImGui::TextDisabled(" to ");
-        ImGui::SameLine();
-
-        if (!entityComponent.engine->entities.valid(entityComponent.entity))
-        {
-            ImGui::Text("Invalid entity #%d", int(entityComponent.entity));
-            ImGui::SameLine();
-        }
-        else if (const char *entityName = entityComponent.engine->getName(entityComponent.entity))
-        {
-            ImGui::Text("#%d %s", int(entityComponent.entity), entityName);
-            ImGui::SameLine();
-        }
-        else
-        {
-            ImGui::Text("#%d", int(entityComponent.entity));
-            ImGui::SameLine();
-        }
-    }
-}
-
-void dibidab::behavior::Tree::ComponentDecoratorNode::onChildFinished(Node *child, Result result)
-{
-    Node::onChildFinished(child, result);
-    finish(result);
-}
-
-dibidab::behavior::Tree::WaitNode::WaitNode() :
-    seconds(-1.0f),
-    waitingEntity(entt::null),
-    engine(nullptr)
-#ifndef NDEBUG
-    ,
-    timeStarted(0.0f)
-#endif
-{}
-
-dibidab::behavior::Tree::WaitNode *dibidab::behavior::Tree::WaitNode::finishAfter(const float inSeconds, const entt::entity inWaitingEntity,
-    ecs::Engine *inEngine)
-{
-    seconds = inSeconds;
-    waitingEntity = inWaitingEntity;
-    engine = inEngine;
-#ifndef NDEBUG
-    if (inEngine == nullptr)
-    {
-        throw gu_err("Engine is a nullptr!\n" + getNodeErrorInfo(this));
-    }
-    if (!inEngine->entities.valid(inWaitingEntity))
-    {
-        throw gu_err("Entity is not valid!\n" + getNodeErrorInfo(this));
-    }
-#endif
-    return this;
-}
-
-void dibidab::behavior::Tree::WaitNode::enter()
-{
-    Node::enter();
-    if (seconds >= 0.0f && engine != nullptr)
-    {
-        if (!engine->entities.valid(waitingEntity))
-        {
-            throw gu_err("Entity #" + std::to_string(int(waitingEntity)) + " is not valid!\n" + getNodeErrorInfo(this));
-        }
-        onWaitFinished = engine->getTimeOuts()->unsafeCallAfter(seconds, waitingEntity, [&]()
-        {
-            finish(Node::Result::SUCCESS);
-        });
-#ifndef NDEBUG
-        if (level::Room *room = dynamic_cast<level::Room *>(engine))
-        {
-            timeStarted = float(room->getLevel().getTime());
-        }
-#endif
-    }
-}
-
-void dibidab::behavior::Tree::WaitNode::abort()
-{
-    Node::abort();
-    finish(Node::Result::ABORTED);
-}
-
-void dibidab::behavior::Tree::WaitNode::finish(Node::Result result)
-{
-    onWaitFinished.reset();
-    Node::finish(result);
-}
-
-const char *dibidab::behavior::Tree::WaitNode::getName() const
-{
-    return "Wait";
-}
-
-void dibidab::behavior::Tree::WaitNode::drawDebugInfo() const
-{
-    Node::drawDebugInfo();
-    const bool bUsingTime = seconds >= 0.0f && engine != nullptr;
-    if (bUsingTime)
-    {
-        ImGui::Text("%.2fs", seconds);
-    }
-    else
-    {
-        ImGui::TextDisabled("Until abort");
-    }
-    if (ImGui::IsItemHovered())
-    {
-        if (engine != nullptr && engine->entities.valid(waitingEntity))
-        {
-            if (const char *waitingEntityName = engine->getName(waitingEntity))
-            {
-                ImGui::SetTooltip("Entity: #%d %s", int(waitingEntity), waitingEntityName);
-            }
-            else
-            {
-                ImGui::SetTooltip("Entity: #%d", int(waitingEntity));
-            }
-        }
-    }
-#ifndef NDEBUG
-    if (bUsingTime && isEntered())
-    {
-        if (level::Room *room = dynamic_cast<level::Room *>(engine))
-        {
-            ImGui::SameLine();
-            const float timeElapsed = float(room->getLevel().getTime()) - timeStarted;
-            ImGui::ProgressBar(timeElapsed / seconds, ImVec2(100.0f, 0.0f), std::string(std::to_string(int(timeElapsed))
-                + "." + std::to_string(int(fract(timeElapsed) * 10.0f)) + "s").c_str());
-        }
-    }
-#endif
-
-}
-
-dibidab::behavior::Tree::ComponentObserverNode::ComponentObserverNode() :
-    bUseSafetyDelay(true),
-    fulfilledNodeIndex(INVALID_CHILD_INDEX),
-    unfulfilledNodeIndex(INVALID_CHILD_INDEX),
-    bFulFilled(false),
-    currentNodeIndex(INVALID_CHILD_INDEX)
-{
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::enter()
-{
-    CompositeNode::enter();
-    enterChild();
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::abort()
-{
-    CompositeNode::abort();
-    if (currentNodeIndex != INVALID_CHILD_INDEX)
-    {
-        getChildren().at(currentNodeIndex)->abort();
-    }
-    else
-    {
-        finish(Node::Result::ABORTED);
-    }
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::finish(Result result)
-{
-    currentNodeIndex = INVALID_CHILD_INDEX;
-    Node::finish(result);
-}
-
-dibidab::behavior::Tree::ComponentObserverNode *dibidab::behavior::Tree::ComponentObserverNode::withoutSafetyDelay()
-{
-    if (!observerHandles.empty())
-    {
-        throw gu_err("Safety delay can only be disabled before observers are added: " + getNodeErrorInfo(this));
-    }
-    bUseSafetyDelay = false;
-    return this;
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::has(ecs::Engine *engine, entt::entity entity,
-    const ComponentInfo *component)
-{
-    observe(engine, entity, component, true, false);
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::exclude(ecs::Engine *engine, entt::entity entity,
-    const ComponentInfo *component)
-{
-    observe(engine, entity, component, false, true);
-}
-
-dibidab::behavior::Tree::ComponentObserverNode *dibidab::behavior::Tree::ComponentObserverNode::setOnFulfilledNode(Node *child)
-{
-    if (fulfilledNodeIndex != INVALID_CHILD_INDEX)
-    {
-        throw gu_err("Cannot set fulfilled child for a second time: " + getNodeErrorInfo(this));
-    }
-    fulfilledNodeIndex = int(getChildren().size());
-    CompositeNode::addChild(child);
-    return this;
-}
-
-dibidab::behavior::Tree::ComponentObserverNode *dibidab::behavior::Tree::ComponentObserverNode::setOnUnfulfilledNode(Node *child)
-{
-    if (unfulfilledNodeIndex != INVALID_CHILD_INDEX)
-    {
-        throw gu_err("Cannot set unfulfilled child for a second time: " + getNodeErrorInfo(this));
-    }
-    unfulfilledNodeIndex = int(getChildren().size());
-    CompositeNode::addChild(child);
-    return this;
-}
-
-dibidab::behavior::Tree::CompositeNode *dibidab::behavior::Tree::ComponentObserverNode::addChild(Node *child)
-{
-    throw gu_err("Do not call addChild on this node: " + getNodeErrorInfo(this));
-}
-
-const char *dibidab::behavior::Tree::ComponentObserverNode::getName() const
-{
-    return "ComponentObserver";
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::drawDebugInfo() const
-{
-    Node::drawDebugInfo();
-    // TODO/WARNING: this debug info relies heavily on the implementation details.
-
-    for (int i = 0; i < observerHandles.size() / 2; i++)
-    {
-        if (i > 0)
-        {
-            ImGui::TextDisabled(" | ");
-            ImGui::SameLine();
-        }
-        const ObserverHandle& observerHandle = observerHandles[i * 2];
-        const entt::entity entity = observerHandle.handle.getEntity();
-
-        if (!observerHandle.engine->entities.valid(entity))
-        {
-            ImGui::Text("Invalid entity #%d", int(entity));
-            continue;
-        }
-        const bool bCurrentValue = conditions[i];
-
-        bool bTmpValue = bCurrentValue;
-        ImGui::Checkbox("", &bTmpValue);
-        ImGui::SameLine();
-
-        const bool bHasComponent = observerHandle.component->hasComponent(entity,
-            observerHandle.engine->entities);
-
-        if (const char *entityName = observerHandle.engine->getName(entity))
-        {
-            ImGui::Text("#%d %s ", int(entity), entityName);
-            ImGui::SameLine();
-        }
-        ImGui::TextDisabled(bCurrentValue == bHasComponent ? "has " : "excludes ");
-        ImGui::SameLine();
-        ImGui::Text("%s", observerHandle.component->name);
-        ImGui::SameLine();
-    }
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::onChildFinished(Node *child, Result result)
-{
-    Node::onChildFinished(child, result);
-    if (result == Node::Result::ABORTED)
-    {
-        if (isAborted())
-        {
-            // Observer was aborted.
-            finish(Node::Result::ABORTED);
-            return;
-        }
-        else if (getChildIndexToEnter() != currentNodeIndex)
-        {
-            enterChild();
-            return;
-        }
-    }
-    else
-    {
-        checkCorrectChildFinished(this, getChildren(), currentNodeIndex, child);
-        finish(result);
-    }
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::observe(ecs::Engine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component, const bool presentValue, const bool absentValue)
-{
-    if (isEntered())
-    {
-        throw gu_err("Cannot edit while entered: " + getNodeErrorInfo(this));
-    }
-#ifndef NDEBUG
-    if (component == nullptr)
-    {
-        throw gu_err("dibidab::ComponentInfo is a nullptr: " + getNodeErrorInfo(this));
-    }
-    if (engine == nullptr)
-    {
-        throw gu_err("No Engine was given: " + getNodeErrorInfo(this));
-    }
-    if (!engine->entities.valid(entity))
-    {
-        throw gu_err("Invalid entity was given: " + getNodeErrorInfo(this));
-    }
-#endif
-    // TODO: Only register callbacks on enter. Remove callbacks when leaving or in destructor
-    ecs::Observer &observer = engine->getObserverForComponent(*component);
-    const int conditionIndex = int(conditions.size());
-
-    std::function<void()> onConstructCallback = [this, engine, entity, conditionIndex, presentValue]
-    {
-        conditions[conditionIndex] = presentValue;
-        onConditionsChanged(engine, entity);
-    };
-
-    ecs::Observer::Handle onConstructHandle = observer.onConstruct(entity,
-        bUseSafetyDelay ? [this, engine, onConstructCallback, conditionIndex]
-        {
-            observerHandles[conditionIndex * 2ul].latestConditionChangedDelay =
-                engine->getTimeOuts()->nextUpdate += onConstructCallback;
-        }
-        :
-        onConstructCallback
-    );
-
-    std::function<void()> onDestroyCallback = [this, engine, entity, conditionIndex, absentValue]
-    {
-        conditions[conditionIndex] = absentValue;
-        onConditionsChanged(engine, entity);
-    };
-
-    ecs::Observer::Handle onDestroyHandle = observer.onDestroy(entity,
-        bUseSafetyDelay ? [this, engine, onDestroyCallback, conditionIndex]
-        {
-            observerHandles[conditionIndex * 2ul + 1ul].latestConditionChangedDelay =
-                engine->getTimeOuts()->nextUpdate += onDestroyCallback;
-        }
-        :
-        onDestroyCallback
-    );
-
-    observerHandles.push_back({
-        engine, component, onConstructHandle
-    });
-    observerHandles.push_back({
-        engine, component, onDestroyHandle
-    });
-    conditions.push_back(component->hasComponent(entity, engine->entities) ? presentValue : absentValue);
-    bFulFilled = allConditionsFulfilled();
-}
-
-bool dibidab::behavior::Tree::ComponentObserverNode::allConditionsFulfilled() const
-{
-    for (const bool condition : conditions)
-    {
-        if (!condition)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-void dibidab::behavior::Tree::ComponentObserverNode::onConditionsChanged(ecs::Engine *engine, entt::entity entity)
-{
-    bool bNewFulfilled = allConditionsFulfilled();
-
-    if (bNewFulfilled != bFulFilled)
-    {
-        bFulFilled = bNewFulfilled;
-
-        if (isEntered())
-        {
-            if (currentNodeIndex != INVALID_CHILD_INDEX)
-            {
-                Node *toAbort = getChildren().at(currentNodeIndex);
-                if (!toAbort->isAborted())
-                {
-                    toAbort->abort();
-                }
-            }
-            else
-            {
-                enterChild();
-            }
-        }
-    }
-}
-
-int dibidab::behavior::Tree::ComponentObserverNode::getChildIndexToEnter() const
-{
-    return bFulFilled ? fulfilledNodeIndex : unfulfilledNodeIndex;
-}
-
-void dibidab::behavior::Tree::ComponentObserverNode::enterChild()
-{
-    int toEnterIndex = getChildIndexToEnter();
-    if (toEnterIndex == INVALID_CHILD_INDEX)
-    {
-        finish(Node::Result::SUCCESS);
-    }
-    else
-    {
-        currentNodeIndex = toEnterIndex;
-        getChildren().at(toEnterIndex)->enter();
-    }
-}
-
-dibidab::behavior::Tree::ComponentObserverNode::~ComponentObserverNode()
-{
-    for (ObserverHandle &observerHandle : observerHandles)
-    {
-        if (observerHandle.engine->isDestructing())
-        {
-            // getEntityObserver() will crash because the registry's context variables are destroyed already.
-            // Unregistering is not needed because the callbacks will be destroyed anyway.
-            continue;
-        }
-        observerHandle.engine->getObserverForComponent(*observerHandle.component).unregister(observerHandle.handle);
-    }
-}
-
-dibidab::behavior::Tree::LuaLeafNode::LuaLeafNode() :
-    bInEnterFunction(false)
-{}
-
-void dibidab::behavior::Tree::LuaLeafNode::enter()
-{
-    Node::enter();
-    if (luaEnterFunction.valid())
-    {
-        bInEnterFunction = true;
-        sol::protected_function_result result = luaEnterFunction(this);
-
-        if (!result.valid())
-        {
-            std::cerr << "LuaLeafNode::enter failed for: " << getNodeErrorInfo(this) << "\n" << result.get<sol::error>().what() << std::endl;
-
-            if (isEntered())
-            {
-                // note: will be ignored in case we're aborted and because bInEnterFunction is still true!
-                finish(Node::Result::FAILURE);
-            }
-        }
-
-        bInEnterFunction = false;
-
-        if (isAborted())
-        {
-            finishAborted();
-        }
-    }
-    else
-    {
-        std::cerr << "LuaLeafNode::enter failed because no enter function was set! " << getNodeErrorInfo(this) << std::endl;
-        finish(Node::Result::FAILURE);
-    }
-}
-
-void dibidab::behavior::Tree::LuaLeafNode::abort()
-{
-    Node::abort();
-    if (!bInEnterFunction)
-    {
-        finishAborted();
-    }
-}
-
-void dibidab::behavior::Tree::LuaLeafNode::finish(Result result)
-{
-    if (bInEnterFunction && isAborted())
-    {
-        // ignore this result. We'll abort after the enter function is done ;)
-        return;
-    }
-    Node::finish(result);
-}
-
-const char *dibidab::behavior::Tree::LuaLeafNode::getName() const
-{
-    return "LuaLeaf";
-}
-
-void dibidab::behavior::Tree::LuaLeafNode::finishAborted()
-{
-    if (luaAbortFunction.valid())
-    {
-        sol::protected_function_result result = luaAbortFunction(this);
-
-        if (!result.valid())
-        {
-            std::cerr << "LuaLeafNode::abort failed for: " << getNodeErrorInfo(this) << "\n" << result.get<sol::error>().what() << std::endl;
-
-            if (isAborted())
-            {
-                finish(Node::Result::ABORTED);
-            }
-        }
-    }
-    else
-    {
-        finish(Node::Result::ABORTED);
-    }
-}
-
-dibidab::behavior::Tree::FunctionalLeafNode::FunctionalLeafNode() :
-    bInEnterFunction(false)
-{}
-
-dibidab::behavior::Tree::FunctionalLeafNode *dibidab::behavior::Tree::FunctionalLeafNode::setOnEnter(
-    std::function<void(FunctionalLeafNode &)> function
-)
-{
-    onEnter = std::move(function);
-    return this;
-}
-
-dibidab::behavior::Tree::FunctionalLeafNode *dibidab::behavior::Tree::FunctionalLeafNode::setOnAbort(
-    std::function<void(FunctionalLeafNode &)> function
-)
-{
-    onAbort = std::move(function);
-    return this;
-}
-
-void dibidab::behavior::Tree::FunctionalLeafNode::enter()
-{
-    Node::enter();
-    if (onEnter)
-    {
-        bInEnterFunction = true;
-        onEnter(*this);
-        bInEnterFunction = false;
-        if (isAborted())
-        {
-            finishAborted();
-        }
-    }
-    else
-    {
-        finish(Result::SUCCESS);
-    }
-}
-
-void dibidab::behavior::Tree::FunctionalLeafNode::abort()
-{
-    Node::abort();
-    if (!bInEnterFunction)
-    {
-        finishAborted();
-    }
-}
-
-void dibidab::behavior::Tree::FunctionalLeafNode::finish(Result result)
-{
-    if (bInEnterFunction && isAborted())
-    {
-        // ignore this result. We'll abort after the enter function is done ;)
-        return;
-    }
-    Node::finish(result);
-}
-
-const char *dibidab::behavior::Tree::FunctionalLeafNode::getName() const
-{
-    return "FunctionalLeaf";
-}
-
-void dibidab::behavior::Tree::FunctionalLeafNode::finishAborted()
-{
-    if (onAbort)
-    {
-        onAbort(*this);
-    }
-    else
-    {
-        finish(Result::ABORTED);
-    }
 }
 
 dibidab::behavior::Tree::Tree() :

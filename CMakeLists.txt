@@ -37,6 +37,8 @@ add_subdirectory(external/lua ./bin/lua)
 target_link_libraries(dibidab lua)
 
 add_subdirectory(external/lua/sol2/single ./bin/lua/sol2)
+# TODO: check necessity, and consider disabling for release builds: https://sol2.readthedocs.io/en/latest/safety.html
+target_compile_definitions(sol2_single INTERFACE SOL_ALL_SAFETIES_ON=1)
 target_link_libraries(dibidab sol2_single)
 
 # ---EnTT---

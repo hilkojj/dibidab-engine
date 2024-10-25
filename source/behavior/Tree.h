@@ -1,12 +1,13 @@
 #pragma once
-#include "../ecs/Engine.h"
-#include "../ecs/Observer.h"
-#include "../reflection/ComponentInfo.h"
-#include "../lua/luau.h"
-
-#include "utils/delegate.h"
 
 #include <vector>
+#include <string>
+#include <memory>
+
+namespace sol
+{
+    class state;
+}
 
 namespace dibidab::behavior
 {
@@ -47,9 +48,7 @@ namespace dibidab::behavior
 
             Node *setDescription(const char *description);
 
-            bool hasLuaDebugInfo() const;
-
-            const lua_Debug &getLuaDebugInfo() const;
+            std::string getReadableDebugInfo() const;
 
             virtual const char *getName() const = 0;
 
@@ -64,6 +63,13 @@ namespace dibidab::behavior
 
             virtual ~Node() = default;
 
+            struct
+            {
+                const char *path = nullptr;
+                int line = 0;
+            }
+            source;
+
           protected:
 
             void registerAsParent(Node *child);
@@ -77,9 +83,6 @@ namespace dibidab::behavior
             bool bAborted;
 
             std::string description;
-
-            lua_Debug luaDebugInfo;
-            bool bHasLuaDebugInfo;
 
 #ifndef NDEBUG
             Result lastResult;
@@ -101,6 +104,11 @@ namespace dibidab::behavior
             bool getEnteredDescription(std::vector<const char *> &descriptions) const override;
 
             ~CompositeNode() override;
+
+            static constexpr int INVALID_CHILD_INDEX = -1;
+
+          protected:
+            void checkCorrectChildFinished(int expectedChildIndex, const Node *finishedChild) const;
 
           private:
             std::vector<Node *> children;
@@ -227,222 +235,6 @@ namespace dibidab::behavior
 #ifndef NDEBUG
             int timesRepeated = 0;
 #endif
-        };
-
-        struct ComponentDecoratorNode : public DecoratorNode
-        {
-            template<class Component>
-            ComponentDecoratorNode *addWhileEntered(ecs::Engine *engine, entt::entity entity)
-            {
-                addWhileEntered(engine, entity, dibidab::findComponentInfo<Component>());
-                return this;
-            }
-
-            void addWhileEntered(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
-
-            template<class Component>
-            ComponentDecoratorNode *addOnEnter(ecs::Engine *engine, entt::entity entity)
-            {
-                addOnEnter(engine, entity, dibidab::findComponentInfo<Component>());
-                return this;
-            }
-
-            void addOnEnter(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
-
-            template<class Component>
-            ComponentDecoratorNode *removeOnFinish(ecs::Engine *engine, entt::entity entity)
-            {
-                removeOnFinish(engine, entity, dibidab::findComponentInfo<Component>());
-                return this;
-            }
-
-            void removeOnFinish(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
-
-            void enter() override;
-
-            void finish(Result result) override;
-
-            const char *getName() const override;
-
-            void drawDebugInfo() const override;
-
-          protected:
-            void onChildFinished(Node *child, Result result) override;
-
-          private:
-
-            struct EntityComponent
-            {
-                ecs::Engine *engine = nullptr;
-                entt::entity entity = entt::null;
-                const dibidab::ComponentInfo *component = nullptr;
-            };
-
-            std::vector<EntityComponent> toAddWhileEntered;
-            std::vector<EntityComponent> toAddOnEnter;
-            std::vector<EntityComponent> toRemoveOnFinish;
-        };
-
-        struct WaitNode : public LeafNode
-        {
-            WaitNode();
-
-            WaitNode *finishAfter(float seconds, entt::entity waitingEntity, ecs::Engine *engine);
-
-            void enter() override;
-
-            void abort() override;
-
-            void finish(Result result) override;
-
-            const char *getName() const override;
-
-            void drawDebugInfo() const override;
-
-          private:
-            /**
-             * If set to >= 0, will abort in n frames (where n could be 0, in case `seconds` <= deltaTime).
-             * Else, will only abort if parent aborts.
-             */
-            float seconds;
-            /**
-             * Can be any entity. If the entity gets destroyed while waiting, abort() will only be called if the parent aborts.
-             */
-            entt::entity waitingEntity;
-            ecs::Engine *engine;
-
-            delegate_method onWaitFinished;
-
-#ifndef NDEBUG
-            float timeStarted;
-#endif
-        };
-
-        // ------------------------ Event-based Node classes: -------------------------- //
-
-        struct ComponentObserverNode : public CompositeNode
-        {
-            ComponentObserverNode();
-
-            void enter() override;
-
-            void abort() override;
-
-            void finish(Result result) override;
-
-            ComponentObserverNode *withoutSafetyDelay();
-
-            template<class Component>
-            ComponentObserverNode *has(ecs::Engine *engine, entt::entity entity)
-            {
-                has(engine, entity, dibidab::findComponentInfo<Component>());
-                return this;
-            }
-
-            void has(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
-
-            template<class Component>
-            ComponentObserverNode *exclude(ecs::Engine *engine, entt::entity entity)
-            {
-                exclude(engine, entity, dibidab::findComponentInfo<Component>());
-                return this;
-            }
-
-            void exclude(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
-
-            ComponentObserverNode *setOnFulfilledNode(Node *child);
-
-            ComponentObserverNode *setOnUnfulfilledNode(Node *child);
-
-            // Do not use:
-            CompositeNode *addChild(Node *child) override;
-
-            const char *getName() const override;
-
-            void drawDebugInfo() const override;
-
-            ~ComponentObserverNode() override;
-
-          protected:
-            void onChildFinished(Node *child, Result result) override;
-
-          private:
-
-            void observe(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component, bool presentValue, bool absentValue);
-
-            bool allConditionsFulfilled() const;
-
-            void onConditionsChanged(ecs::Engine *engine, entt::entity entity);
-
-            int getChildIndexToEnter() const;
-
-            void enterChild();
-
-            struct ObserverHandle
-            {
-                ecs::Engine *engine = nullptr;
-                const ComponentInfo *component = nullptr;
-                ecs::Observer::Handle handle;
-                delegate_method latestConditionChangedDelay;
-            };
-
-            std::vector<ObserverHandle> observerHandles;
-            std::vector<bool> conditions;
-            bool bUseSafetyDelay;
-            int fulfilledNodeIndex;
-            int unfulfilledNodeIndex;
-            bool bFulFilled;
-            int currentNodeIndex;
-
-            friend class TreeInspector;
-        };
-
-        // ------------------------ Customization Node classes: -------------------------- //
-
-        struct LuaLeafNode : public LeafNode
-        {
-            LuaLeafNode();
-
-            void enter() override;
-
-            void abort() override;
-
-            void finish(Result result) override;
-
-            const char *getName() const override;
-
-            sol::function luaEnterFunction;
-            sol::function luaAbortFunction;
-
-          private:
-            void finishAborted();
-
-            bool bInEnterFunction;
-        };
-
-        struct FunctionalLeafNode : public LeafNode
-        {
-            FunctionalLeafNode();
-
-            FunctionalLeafNode *setOnEnter(std::function<void(FunctionalLeafNode &node)> function);
-
-            FunctionalLeafNode *setOnAbort(std::function<void(FunctionalLeafNode &node)> function);
-
-            void enter() override;
-
-            void abort() override;
-
-            void finish(Result result) override;
-
-            const char *getName() const override;
-
-          private:
-            void finishAborted();
-
-            std::function<void(FunctionalLeafNode &node)> onEnter;
-            std::function<void(FunctionalLeafNode &node)> onAbort;
-
-            bool bInEnterFunction;
         };
 
         Tree();

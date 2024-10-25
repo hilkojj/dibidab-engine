@@ -1,6 +1,8 @@
 #pragma once
 #include "Tree.h"
 
+#include <entt/entity/fwd.hpp>
+
 namespace dibidab::ecs
 {
     class Engine;

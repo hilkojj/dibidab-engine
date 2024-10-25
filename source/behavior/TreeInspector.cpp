@@ -1,11 +1,14 @@
 
 #include "TreeInspector.h"
 
-#include "ecs/components/Brain.dibidab.h"
+#include "nodes/ComponentObserverNode.h"
 
-#include "utils/string_utils.h"
+#include "../ecs/Engine.h"
+#include "../ecs/components/Brain.dibidab.h"
 
-#include "imgui.h"
+#include <utils/string_utils.h>
+
+#include <imgui.h>
 
 dibidab::behavior::TreeInspector::TreeInspector(ecs::Engine &engine, entt::entity entity) :
     engine(&engine),
@@ -83,7 +86,7 @@ void dibidab::behavior::TreeInspector::drawNode(Tree::Node *node, uint depth)
     std::string nodeName = node->getName();
     if (node->parent)
     {
-        if (Tree::ComponentObserverNode *observerParent = dynamic_cast<Tree::ComponentObserverNode *>(node->parent))
+        if (ComponentObserverNode *observerParent = dynamic_cast<ComponentObserverNode *>(node->parent))
         {
             bool bNodeIsFulfilledBranch = false;
             if (observerParent->fulfilledNodeIndex >= 0)
@@ -96,14 +99,13 @@ void dibidab::behavior::TreeInspector::drawNode(Tree::Node *node, uint depth)
 
     bool bNodeOpen = ImGui::TreeNodeEx(nodeName.c_str(), nodeFlags);
 
-    if (node->hasLuaDebugInfo())
+    if (node->source.path != nullptr)
     {
-        const lua_Debug &debugInfo = node->getLuaDebugInfo();
-        std::vector<std::string> pathSplitted = su::split(debugInfo.source, "/");
+        std::vector<std::string> pathSplitted = su::split(node->source.path, "/");
         if (!pathSplitted.empty())
         {
             ImGui::SameLine();
-            ImGui::TextDisabled("%s:%d", pathSplitted.back().c_str(), debugInfo.currentline);
+            ImGui::TextDisabled("%s:%d", pathSplitted.back().c_str(), node->source.line);
         }
     }
     ImGui::NextColumn();
