@@ -9,6 +9,7 @@
 #include "components/LuaScripted.dibidab.h"
 
 #include "../reflection/ComponentInfo.h"
+#include "../reflection/StructInfo.h"
 
 #include <assets/AssetManager.h>
 #include <gu/profiler.h>
@@ -164,21 +165,6 @@ void dibidab::ecs::Engine::initialize()
     bInitialized = true;
 }
 
-void setComponentFromLua(entt::entity entity, const sol::table &component, entt::registry &reg)
-{
-    if (component.get_type() != sol::type::userdata)
-    {
-        throw gu_err("Given object is not a registered type");
-    }
-
-    const char *typeName = component["__type"]["name"].get<const char *>();
-
-    if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(typeName))
-    {
-        info->setFromLua(component, entity, reg);
-    }
-}
-
 void dibidab::ecs::Engine::initializeLuaEnvironment()
 {
     // todo: functions might be called after Engine is destructed
@@ -233,13 +219,13 @@ void dibidab::ecs::Engine::initializeLuaEnvironment()
 
     env["setComponent"] = [&] (entt::entity entity, const sol::table &component)
     {
-        setComponentFromLua(entity, component, entities);
+        setComponentFromLua(entity, component);
     };
 
     env["setComponents"] = [&] (entt::entity entity, const sol::table &componentsTable)
     {
         for (const auto &[i, comp] : componentsTable)
-            setComponentFromLua(entity, comp, entities);
+            setComponentFromLua(entity, comp);
     };
 
     env["createEntity"] = [&] () -> entt::entity
@@ -460,4 +446,22 @@ std::list<dibidab::ecs::System *> dibidab::ecs::Engine::getSystemsToUpdate() con
         }
     }
     return systemsToUpdate;
+}
+
+void dibidab::ecs::Engine::setComponentFromLua(entt::entity entity, const sol::table &component)
+{
+    if (component.get_type() != sol::type::userdata)
+    {
+        throw gu_err("Given object is not a registered type");
+    }
+
+    const char *structId = component["__type"]["name"].get<const char *>();
+
+    if (const dibidab::StructInfo *structInfo = dibidab::findStructInfo(structId))
+    {
+        if (structInfo->componentInfo != nullptr)
+        {
+            structInfo->componentInfo->setFromLua(component, entity, entities);
+        }
+    }
 }

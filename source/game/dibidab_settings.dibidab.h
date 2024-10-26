@@ -52,6 +52,5 @@ namespace dibidab
         KeyInputSettings developerKeyInput;
 
         bool bShowDeveloperOptions = true;
-        bool bLimitUpdatesPerSec = false;
     };
 }

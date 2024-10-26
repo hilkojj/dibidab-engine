@@ -2,13 +2,11 @@
 
 #include "../reflection/StructInfo.h"
 #include "../behavior/Tree.h"
-#include "../ecs/PersistentRef.h"
 #include "../level/Level.h"
-#include "../game/session/SingleplayerSession.h"
 #include "../game/dibidab.h"
 
-#include "input/gamepad_input.h"
-#include "gu/game_utils.h"
+#include <input/gamepad_input.h>
+#include <gu/game_utils.h>
 
 luau::Script::Script(const std::string &path) : path(path)
 {}
@@ -34,30 +32,38 @@ const sol::bytecode &luau::Script::getByteCode()
 template<typename type, typename vecType>
 void populateVecUserType(sol::usertype<vecType> &vus)
 {
-    vus[sol::meta_function::multiplication] = [] (const vecType &a, const vecType &b) {
+    vus[sol::meta_function::multiplication] = [] (const vecType &a, const vecType &b)
+    {
         return a * b;
     };
-    vus[sol::meta_function::addition] = [] (const vecType &a, const vecType &b) {
+    vus[sol::meta_function::addition] = [] (const vecType &a, const vecType &b)
+    {
         return a + b;
     };
-    vus[sol::meta_function::subtraction] = [] (const vecType &a, const vecType &b) {
+    vus[sol::meta_function::subtraction] = [] (const vecType &a, const vecType &b)
+    {
         return a - b;
     };
-    vus[sol::meta_function::division] = [] (const vecType &a, const vecType &b) {
+    vus[sol::meta_function::division] = [] (const vecType &a, const vecType &b)
+    {
         for (int i = 0; i < vecType::length(); i++)
             if (b[i] == 0)
                 throw gu_err("Division by zero. a = " + to_string(a) + ", b = " + to_string(b));
         return a / b;
     };
-    vus[sol::meta_function::equal_to] = [] (const vecType &a, const vecType &b) {
+    vus[sol::meta_function::equal_to] = [] (const vecType &a, const vecType &b)
+    {
         return a == b;
     };
     if constexpr (std::is_same_v<float, type>)
+    {
         vus["length"] = [] (const vecType &v) {
             return length(v);
         };
+    }
 
-    vus[sol::meta_function::to_string] = [] (const vecType &a) {
+    vus[sol::meta_function::to_string] = [] (const vecType &a)
+    {
         return to_string(a);
     };
 }
@@ -65,17 +71,23 @@ void populateVecUserType(sol::usertype<vecType> &vus)
 template<typename type, typename vec2Type = vec<2, type, defaultp>, typename vec3Type = vec<3, type, defaultp>, typename vec4Type = vec<4, type, defaultp>>
 void registerVecUserType(const std::string &name, sol::state &lua)
 {
-    sol::usertype<vec2Type> v2 = lua.new_usertype<vec2Type>(name + "2", sol::call_constructor,
-
-        sol::constructors<vec2Type(), vec2Type(type), vec2Type(type, type), vec2Type(vec2Type), vec2Type(vec<2, int, defaultp>), vec2Type(vec<2, float, defaultp>)>()
+    sol::usertype<vec2Type> v2 = lua.new_usertype<vec2Type>(
+        name + "2",
+        sol::call_constructor,
+        sol::constructors<
+            vec2Type(), vec2Type(type), vec2Type(type, type), vec2Type(vec2Type), vec2Type(vec<2, int, defaultp>), vec2Type(vec<2, float, defaultp>)
+        >()
     );
     v2["x"] = &vec2Type::x;
     v2["y"] = &vec2Type::y;
     populateVecUserType<type>(v2);
 
-    sol::usertype<vec3Type> v3 = lua.new_usertype<vec3Type>(name + "3", sol::call_constructor,
-
-        sol::constructors<vec3Type(), vec3Type(type), vec3Type(type, type, type), vec3Type(vec3Type), vec3Type(vec<3, int, defaultp>), vec3Type(vec<3, float, defaultp>)>()
+    sol::usertype<vec3Type> v3 = lua.new_usertype<vec3Type>(
+        name + "3",
+        sol::call_constructor,
+        sol::constructors<
+            vec3Type(), vec3Type(type), vec3Type(type, type, type), vec3Type(vec3Type), vec3Type(vec<3, int, defaultp>), vec3Type(vec<3, float, defaultp>)
+        >()
     );
     v3["x"] = &vec3Type::x;
     v3["r"] = &vec3Type::x;
@@ -85,9 +97,12 @@ void registerVecUserType(const std::string &name, sol::state &lua)
     v3["b"] = &vec3Type::z;
     populateVecUserType<type>(v3);
 
-    sol::usertype<vec4Type> v4 = lua.new_usertype<vec4Type>(name + "4", sol::call_constructor,
-
-        sol::constructors<vec4Type(), vec4Type(type), vec4Type(type, type, type, type), vec4Type(vec4Type), vec4Type(vec<4, int, defaultp>), vec4Type(vec<4, float, defaultp>)>()
+    sol::usertype<vec4Type> v4 = lua.new_usertype<vec4Type>(
+        name + "4",
+        sol::call_constructor,
+        sol::constructors<
+            vec4Type(), vec4Type(type), vec4Type(type, type, type, type), vec4Type(vec4Type), vec4Type(vec<4, int, defaultp>), vec4Type(vec<4, float, defaultp>
+        )>()
     );
     v4["x"] = &vec4Type::x;
     v4["r"] = &vec4Type::x;
@@ -121,36 +136,9 @@ sol::state &luau::getLuaState()
             gu::setShouldClose(true);
         };
 
-        env["endCurrentSession"] = []
-        {
-            dibidab::setCurrentSession(nullptr);
-        };
-
-        env["startSinglePlayerSession"] = [] (const sol::optional<std::string> &saveGamePath)
-        {
-            dibidab::setCurrentSession(new dibidab::SingleplayerSession(saveGamePath.has_value() ? saveGamePath->c_str() : nullptr));
-        };
-        // todo: startMultiplayerServerSession and startMultiplayerClientsession
-
-        env["joinSession"] = [] (const char *username, const sol::function& onJoinRequestDeclined)
-        {
-            auto &session = dibidab::getCurrentSession();
-
-            session.onJoinRequestDeclined = [onJoinRequestDeclined] (auto reason) {
-
-                sol::protected_function_result result = onJoinRequestDeclined(reason);
-                if (!result.valid())
-                    throw gu_err(result.get<sol::error>().what());
-            };
-            session.join(username);
-        };
-
         env["loadOrCreateLevel"] = [] (const sol::optional<std::string> &path)
         {
-            auto &session = dibidab::getCurrentSession();
-            auto singleplayerSession = dynamic_cast<dibidab::SingleplayerSession *>(&session);
-            if (singleplayerSession)
-                singleplayerSession->setLevel(path.has_value() ? new dibidab::level::Level(path.value().c_str()) : nullptr);
+            dibidab::setLevel(path.has_value() ? new dibidab::level::Level(path.value().c_str()) : nullptr);
         };
 
         env["include"] = [&] (const char *scriptPath, const sol::this_environment &currentEnv) -> sol::environment
@@ -248,15 +236,4 @@ sol::environment luau::environmentFromScript(luau::Script &script, sol::environm
     }
 
     return env;
-}
-
-lua_Debug luau::getDebugInfo(sol::function func)
-{
-    func.push();
-    lua_Debug dbgInfo;
-    if (!lua_getinfo(func.lua_state(), ">nS", &dbgInfo))
-    {
-        throw gu_err("Failed to get debug info");
-    }
-    return dbgInfo;
 }

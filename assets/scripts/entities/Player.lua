@@ -3,6 +3,7 @@ description("This is the player description")
 function create(player)
     setName(player, "Yo yo player")
     setComponents(player, {
+        Player()
     })
     print("hey!")
 

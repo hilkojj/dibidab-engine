@@ -2,8 +2,6 @@
 
 #include "../components/LuaScripted.dibidab.h"
 
-#include "../../game/SaveGame.h"
-
 #include <assets/AssetManager.h>
 #include <utils/string_utils.h>
 
@@ -122,15 +120,6 @@ void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e,
             luaScripted.usedTemplate = this;
         }
 
-#ifndef DIBIDAB_NO_SAVE_GAME
-        std::string id;
-        if (!luaScripted.saveData.valid())
-        {
-            id = arguments.value()["saveGameEntityID"].get_or<std::string, std::string>(getUniqueID());
-            luaScripted.saveData = SaveGame::getSaveDataForEntity(id, !persistent);
-        }
-#endif
-
         if (persistent)
         {
             PersistentID persistentEntityID;
@@ -156,20 +145,12 @@ void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e,
                 jsonFromLuaTable(arguments.value(), p.data);
 
             assert(p.data.is_object());
-#ifndef DIBIDAB_NO_SAVE_GAME
-            if (!id.empty())
-                p.data["saveGameEntityID"] = id;
-#endif
         }
 
         sol::protected_function_result result = luaCreateComponents(
             e,
             arguments,
             persistent
-#ifndef DIBIDAB_NO_SAVE_GAME
-            ,
-            luaScripted.saveData
-#endif
         );
         if (!result.valid())
             throw gu_err(result.get<sol::error>().what());

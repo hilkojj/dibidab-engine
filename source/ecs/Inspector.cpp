@@ -876,7 +876,7 @@ void dibidab::ecs::Inspector::addCustomDrawFunctions(StructInspector &structEdit
         {
             if (ImGui::Button("Inspect"))
             {
-                engine->entities.assign<Inspecting>(entity);
+                engine->entities.get_or_assign<Inspecting>(entity);
             }
             bHovered |= ImGui::IsItemHovered();
         }

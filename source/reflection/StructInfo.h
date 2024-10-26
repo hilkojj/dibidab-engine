@@ -13,6 +13,8 @@ namespace sol
 
 namespace dibidab
 {
+    struct ComponentInfo;
+
     struct VariableInfo
     {
         const char *name;
@@ -24,6 +26,8 @@ namespace dibidab
     struct StructInfo
     {
         const char *id;
+
+        const ComponentInfo *componentInfo;
 
         const std::vector<VariableInfo> variables;
 

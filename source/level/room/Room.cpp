@@ -1,7 +1,7 @@
-
 #include "Room.h"
 
-#include "../../ecs/systems/PlayerControlSystem.h"
+#include "../Level.h"
+
 #include "../../ecs/systems/SpawningSystem.h"
 #include "../../ecs/systems/LuaScriptsSystem.h"
 #include "../../ecs/components/Persistent.dibidab.h"
@@ -23,8 +23,6 @@ void dibidab::level::Room::initialize(Level *lvl)
 
 void dibidab::level::Room::preLoadInitialize()
 {
-    addSystem(new ecs::PlayerControlSystem("Player Control"));
-
     addSystem(new ecs::LuaScriptsSystem("Lua Functions"), true); // execute lua functions first, in case they might spawn entities, same reason as below:
     addSystem(new ecs::SpawningSystem("(De)spawning"), true); // SPAWN ENTITIES FIRST, so they get a chance to be updated before being rendered
     Engine::initialize();

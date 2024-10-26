@@ -128,6 +128,8 @@ namespace dibidab::ecs
 
         void onEntityDenaming(entt::registry &, entt::entity);
 
+        void setComponentFromLua(entt::entity entity, const sol::table &component);
+
         bool bInitialized = false;
         bool bUpdating = false;
         bool bDestructing = false;

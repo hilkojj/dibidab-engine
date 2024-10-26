@@ -1,13 +1,12 @@
-// TODO: for now importing as first, to confirm it has the necessary includes itself.
-#include "../generated/registry.struct_info.h"
-
 #include "dibidab.h"
 
 #include "../ecs/Inspector.h"
 #include "../rendering/ImGuiStyle.h"
+#include "../level/Level.h"
+
+#include "../generated/registry.struct_info.h"
 
 #include <gu/game_utils.h>
-#include <gu/game_config.h>
 #include <gu/profiler.h>
 #include <graphics/textures/texture.h>
 #include <assets/AssetManager.h>
@@ -18,39 +17,20 @@
 
 #include <mutex>
 
-dibidab::EngineSettings dibidab::settings;
-
-std::map<std::string, std::string> dibidab::startupArgs;
-
-dibidab::Session &dibidab::getCurrentSession()
+namespace dibidab
 {
-    auto *s = tryGetCurrentSession();
-    if (s == nullptr)
-        throw gu_err("There's no Session active at the moment");
-    return *s;
+    delegate<void(dibidab::level::Level *)> onLevelChange;
+
+    dibidab::EngineSettings settings;
+
+    std::map<std::string, std::string> startupArgs;
+
+    std::mutex assetToReloadMutex;
+    std::string assetToReload;
+    FileWatcher assetWatcher;
+
+    level::Level *currentLevel = nullptr;
 }
-
-delegate<void()> dibidab::onSessionChange;
-dibidab::Session *currSession = nullptr;
-
-dibidab::Session *dibidab::tryGetCurrentSession()
-{
-    return currSession;
-}
-
-void dibidab::setCurrentSession(Session *s)
-{
-    delete currSession;
-    currSession = s;
-
-#ifndef DIBIDAB_NO_SAVE_GAME
-    if (s)
-        luau::getLuaState()["saveGame"] = s->saveGame.luaTable;
-#endif
-
-    onSessionChange();
-}
-
 
 void showDeveloperOptionsMenuBar()
 {
@@ -77,7 +57,9 @@ void showDeveloperOptionsMenuBar()
                 for (auto &[name, asset] : AssetManager::getAssetsForType<std::string>())
                 {
                     if (!su::endsWith(name, ".frag") && !su::endsWith(name, ".vert") && !su::endsWith(name, ".glsl"))
+                    {
                         continue;
+                    }
                     if (ImGui::MenuItem(name.c_str()))
                     {
                         auto &tab = CodeEditor::tabs.emplace_back();
@@ -85,13 +67,14 @@ void showDeveloperOptionsMenuBar()
 
                         tab.code = *((std::string *)asset->obj);
                         tab.languageDefinition = TextEditor::LanguageDefinition::C();
-                        tab.save = [] (auto &tab) {
-
+                        tab.save = [] (auto &tab)
+                        {
                             fu::writeBinary(tab.title.c_str(), tab.code.data(), tab.code.length());
 
                             AssetManager::loadFile(tab.title, "assets/");
                         };
-                        tab.revert = [] (auto &tab) {
+                        tab.revert = [] (auto &tab)
+                        {
                             tab.code = fu::readString(tab.title.c_str());
                         };
                     }
@@ -104,11 +87,10 @@ void showDeveloperOptionsMenuBar()
             ImGui::MenuItem(reinterpret_cast<const char *>(glGetString(GL_RENDERER)), nullptr, false, false);
             ImGui::EndMenu();
         }
-
         ImGui::Separator();
 
-        std::string luamem = "Lua memory: " + std::to_string(luau::getLuaState().memory_used() / (1024.f*1024.f)) + "MB";
-        ImGui::MenuItem(luamem.c_str(), nullptr, false, false);
+        const std::string luaMemoryStr = "Lua memory: " + std::to_string(luau::getLuaState().memory_used() / (1024.0f * 1024.0f)) + "MB";
+        ImGui::MenuItem(luaMemoryStr.c_str(), nullptr, false, false);
 
         ImGui::EndMenu();
     }
@@ -120,37 +102,42 @@ void showDeveloperOptionsMenuBar()
     );
 }
 
-void dibidab::addDefaultAssetLoaders()
+void addDefaultAssetLoaders(const dibidab::Config &config)
 {
-#ifdef DIBIDAB_ADD_TEXTURE_ASSET_LOADER
-    AssetManager::addAssetLoader<Texture>(".png|.jpg|.jpeg|.tga|.bmp|.psd|.gif", [](auto path) {
-
-        return new Texture(Texture::fromImageFile(path.c_str()));
-    });
-#endif
-    AssetManager::addAssetLoader<std::string>({ ".frag", ".vert", ".glsl" }, [](auto path) {
-
-        return new std::string(fu::readString(path.c_str()));
-    });
-    AssetManager::addAssetLoader<json>({ ".json" }, [](auto path) {
-
-        return new json(json::parse(fu::readString(path.c_str())));
-    });
-    AssetManager::addAssetLoader<luau::Script>({ ".lua" }, [](auto path) {
-
-        return new luau::Script(path);
-    });
+    if (config.addAssetLoaders.bLua)
+    {
+        AssetManager::addAssetLoader<luau::Script>({ ".lua" }, [] (const std::string &path)
+        {
+            return new luau::Script(path);
+        });
+    }
+    if (config.addAssetLoaders.bJson)
+    {
+        AssetManager::addAssetLoader<json>({ ".json" }, [] (const std::string &path)
+        {
+            return new json(json::parse(fu::readString(path.c_str())));
+        });
+    }
+    if (config.addAssetLoaders.bShaders)
+    {
+        AssetManager::addAssetLoader<std::string>({ ".frag", ".vert", ".glsl" }, [] (const std::string &path)
+        {
+            return new std::string(fu::readString(path.c_str()));
+        });
+    }
+    if (config.addAssetLoaders.bTextures)
+    {
+        AssetManager::addAssetLoader<Texture>({ ".png", ".jpg", ".jpeg", ".tga", ".bmp", ".psd", ".gif" },
+            [] (const std::string &path)
+        {
+            return new Texture(Texture::fromImageFile(path.c_str()));
+        });
+    }
 }
 
-std::mutex assetToReloadMutex;
-std::string assetToReload;
-FileWatcher assetWatcher;
-
-void dibidab::init(int argc, char **argv, gu::Config &config)
+gu::Config dibidab::guConfigFromSettings()
 {
-    registerStructs();
-    startupArgsToMap(argc, argv, dibidab::startupArgs);
-
+    gu::Config config;
     config.width = dibidab::settings.graphics.windowSize.x;
     config.height = dibidab::settings.graphics.windowSize.y;
     config.bVSync = dibidab::settings.graphics.bVSync;
@@ -159,9 +146,20 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
     config.bPrintOpenGLErrors = dibidab::settings.graphics.bPrintOpenGLErrors;
     config.openGLMajorVersion = dibidab::settings.graphics.openGLMajorVersion;
     config.openGLMinorVersion = dibidab::settings.graphics.openGLMinorVersion;
-    gu::bFullscreen = dibidab::settings.graphics.bFullscreen; // dont ask me why this is not in config
-    if (!gu::init(config))
+    return config;
+}
+
+void dibidab::init(int argc, char **argv, Config &config)
+{
+    startupArgsToMap(argc, argv, dibidab::startupArgs);
+    registerStructs();
+
+    gu::bFullscreen = dibidab::settings.graphics.bFullscreen;
+
+    if (!gu::init(config.guConfig))
+    {
         throw gu_err("Error while initializing gu");
+    }
 
     std::cout << "Running game with\n - GL_VERSION: " << glGetString(GL_VERSION) << "\n";
     std::cout << " - GL_RENDERER: " << glGetString(GL_RENDERER) << "\n";
@@ -180,27 +178,38 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
     assetWatcher.startWatchingAsync();
     #endif
 
+    addDefaultAssetLoaders(config);
     AssetManager::loadDirectory("assets");
 
     // save window size in settings:
-    static auto onResize = gu::onResize += [] {
+    static auto onResize = gu::onResize += []
+    {
         if (!gu::bFullscreen) // dont save fullscreen-resolution
+        {
             dibidab::settings.graphics.windowSize = ivec2(
                 gu::virtualWidth, gu::virtualHeight
             );
+        }
     };
 
-    static auto beforeRender = gu::beforeRender += [&](double deltaTime) {
-        if (currSession)
-            currSession->update(deltaTime);
+    static auto beforeRender = gu::beforeRender += [&](double deltaTime)
+    {
+        if (level::Level *level = getLevel())
+        {
+            level->update(deltaTime);
+        }
 
         if (KeyInput::justPressed(dibidab::settings.developerKeyInput.reloadAssets) && dibidab::settings.bShowDeveloperOptions)
+        {
             AssetManager::loadDirectory("assets", true);
+        }
 
         {
             assetToReloadMutex.lock();
             if (!assetToReload.empty())
+            {
                 AssetManager::loadFile(assetToReload, "assets/", true);
+            }
             assetToReload.clear();
             assetToReloadMutex.unlock();
         }
@@ -211,20 +220,45 @@ void dibidab::init(int argc, char **argv, gu::Config &config)
         }
 
         if (KeyInput::justPressed(dibidab::settings.developerKeyInput.toggleDeveloperOptions))
+        {
             dibidab::settings.bShowDeveloperOptions ^= 1;
+        }
+        gu::profiler::showGUI = dibidab::settings.bShowDeveloperOptions;
 
         if (KeyInput::justPressed(dibidab::settings.developerKeyInput.toggleFullscreen))
+        {
             gu::bFullscreen = !gu::bFullscreen;
+        }
 
         if (dibidab::settings.bShowDeveloperOptions)
+        {
             showDeveloperOptionsMenuBar();
-        gu::profiler::showGUI = dibidab::settings.bShowDeveloperOptions;
+        }
     };
-
 }
 
 void dibidab::run()
 {
     gu::run();
-    dibidab::setCurrentSession(nullptr);
+    setLevel(nullptr);
+}
+
+void dibidab::setLevel(dibidab::level::Level *level)
+{
+    if (currentLevel != nullptr && currentLevel->isUpdating())
+    {
+        throw gu_err("Cannot change level while updating level!");
+    }
+    delete currentLevel;
+    currentLevel = level;
+    if (currentLevel != nullptr)
+    {
+        currentLevel->initialize();
+    }
+    onLevelChange(level);
+}
+
+dibidab::level::Level *dibidab::getLevel()
+{
+    return currentLevel;
 }

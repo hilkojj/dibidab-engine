@@ -47,7 +47,4 @@ namespace luau
     }
 
     sol::environment environmentFromScript(Script &script, sol::environment *parent = nullptr);
-
-    lua_Debug getDebugInfo(sol::function func);
-
 }

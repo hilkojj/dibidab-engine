@@ -38,13 +38,10 @@ namespace dibidab::level
         const std::string loadedFromFile;
         bool bSaveOnDestruct = true;
 
-        std::string spawnRoom;
-
         Level() = default;
 
         Level(const char *filePath);
 
-        delegate<void(Room *, int playerId)> onPlayerEnteredRoom, onPlayerLeftRoom;
         delegate<void(Room *)> beforeRoomDeletion;
 
         int getNrOfRooms() const

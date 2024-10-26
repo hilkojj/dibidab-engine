@@ -1,15 +1,14 @@
-#include <files/file_utils.h>
-#include <gu/game_utils.h>
-#include <gu/profiler.h>
-#include <utils/gu_error.h>
-#include <cstring>
-#include <zlib.h>
-#include <level/room/Room.h>
-
-
 #include "Level.h"
-#include "../ecs/components/PlayerControlled.dibidab.h"
+#include "room/Room.h"
+
+#include "../ecs/components/Player.dibidab.h"
+#include "../ecs/templates/Template.h"
 #include "../game/dibidab.h"
+
+#include <files/file_utils.h>
+#include <gu/profiler.h>
+
+#include <zlib.h>
 
 std::function<dibidab::level::Room *(const json &)> dibidab::level::Level::customRoomLoader;
 
@@ -27,6 +26,11 @@ void dibidab::level::Level::initialize()
         room->initialize(this);
     }
     initialized = true;
+    if (rooms.size() > 0)
+    {
+        Room *spawnRoom = rooms[0];
+        spawnRoom->getTemplate("Player").create(false);
+    }
 }
 
 void dibidab::level::Level::update(double deltaTime)
@@ -34,60 +38,15 @@ void dibidab::level::Level::update(double deltaTime)
     gu::profiler::Zone levelUpdateZone("level update");
     updating = true;
 
-    auto update = [&] (double roomDeltaTime) {
-        /*
-         * This piece of code will update rooms that have a player in them.
-         * Rooms are checked twice for a player in them, because a Player might have been spawned during another Room's update
-         */
-
-        std::vector<bool> skippedRoom(rooms.size(), true);
-
-        for (int repeat = 0; repeat < 2; repeat++)
-        {
-            for (int i = 0; i < rooms.size(); i++)
-            {
-                auto room = rooms[i];
-                if (!skippedRoom[i] || room->entities.empty<ecs::PlayerControlled>())
-                {
-                    skippedRoom[i] = true;
-                    continue;
-                }
-                skippedRoom[i] = false;
-                room->update(roomDeltaTime);
-            }
-        }
-    };
-
-    if (dibidab::settings.bLimitUpdatesPerSec)
+    time += deltaTime;
+    for (int i = 0; i < rooms.size(); i++)
     {
-
-        updateAccumulator += deltaTime;
-
-        static float MIN_DELTA_TIME = 1. / MAX_UPDATES_PER_SEC;
-        static float MAX_DELTA_TIME = 1. / MIN_UPDATES_PER_SEC;
-
-        int updates = 0;
-
-        while (updateAccumulator >= MIN_DELTA_TIME && updates++ < MAX_UPDATES_PER_FRAME)
+        Room *room = rooms[i];
+        if (room->entities.empty<ecs::Player>())
         {
-            float roomDeltaTime = min(updateAccumulator, MAX_DELTA_TIME);
-            time += roomDeltaTime;
-
-            update(roomDeltaTime);
-
-            updateAccumulator -= roomDeltaTime;
+            continue;
         }
-
-        if (updateAccumulator > 2.)
-        {
-            std::cerr << "Level::update() can't reach MIN_UPDATES_PER_SEC! Skipping " << updateAccumulator << "sec!" << std::endl;
-            updateAccumulator = 0;
-        }
-    }
-    else
-    {
-        time += deltaTime;
-        update(deltaTime);
+        room->update(deltaTime);
     }
 
     updating = false;
@@ -120,21 +79,19 @@ const dibidab::level::Room &dibidab::level::Level::getRoom(int i) const
 
 void dibidab::level::to_json(json &j, const Level &lvl)
 {
-    j = json::object({{"spawnRoom", lvl.spawnRoom}, {"rooms", json::array()}});
-    for (auto room : lvl.rooms)
+    j = json::object({ { "rooms", json::array() } });
+    for (Room *room : lvl.rooms)
     {
-        if (!room->isPersistent())
+        if (room->isPersistent())
         {
-            continue;
+            json &roomJ = j["rooms"].emplace_back();
+            room->exportJsonData(roomJ);
         }
-        json &roomJ = j["rooms"].emplace_back();
-        room->exportJsonData(roomJ);
     }
 }
 
 void dibidab::level::from_json(const json &j, Level &lvl)
 {
-    lvl.spawnRoom = j.at("spawnRoom");
     const json &roomsJson = j.at("rooms");
 
     for (const auto &rJ : roomsJson)

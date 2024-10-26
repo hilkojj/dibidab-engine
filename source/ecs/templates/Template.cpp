@@ -4,7 +4,8 @@
 
 const std::string &dibidab::ecs::Template::getDescription() const
 {
-    return "";
+    static std::string description = "";
+    return description;
 }
 
 entt::entity dibidab::ecs::Template::create(bool persistent)
