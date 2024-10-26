@@ -18,9 +18,9 @@ namespace dibidab
         struct
         {
             bool bLua = true;
-            bool bJson = false;
-            bool bShaders = false;
-            bool bTextures = false;
+            bool bJson = true;
+            bool bShaders = true;
+            bool bTextures = true;
         }
         addAssetLoaders;
     };

@@ -11,7 +11,7 @@ namespace dibidab
     struct GraphicsSettings
     {
       dibidab_json_method(object);
-      dibidab_expose(json);
+      dibidab_expose(json, lua);
 
         // Window:
         bool bVSync = true;
@@ -35,7 +35,7 @@ namespace dibidab
     struct KeyInputSettings
     {
       dibidab_json_method(object);
-      dibidab_expose(json);
+      dibidab_expose(json, lua);
         KeyInput::Key toggleDeveloperOptions = GLFW_KEY_F3;
         KeyInput::Key reloadAssets = GLFW_KEY_F4;
         KeyInput::Key toggleFullscreen = GLFW_KEY_F11;
@@ -47,7 +47,7 @@ namespace dibidab
     struct EngineSettings
     {
       dibidab_json_method(object);
-      dibidab_expose(json);
+      dibidab_expose(json, lua);
         GraphicsSettings graphics;
         KeyInputSettings developerKeyInput;
 

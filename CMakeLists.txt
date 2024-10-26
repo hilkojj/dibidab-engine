@@ -42,7 +42,7 @@ target_compile_definitions(sol2_single INTERFACE SOL_ALL_SAFETIES_ON=1)
 target_link_libraries(dibidab sol2_single)
 
 # ---EnTT---
-include_directories(dibidab PUBLIC external/entt/src)
+target_include_directories(dibidab PUBLIC external/entt/src)
 
 # ---Dibidab Header Library---
 target_include_directories(dibidab PUBLIC external/dibidab-header/include)
