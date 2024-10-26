@@ -15,7 +15,7 @@ process_dibidab_headers(
 file(GLOB_RECURSE source source/*)
 
 # ---
-add_executable(dibidab ${source})
+add_library(dibidab ${source})
 target_include_directories(dibidab PUBLIC source/)
 
 set_property(TARGET dibidab PROPERTY LINKER_LANGUAGE CXX)
