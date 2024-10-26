@@ -3,7 +3,7 @@
 
 #include "../ecs/components/Player.dibidab.h"
 #include "../ecs/templates/Template.h"
-#include "../game/dibidab.h"
+#include "../dibidab/dibidab.h"
 
 #include <files/file_utils.h>
 #include <gu/profiler.h>

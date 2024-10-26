@@ -3,7 +3,7 @@
 #include "../reflection/StructInfo.h"
 #include "../behavior/Tree.h"
 #include "../level/Level.h"
-#include "../game/dibidab.h"
+#include "../dibidab/dibidab.h"
 
 #include <input/gamepad_input.h>
 #include <gu/game_utils.h>

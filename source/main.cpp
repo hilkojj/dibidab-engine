@@ -1,4 +1,4 @@
-#include "game/dibidab.h"
+#include "dibidab/dibidab.h"
 #include "ecs/Inspector.h"
 #include "level/Level.h"
 

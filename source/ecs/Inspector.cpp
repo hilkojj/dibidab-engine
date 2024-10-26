@@ -11,7 +11,7 @@
 #include "templates/LuaTemplate.h"
 
 #include "../behavior/TreeInspector.h"
-#include "../game/dibidab.h"
+#include "../dibidab/dibidab.h"
 #include "../reflection/StructInfo.h"
 #include "../reflection/ComponentInfo.h"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../game/dibidab.h"
+#include "../dibidab/dibidab.h"
 
 #include <imgui.h>
 
