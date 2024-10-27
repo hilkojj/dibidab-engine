@@ -1,6 +1,6 @@
 #include "SpawningSystem.h"
 
-#include "../components/Spawning.dibidab.h"
+#include "../components/DespawnAfter.dibidab.h"
 #include "../Engine.h"
 
 void dibidab::ecs::SpawningSystem::update(double deltaTime, Engine *engine)
