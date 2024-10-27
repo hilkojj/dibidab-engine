@@ -24,7 +24,7 @@ void dibidab::ecs::PersistentRef::set(entt::entity e, const entt::registry &reg)
         }
         else
         {
-            throw gu_err("Tried to set a PersistentEntityRef to an non-persistent entity (entity: " + std::to_string(int(e)) + ")");
+            throw gu_err("Tried to set a dibidab::ecs::PersistentRef to an non-persistent entity (entity: " + std::to_string(int(e)) + ")");
         }
     }
     else
@@ -41,7 +41,7 @@ entt::entity dibidab::ecs::PersistentRef::resolve(const entt::registry &reg) con
     {
         return entity;
     }
-    throw gu_err("Failed to resolve a PersistentEntityRef (id = " + std::to_string(persistentEntityId) + ").\nIs the level still loading?");
+    throw gu_err("Failed to resolve a dibidab::ecs::PersistentRef (id = " + std::to_string(persistentEntityId) + ").\nIs the level still loading?");
 }
 
 bool dibidab::ecs::PersistentRef::tryResolve(const entt::registry &reg, entt::entity &outEntity) const

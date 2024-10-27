@@ -195,7 +195,7 @@ void dibidab::ecs::Engine::initializeLuaEnvironment()
         return getByName(name);
     };
 
-    // PersistentEntityRef
+    // dibidab::ecs::PersistentRef
     env["createPersistentRef"] = [&] (entt::entity e) -> PersistentRef
     {
         PersistentRef ref;

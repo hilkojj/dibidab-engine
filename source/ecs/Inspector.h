@@ -31,7 +31,7 @@ namespace dibidab::ecs
     class Mover
     {
       public:
-        explicit Mover(entt::entity entity);
+        Mover(Engine &, entt::entity entity);
 
         virtual bool update() = 0;
 
@@ -39,6 +39,7 @@ namespace dibidab::ecs
 
       protected:
         const entt::entity entity;
+        Engine *engine;
     };
 
 
@@ -61,6 +62,8 @@ namespace dibidab::ecs
         virtual const loaded_asset *getAssetForTemplate(const Template &entityTemplate) const;
 
         virtual void editTemplateAsset(const loaded_asset &templateAsset);
+
+        Engine *const engine;
 
       private:
         void updatePicking();
@@ -97,7 +100,6 @@ namespace dibidab::ecs
 
         void addCustomDrawFunctions(StructInspector &structEditor);
 
-        Engine *engine;
         Picker *picker = nullptr;
         Mover *mover = nullptr;
 

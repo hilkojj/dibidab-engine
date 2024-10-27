@@ -37,7 +37,8 @@ namespace dibidab::ecs
     };
 }
 
-dibidab::ecs::Mover::Mover(entt::entity entity) :
+dibidab::ecs::Mover::Mover(Engine &engine, entt::entity entity) :
+    engine(&engine),
     entity(entity)
 {
 }

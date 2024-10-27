@@ -40,10 +40,10 @@ namespace dibidab
 
     const ComponentInfo *findComponentInfo(const char *name);
 
-    template <typename component>
+    template <typename Component>
     const ComponentInfo *findComponentInfo()
     {
-        return findComponentInfo(typename_utils::getTypeName<component>());
+        return findComponentInfo(typename_utils::getTypeName<Component>().c_str());
     }
 
     const ComponentInfo *getInfoFromUtilsTable(const sol::table &);
