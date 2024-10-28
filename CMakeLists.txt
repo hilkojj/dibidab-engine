@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(dibidab)
 
-# ---Dibidab Header Tool---:
+# ---Dibidab Header Tool (Run before searching for source files)---:
 include(${CMAKE_CURRENT_LIST_DIR}/external/dibidab-header/tool/dibidab_header.cmake)
 process_dibidab_headers(
     # Source directory (to search for .dibidab.h headers):

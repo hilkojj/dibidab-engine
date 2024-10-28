@@ -1,5 +1,6 @@
-
 #include "lua_converters.h"
+
+#include <entt/entity/entity.hpp>
 
 template<typename luaRef>
 void jsonToLua(luaRef &luaVal, const json &json)

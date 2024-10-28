@@ -1,9 +1,8 @@
 #pragma once
-#include "lua/luau.h"
-
 #include <assets/asset.h>
 #include <json.hpp>
-#include <entt/entity/registry.hpp>
+#include <entt/entity/fwd.hpp>
+#include <sol/sol.hpp>
 
 /////////// asset<>
 
