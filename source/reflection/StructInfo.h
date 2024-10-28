@@ -31,8 +31,17 @@ namespace dibidab
 
         const std::vector<VariableInfo> variables;
 
+        /**
+         * Constructs the struct and converts it to json.
+         * NOTE: function is nullptr if struct is not exposed to json!
+         */
         json (*getDefaultJsonObject)();
 
+        /**
+         * Allows the struct to be constructed and accessed in Lua.
+         * https://sol2.readthedocs.io/en/latest/usertypes.html
+         * NOTE: function is nullptr if struct is not exposed to lua!
+         */
         void (*registerLuaUserType)(sol::state &);
 
         /**

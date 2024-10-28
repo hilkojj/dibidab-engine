@@ -241,6 +241,7 @@ void dibidab::run()
 {
     gu::run();
     setLevel(nullptr);
+    dibidab::assetWatcher.stopWatching();
 }
 
 void dibidab::setLevel(dibidab::level::Level *level)

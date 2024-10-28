@@ -113,7 +113,14 @@ void dibidab::level::Room::loadPersistentEntities()
             {
                 if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(componentName.c_str()))
                 {
-                    info->setFromJson(componentJson, e, entities);
+                    if (info->setFromJson)
+                    {
+                        info->setFromJson(componentJson, e, entities);
+                    }
+                    else
+                    {
+                        info->addComponent(e, entities);
+                    }
                 }
                 else
                 {
@@ -164,7 +171,14 @@ void dibidab::level::Room::persistentEntityToJson(entt::entity e, const ecs::Per
         {
             if (info->hasComponent(e, entities))
             {
-                info->getJsonObject(e, entities, componentsJson[componentTypeName]);
+                if (info->getJsonObject)
+                {
+                    info->getJsonObject(e, entities, componentsJson[componentTypeName]);
+                }
+                else
+                {
+                    componentsJson[componentTypeName] = json::object();
+                }
             }
         }
     }

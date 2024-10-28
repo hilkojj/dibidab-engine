@@ -28,8 +28,24 @@ namespace dibidab
 
         ecs::Observer *(*createObserver)(entt::registry &);
 
+        /**
+         *  Gets the component on the entity (check presence first with `hasComponent`!)
+         *  and returns it as a Json object.
+         *  NOTE: function is nullptr if component is not exposed to json!
+         */
         void (*getJsonObject)(entt::entity, const entt::registry &, json &outObject);
+
+        /**
+         *  Gets the component on the entity (check presence first with `hasComponent`!)
+         *  and returns it as a Json array (similar as object, but omitting keys).
+         *  NOTE: function is nullptr if component is not exposed to json!
+         */
         void (*getJsonArray)(entt::entity, const entt::registry &, json &outArray);
+
+        /**
+         *  Sets/replaces the component on the entity.
+         *  NOTE: function is nullptr if component is not exposed to json!
+         */
         void (*setFromJson)(const json &objectOrArray, entt::entity, entt::registry &);
 
         void (*setFromLua)(const sol::table &, entt::entity, entt::registry &);

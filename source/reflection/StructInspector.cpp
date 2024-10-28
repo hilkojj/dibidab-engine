@@ -480,6 +480,7 @@ bool dibidab::StructInspector::drawInsertIntoStructure(json &structure, const st
         ImGui::TextDisabled("%s", valueStructInfo->id);
         if (bAdd)
         {
+            assert(valueStructInfo->getDefaultJsonObject != nullptr); // Must be exposed to json, or else our struct's json code wouldn't compile.
             valueJson = valueStructInfo->getDefaultJsonObject();
         }
     }

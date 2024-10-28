@@ -277,7 +277,7 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
             {
                 AddingComponent &adding = engine->entities.assign_or_replace<AddingComponent>(entity, AddingComponent {
                     info,
-                    structInfo->getDefaultJsonObject(),
+                    structInfo->getDefaultJsonObject ? structInfo->getDefaultJsonObject() : json::object(),
                     StructInspector(*structInfo)
                 });
                 addCustomDrawFunctions(adding.editor);
@@ -311,12 +311,18 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
                 }
                 StructInspector &editor = inspecting.componentInspectors.at(component);
                 json componentJson;
-                component->getJsonObject(entity, engine->entities, componentJson);
+                if (component->getJsonObject)
+                {
+                    component->getJsonObject(entity, engine->entities, componentJson);
+                }
                 if (editor.draw(componentJson))
                 {
                     try
                     {
-                        component->setFromJson(componentJson, entity, engine->entities);
+                        if (component->setFromJson)
+                        {
+                            component->setFromJson(componentJson, entity, engine->entities);
+                        }
                     }
                     catch (const nlohmann::detail::exception &exception)
                     {
@@ -460,7 +466,14 @@ void dibidab::ecs::Inspector::drawAddComponent(const entt::entity entity)
         {
             try
             {
-                addingComponent.componentInfo->setFromJson(addingComponent.componentJson, entity, engine->entities);
+                if (addingComponent.componentInfo->setFromJson)
+                {
+                    addingComponent.componentInfo->setFromJson(addingComponent.componentJson, entity, engine->entities);
+                }
+                else
+                {
+                    addingComponent.componentInfo->addComponent(entity, engine->entities);
+                }
                 bOpen = false;
             }
             catch (const nlohmann::detail::exception &e)
