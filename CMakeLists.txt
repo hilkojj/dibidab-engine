@@ -24,8 +24,6 @@ set_property(TARGET dibidab PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
     set(CMAKE_CXX_FLAGS  "/Ox /EHsc /bigobj /D NDEBUG")
-else()
-    set(CMAKE_CXX_FLAGS  "-B /usr/libexec/mold")
 endif()
 
 # ---GU Game Utilities Library---:
