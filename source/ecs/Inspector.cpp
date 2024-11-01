@@ -221,7 +221,7 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
         ImGui::End();
         return;
     }
-    ImGui::BeginChild("EntityOptions", vec2(-1, 36), true);
+    ImGui::BeginChild("EntityOptions", vec2(-1, 42), true);
 
     drawEntityNameField(entity);
 
@@ -412,6 +412,7 @@ const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const
             continue;
         }
         int categoriesOpened = 0;
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
         if (!filter.IsActive())
         {
             for (int i = commonCategoryPath.size(); i < info.categoryPath.size(); i++)
@@ -426,6 +427,7 @@ const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const
                 }
             }
         }
+        ImGui::PopStyleColor();
         if ((filter.IsActive() || categoriesOpened == info.categoryPath.size() - commonCategoryPath.size())
             && ImGui::MenuItem(info.name))
         {
