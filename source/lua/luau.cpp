@@ -1,6 +1,7 @@
 #include "luau.h"
 
 #include "../reflection/StructInfo.h"
+#include "../reflection/EnumInfo.h"
 #include "../behavior/Tree.h"
 #include "../level/Level.h"
 #include "../dibidab/dibidab.h"
@@ -157,6 +158,10 @@ sol::state &luau::getLuaState()
             {
                 structInfo.registerLuaUserType(*lua);
             }
+        }
+        for (const auto &[name, enumInfo] : dibidab::getAllEnumInfos())
+        {
+            enumInfo.registerLuaEnum(*lua);
         }
 
         // register glm vectors:

@@ -14,6 +14,7 @@ namespace sol
 namespace dibidab
 {
     struct ComponentInfo;
+    struct EnumInfo;
 
     struct VariableInfo
     {
@@ -49,6 +50,7 @@ namespace dibidab
          * Because those can omit the namespaces of the type, if this struct is in the same namespace.
          */
         const StructInfo *findStructInfoInNamespace(const char *structId) const;
+        const EnumInfo *findEnumInfoInNamespace(const char *enumId) const;
     };
 
     const std::map<std::string, StructInfo> &getAllStructInfos();

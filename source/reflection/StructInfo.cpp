@@ -1,9 +1,8 @@
 #include "StructInfo.h"
 
-#include <utils/string_utils.h>
-#include <utils/gu_error.h>
+#include "EnumInfo.h"
 
-#include <map>
+#include <utils/string_utils.h>
 
 namespace
 {
@@ -29,6 +28,28 @@ const dibidab::StructInfo *dibidab::StructInfo::findStructInfoInNamespace(const 
         if (const dibidab::StructInfo *foundStruct = findStructInfo(tryStructId.c_str()))
         {
             return foundStruct;
+        }
+    }
+    while (!namespaces.empty());
+    return nullptr;
+}
+
+const dibidab::EnumInfo *dibidab::StructInfo::findEnumInfoInNamespace(const char *enumId) const
+{
+    // TODO: Duplicated code from above.
+    std::vector<std::string> namespaces = su::split(id, "::");
+    do
+    {
+        namespaces.pop_back();
+        std::string tryEnumId = "";
+        for (const std::string &space : namespaces)
+        {
+            tryEnumId += space + "::";
+        }
+        tryEnumId += enumId;
+        if (const dibidab::EnumInfo *foundEnum = findEnumInfo(tryEnumId.c_str()))
+        {
+            return foundEnum;
         }
     }
     while (!namespaces.empty());

@@ -1,7 +1,7 @@
-
 #include "StructInspector.h"
 
 #include "StructInfo.h"
+#include "EnumInfo.h"
 
 #include "utils/type_name.h"
 #include "utils/string_utils.h"
@@ -144,6 +144,35 @@ bool dibidab::StructInspector::drawField(json &value, const std::string &valueTy
     if (customDrawIt != customFieldDraw.end())
     {
         bEdited = customDrawIt->second(value);
+    }
+    else if (const EnumInfo *enumInfo = findEnumInfo(valueType.c_str()))
+    {
+        const int intValue = value;
+        std::string selected = std::to_string(intValue);
+        for (const auto &[otherName, otherValue] : enumInfo->values)
+        {
+            if (otherValue == intValue)
+            {
+                selected = otherName;
+            }
+        }
+        if (ImGui::BeginCombo("", selected.c_str()))
+        {
+            for (const auto &[otherName, otherValue] : enumInfo->values)
+            {
+                const bool bIsSelected = selected == otherName;
+                if (ImGui::Selectable(otherName.c_str(), bIsSelected))
+                {
+                    value = otherValue;
+                    bEdited = true;
+                }
+                if (bIsSelected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
     else if (isVecType(valueType, vecSize, vecDataType) && value.is_array() && value.size() == vecSize)
     {
@@ -620,7 +649,11 @@ bool dibidab::StructInspector::isVecType(const std::string &type, int &outSize, 
 
 std::string dibidab::StructInspector::getGlobalTypename(const std::string &localTypename) const
 {
-    if (const dibidab::StructInfo *info = structInfo->findStructInfoInNamespace(localTypename.c_str()))
+    if (const StructInfo *info = structInfo->findStructInfoInNamespace(localTypename.c_str()))
+    {
+        return info->id;
+    }
+    if (const EnumInfo *info = structInfo->findEnumInfoInNamespace(localTypename.c_str()))
     {
         return info->id;
     }
