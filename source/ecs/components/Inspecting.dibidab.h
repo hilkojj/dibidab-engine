@@ -22,7 +22,7 @@ namespace dibidab::ecs
         std::map<const dibidab::ComponentInfo *, StructInspector> componentInspectors;
     };
 
-    struct InspectingBrain
+    struct InspectingBehavior
     {
         dibidab_component;
     };

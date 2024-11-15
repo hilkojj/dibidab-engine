@@ -6,7 +6,7 @@
 #include "components/Inspecting.dibidab.h"
 #include "components/LuaScripted.dibidab.h"
 #include "components/Children.dibidab.h"
-#include "components/Brain.dibidab.h"
+#include "components/Behavior.dibidab.h"
 #include "templates/TemplateArgs.dibidab.h"
 #include "templates/LuaTemplate.h"
 
@@ -246,7 +246,7 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
         }
     }
 
-    if (engine->entities.has<Brain>(entity))
+    if (engine->entities.has<Behavior>(entity))
     {
         ImGui::SameLine();
         if (ImGui::Button("Inspect brain") && !engine->entities.has<behavior::TreeInspector>(entity))
@@ -832,18 +832,18 @@ void dibidab::ecs::Inspector::drawCreateEntityFromTemplate()
 
 void dibidab::ecs::Inspector::drawBehaviorTreeInspectors()
 {
-    engine->entities.view<InspectingBrain>(entt::exclude<behavior::TreeInspector>).each([&] (entt::entity entity, auto)
+    engine->entities.view<InspectingBehavior>(entt::exclude<behavior::TreeInspector>).each([&] (entt::entity entity, auto)
     {
         engine->entities.assign<behavior::TreeInspector>(entity, *engine, entity);
     });
 
     engine->entities.view<behavior::TreeInspector>().each([&] (entt::entity entity, behavior::TreeInspector &inspector)
     {
-        engine->entities.get_or_assign<InspectingBrain>(entity);
+        engine->entities.get_or_assign<InspectingBehavior>(entity);
         if (!inspector.drawGUI())
         {
             engine->entities.remove<behavior::TreeInspector>(entity);
-            engine->entities.remove<InspectingBrain>(entity);
+            engine->entities.remove<InspectingBehavior>(entity);
         }
     });
 }

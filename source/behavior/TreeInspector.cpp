@@ -4,7 +4,7 @@
 #include "nodes/ComponentObserverNode.h"
 
 #include "../ecs/Engine.h"
-#include "../ecs/components/Brain.dibidab.h"
+#include "../ecs/components/Behavior.dibidab.h"
 
 #include <utils/string_utils.h>
 
@@ -19,12 +19,12 @@ dibidab::behavior::TreeInspector::TreeInspector(ecs::Engine &engine, entt::entit
 
 bool dibidab::behavior::TreeInspector::drawGUI()
 {
-    if (!engine->entities.valid(entity) || !engine->entities.has<ecs::Brain>(entity))
+    if (!engine->entities.valid(entity) || !engine->entities.has<ecs::Behavior>(entity))
     {
         return false;
     }
-    ecs::Brain &brain = engine->entities.get<ecs::Brain>(entity);
-    Tree &tree = brain.behaviorTree;
+    ecs::Behavior &behavior = engine->entities.get<ecs::Behavior>(entity);
+    Tree &tree = behavior.tree;
 
     bool bOpen = true;
 
