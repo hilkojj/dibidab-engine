@@ -48,6 +48,14 @@ namespace dibidab
          */
         void (*setFromJson)(const json &objectOrArray, entt::entity, entt::registry &);
 
+        /**
+         *  Sets/replaces the component on the entity.
+         *  If the component was already present, it will be used as the base on which the Json is applied as a patch.
+         *  Which means that all non-json-exposed values are left intact.
+         *  NOTE: function is nullptr if component is not exposed to json!
+         */
+        void (*patchFromJson)(const json &objectOrArray, entt::entity, entt::registry &);
+
         void (*setFromLua)(const sol::table &, entt::entity, entt::registry &);
         void (*fillLuaUtilsTable)(sol::table &, entt::registry &, const ComponentInfo *);
     };

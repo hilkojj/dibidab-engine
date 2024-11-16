@@ -319,9 +319,9 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
                 {
                     try
                     {
-                        if (component->setFromJson)
+                        if (component->patchFromJson)
                         {
-                            component->setFromJson(componentJson, entity, engine->entities);
+                            component->patchFromJson(componentJson, entity, engine->entities);
                         }
                     }
                     catch (const nlohmann::detail::exception &exception)
