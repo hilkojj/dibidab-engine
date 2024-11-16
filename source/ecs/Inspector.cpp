@@ -6,11 +6,9 @@
 #include "components/Inspecting.dibidab.h"
 #include "components/LuaScripted.dibidab.h"
 #include "components/Children.dibidab.h"
-#include "components/Behavior.dibidab.h"
 #include "templates/TemplateArgs.dibidab.h"
 #include "templates/LuaTemplate.h"
 
-#include "../behavior/TreeInspector.h"
 #include "../dibidab/dibidab.h"
 #include "../reflection/StructInfo.h"
 #include "../reflection/ComponentInfo.h"
@@ -86,7 +84,6 @@ void dibidab::ecs::Inspector::draw()
 
     drawMainMenuItem();
     drawAddComponents();
-    drawBehaviorTreeInspectors();
 }
 
 dibidab::ecs::Inspector::~Inspector()
@@ -243,15 +240,6 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
             bDestroyEntity = true;
             const entt::entity newEntity = usedTemplate->create(engine->entities.has<Persistent>(entity));
             engine->entities.assign_or_replace<Inspecting>(newEntity).nextWindowPos = ImGui::GetWindowPos();
-        }
-    }
-
-    if (engine->entities.has<Behavior>(entity))
-    {
-        ImGui::SameLine();
-        if (ImGui::Button("Inspect brain") && !engine->entities.has<behavior::TreeInspector>(entity))
-        {
-            engine->entities.assign<behavior::TreeInspector>(entity, *engine, entity);
         }
     }
     ImGui::EndChild();
@@ -828,24 +816,6 @@ void dibidab::ecs::Inspector::drawCreateEntityFromTemplate()
     {
         creatingEntity = CreatingEntity();
     }
-}
-
-void dibidab::ecs::Inspector::drawBehaviorTreeInspectors()
-{
-    engine->entities.view<InspectingBehavior>(entt::exclude<behavior::TreeInspector>).each([&] (entt::entity entity, auto)
-    {
-        engine->entities.assign<behavior::TreeInspector>(entity, *engine, entity);
-    });
-
-    engine->entities.view<behavior::TreeInspector>().each([&] (entt::entity entity, behavior::TreeInspector &inspector)
-    {
-        engine->entities.get_or_assign<InspectingBehavior>(entity);
-        if (!inspector.drawGUI())
-        {
-            engine->entities.remove<behavior::TreeInspector>(entity);
-            engine->entities.remove<InspectingBehavior>(entity);
-        }
-    });
 }
 
 dibidab::ecs::Template *dibidab::ecs::Inspector::getUsedTemplate(entt::entity entity) const

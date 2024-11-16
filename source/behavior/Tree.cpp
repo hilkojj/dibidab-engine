@@ -511,13 +511,15 @@ void dibidab::behavior::Tree::InverterNode::onChildFinished(Node *child, Result 
 
 void dibidab::behavior::Tree::SucceederNode::enter()
 {
-    Node *child = getChild();
-    if (child == nullptr)
-    {
-        throw gu_err("SucceederNode has no child: " + getReadableDebugInfo());
-    }
     Node::enter();
-    child->enter();
+    if (Node *child = getChild())
+    {
+        child->enter();
+    }
+    else
+    {
+        finish(Result::SUCCESS);
+    }
 }
 
 const char *dibidab::behavior::Tree::SucceederNode::getName() const
@@ -534,6 +536,35 @@ void dibidab::behavior::Tree::SucceederNode::onChildFinished(Node *child, Result
         return;
     }
     finish(Result::SUCCESS);
+}
+
+void dibidab::behavior::Tree::FailNode::enter()
+{
+    Node::enter();
+    if (Node *child = getChild())
+    {
+        child->enter();
+    }
+    else
+    {
+        finish(Result::FAILURE);
+    }
+}
+
+const char *dibidab::behavior::Tree::FailNode::getName() const
+{
+    return "Fail";
+}
+
+void dibidab::behavior::Tree::FailNode::onChildFinished(Node *child, Result result)
+{
+    Node::onChildFinished(child, result);
+    if (result == Result::ABORTED)
+    {
+        finish(Result::ABORTED);
+        return;
+    }
+    finish(Result::FAILURE);
 }
 
 void dibidab::behavior::Tree::RepeaterNode::enter()
@@ -596,9 +627,9 @@ dibidab::behavior::Tree::Tree() :
 
 void dibidab::behavior::Tree::setRootNode(Node *root)
 {
-    if (rootNode)
+    if (rootNode && rootNode->isEntered())
     {
-        throw gu_err("A rootNode was already set!");
+        throw gu_err("Cannot change root while it's entered!");
     }
     rootNode = std::shared_ptr<Node>(root);
 }
@@ -689,6 +720,15 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::factories([] ()
         {
             return new SucceederNode();
+        }),
+        sol::base_classes,
+        sol::bases<Node, DecoratorNode>()
+    );
+    sol::usertype<FailNode> failNodeType = lua->new_usertype<FailNode>(
+        "BTFailNode",
+        sol::factories([] ()
+        {
+            return new FailNode();
         }),
         sol::base_classes,
         sol::bases<Node, DecoratorNode>()

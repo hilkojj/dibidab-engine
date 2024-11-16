@@ -21,9 +21,4 @@ namespace dibidab::ecs
         std::optional<vec2> nextWindowPos;
         std::map<const dibidab::ComponentInfo *, StructInspector> componentInspectors;
     };
-
-    struct InspectingBehavior
-    {
-        dibidab_component;
-    };
 }

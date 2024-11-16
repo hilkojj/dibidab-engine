@@ -131,7 +131,7 @@ namespace dibidab::behavior
             ~DecoratorNode() override;
 
           private:
-            Node *child;
+            Node *child = nullptr;
         };
 
         struct LeafNode : public Node
@@ -220,6 +220,16 @@ namespace dibidab::behavior
             void onChildFinished(Node *child, Result result) override;
         };
 
+        struct FailNode : public DecoratorNode
+        {
+            void enter() override;
+
+            const char *getName() const override;
+
+          protected:
+            void onChildFinished(Node *child, Result result) override;
+        };
+
         struct RepeaterNode : public DecoratorNode
         {
             void enter() override;
@@ -241,6 +251,7 @@ namespace dibidab::behavior
 
         Tree();
 
+        // Note: takes ownership of root
         void setRootNode(Node *root);
 
         Node *getRootNode() const;

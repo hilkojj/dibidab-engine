@@ -92,8 +92,6 @@ namespace dibidab::ecs
 
         void drawCreateEntityFromTemplate();
 
-        void drawBehaviorTreeInspectors();
-
         Template *getUsedTemplate(entt::entity entity) const;
 
         std::set<const ComponentInfo *> getComponentsForEntity(entt::entity entity) const;

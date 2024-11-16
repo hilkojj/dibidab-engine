@@ -1,45 +1,21 @@
-
 #include "TreeInspector.h"
 
 #include "nodes/ComponentObserverNode.h"
-
-#include "../ecs/Engine.h"
-#include "../ecs/components/Behavior.dibidab.h"
 
 #include <utils/string_utils.h>
 
 #include <imgui.h>
 
-dibidab::behavior::TreeInspector::TreeInspector(ecs::Engine &engine, entt::entity entity) :
-    engine(&engine),
-    entity(entity)
+bool dibidab::behavior::TreeInspector::drawGUI(Tree &tree, const std::string &title)
 {
-
-}
-
-bool dibidab::behavior::TreeInspector::drawGUI()
-{
-    if (!engine->entities.valid(entity) || !engine->entities.has<ecs::Behavior>(entity))
-    {
-        return false;
-    }
-    ecs::Behavior &behavior = engine->entities.get<ecs::Behavior>(entity);
-    Tree &tree = behavior.tree;
-
     bool bOpen = true;
 
     if (ImGui::Begin("Behavior Tree Inspector"))
     {
         // TODO: something is broken here (if more than 1 tab is opened):
-        if (ImGui::BeginTabBar("Entities"))
+        if (ImGui::BeginTabBar("Trees"))
         {
-            std::string tabName = "#" + std::to_string(int(entity));
-            if (const char *entityName = engine->getName(entity))
-            {
-                tabName += " ";
-                tabName += entityName;
-            }
-            if (ImGui::BeginTabItem(tabName.c_str(), &bOpen))
+            if (ImGui::BeginTabItem(title.c_str(), &bOpen))
             {
                 if (dibidab::behavior::Tree::Node *root = tree.getRootNode())
                 {
