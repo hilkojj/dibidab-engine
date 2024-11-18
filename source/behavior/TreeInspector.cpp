@@ -89,13 +89,12 @@ void dibidab::behavior::TreeInspector::drawNode(Tree::Node *node, uint depth)
 
     if (node->isEntered())
     {
-        if (node->isAborted())
+        if (node->isAborting())
         {
             ImGui::SameLine();
             ImGui::Text("[ABORTING...]");
         }
     }
-#ifndef NDEBUG
     else if (node->hasFinishedAtLeastOnce())
     {
         switch (node->getLastResult())
@@ -111,7 +110,6 @@ void dibidab::behavior::TreeInspector::drawNode(Tree::Node *node, uint depth)
                 break;
         }
     }
-#endif
 
     ImGui::NextColumn();
     ImGui::AlignTextToFramePadding();

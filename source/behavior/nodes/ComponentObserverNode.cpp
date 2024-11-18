@@ -138,7 +138,7 @@ void dibidab::behavior::ComponentObserverNode::onChildFinished(Node *child, Resu
     Node::onChildFinished(child, result);
     if (result == Node::Result::ABORTED)
     {
-        if (isAborted())
+        if (isAborting())
         {
             // Observer was aborted.
             finish(Node::Result::ABORTED);
@@ -248,7 +248,7 @@ void dibidab::behavior::ComponentObserverNode::onConditionsChanged(ecs::Engine *
             if (currentNodeIndex != INVALID_CHILD_INDEX)
             {
                 Node *toAbort = getChildren().at(currentNodeIndex);
-                if (!toAbort->isAborted())
+                if (!toAbort->isAborting())
                 {
                     toAbort->abort();
                 }

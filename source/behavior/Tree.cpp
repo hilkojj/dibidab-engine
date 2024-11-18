@@ -14,9 +14,9 @@
 #include <imgui.h>
 
 dibidab::behavior::Tree::Node::Node() :
-    parent(nullptr),
-    bEntered(false),
-    bAborted(false)
+        parent(nullptr),
+        bEntered(false),
+        bAborting(false)
 {
     lua_State *luaState = luau::getLuaState().lua_state();
     lua_Debug luaDebugInfo;
@@ -48,12 +48,12 @@ void dibidab::behavior::Tree::Node::abort()
     {
         throw gu_err("Cannot abort a non-entered Node: " + getReadableDebugInfo());
     }
-    if (bAborted)
+    if (bAborting)
     {
         throw gu_err("Cannot abort a Node again: " + getReadableDebugInfo());
     }
 #endif
-    bAborted = true;
+    bAborting = true;
 }
 
 void dibidab::behavior::Tree::Node::finish(Result result)
@@ -64,19 +64,17 @@ void dibidab::behavior::Tree::Node::finish(Result result)
         throw gu_err("Cannot finish a non-entered Node: " + getReadableDebugInfo());
     }
 #endif
-    if (bAborted)
+    if (bAborting)
     {
         if (result != Result::ABORTED)
         {
             throw gu_err("Cannot finish an aborted Node with an result other than ABORTED: " + getReadableDebugInfo());
         }
-        bAborted = false;
+        bAborting = false;
     }
     bEntered = false;
-#ifndef NDEBUG
     bFinishedAtLeastOnce = true;
     lastResult = result;
-#endif
     if (parent != nullptr)
     {
         parent->onChildFinished(this, result);
@@ -88,9 +86,9 @@ bool dibidab::behavior::Tree::Node::isEntered() const
     return bEntered;
 }
 
-bool dibidab::behavior::Tree::Node::isAborted() const
+bool dibidab::behavior::Tree::Node::isAborting() const
 {
-    return bAborted;
+    return bAborting;
 }
 
 bool dibidab::behavior::Tree::Node::getEnteredDescription(std::vector<const char *> &descriptions) const
@@ -123,7 +121,6 @@ std::string dibidab::behavior::Tree::Node::getReadableDebugInfo() const
     return info;
 }
 
-#ifndef NDEBUG
 bool dibidab::behavior::Tree::Node::hasFinishedAtLeastOnce() const
 {
     return bFinishedAtLeastOnce;
@@ -133,7 +130,6 @@ dibidab::behavior::Tree::Node::Result dibidab::behavior::Tree::Node::getLastResu
 {
     return lastResult;
 }
-#endif
 
 void dibidab::behavior::Tree::Node::registerAsParent(Node *child)
 {
@@ -479,7 +475,7 @@ void dibidab::behavior::Tree::ParallelNode::onChildFinished(Node *child, Node::R
     // Finish if all children are finished.
     if (++numChildrenFinished == getChildren().size())
     {
-        CompositeNode::finish(isAborted() ? Node::Result::ABORTED : Node::Result::SUCCESS);
+        CompositeNode::finish(isAborting() ? Node::Result::ABORTED : Node::Result::SUCCESS);
     }
 }
 

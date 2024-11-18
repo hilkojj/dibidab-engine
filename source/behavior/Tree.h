@@ -44,7 +44,7 @@ namespace dibidab::behavior
 
             bool isEntered() const;
 
-            bool isAborted() const;
+            bool isAborting() const;
 
             virtual bool getEnteredDescription(std::vector<const char *> &descriptions) const;
 
@@ -57,11 +57,9 @@ namespace dibidab::behavior
             virtual void drawDebugInfo() const
             {};
 
-#ifndef NDEBUG
             bool hasFinishedAtLeastOnce() const;
 
             Result getLastResult() const;
-#endif
 
             virtual ~Node() = default;
 
@@ -82,14 +80,12 @@ namespace dibidab::behavior
           private:
             Node *parent;
             bool bEntered;
-            bool bAborted;
+            bool bAborting;
 
             std::string description;
 
-#ifndef NDEBUG
             Result lastResult;
             bool bFinishedAtLeastOnce = false;
-#endif
 
             friend class TreeInspector;
         };

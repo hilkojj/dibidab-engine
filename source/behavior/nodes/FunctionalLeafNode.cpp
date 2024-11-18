@@ -28,7 +28,7 @@ void dibidab::behavior::FunctionalLeafNode::enter()
         bInEnterFunction = true;
         onEnter(*this);
         bInEnterFunction = false;
-        if (isAborted())
+        if (isAborting())
         {
             finishAborted();
         }
@@ -50,7 +50,7 @@ void dibidab::behavior::FunctionalLeafNode::abort()
 
 void dibidab::behavior::FunctionalLeafNode::finish(Result result)
 {
-    if (bInEnterFunction && isAborted())
+    if (bInEnterFunction && isAborting())
     {
         // ignore this result. We'll abort after the enter function is done ;)
         return;

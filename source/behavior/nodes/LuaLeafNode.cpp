@@ -25,7 +25,7 @@ void dibidab::behavior::LuaLeafNode::enter()
 
         bInEnterFunction = false;
 
-        if (isAborted())
+        if (isAborting())
         {
             finishAborted();
         }
@@ -48,7 +48,7 @@ void dibidab::behavior::LuaLeafNode::abort()
 
 void dibidab::behavior::LuaLeafNode::finish(Result result)
 {
-    if (bInEnterFunction && isAborted())
+    if (bInEnterFunction && isAborting())
     {
         // ignore this result. We'll abort after the enter function is done ;)
         return;
@@ -71,7 +71,7 @@ void dibidab::behavior::LuaLeafNode::finishAborted()
         {
             std::cerr << "LuaLeafNode::abort failed for: " << getReadableDebugInfo() << "\n" << result.get<sol::error>().what() << std::endl;
 
-            if (isAborted())
+            if (isAborting())
             {
                 finish(Node::Result::ABORTED);
             }
