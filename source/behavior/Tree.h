@@ -130,7 +130,10 @@ namespace dibidab::behavior
 
             ~DecoratorNode() override;
 
-            private:
+          protected:
+            void onChildFinished(Node *child, Result result) override;
+
+          private:
             Node *child = nullptr;
         };
 

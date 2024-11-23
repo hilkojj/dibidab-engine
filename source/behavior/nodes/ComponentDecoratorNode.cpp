@@ -67,7 +67,7 @@ void dibidab::behavior::ComponentDecoratorNode::enter()
 
     for (const std::vector<EntityComponent> &toAddVector : { toAddWhileEntered, toAddOnEnter })
     {
-        for (const EntityComponent entityComponent : toAddVector)
+        for (const EntityComponent &entityComponent : toAddVector)
         {
             if (!entityComponent.engine->entities.valid(entityComponent.entity))
             {
@@ -85,7 +85,7 @@ void dibidab::behavior::ComponentDecoratorNode::finish(Result result)
 {
     for (const std::vector<EntityComponent> &entityComponentsToRemove : { toAddWhileEntered, toRemoveOnFinish })
     {
-        for (const EntityComponent entityComponent : entityComponentsToRemove)
+        for (const EntityComponent &entityComponent : entityComponentsToRemove)
         {
             if (!entityComponent.engine->entities.valid(entityComponent.entity))
             {

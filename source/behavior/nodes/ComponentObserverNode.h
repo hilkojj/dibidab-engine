@@ -24,8 +24,6 @@ namespace dibidab::behavior
 
         void finish(Result result) override;
 
-        ComponentObserverNode *withoutSafetyDelay();
-
         template<class Component>
         ComponentObserverNode *has(ecs::Engine *engine, entt::entity entity)
         {
@@ -33,7 +31,7 @@ namespace dibidab::behavior
             return this;
         }
 
-        void has(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
+        void has(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component);
 
         template<class Component>
         ComponentObserverNode *exclude(ecs::Engine *engine, entt::entity entity)
@@ -42,7 +40,7 @@ namespace dibidab::behavior
             return this;
         }
 
-        void exclude(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
+        void exclude(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component);
 
         ComponentObserverNode *setOnFulfilledNode(Node *child);
 
@@ -62,7 +60,7 @@ namespace dibidab::behavior
 
       private:
 
-        void observe(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component, bool presentValue, bool absentValue);
+        void observe(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component, bool presentValue, bool absentValue);
 
         bool allConditionsFulfilled() const;
 
@@ -77,16 +75,16 @@ namespace dibidab::behavior
             ecs::Engine *engine = nullptr;
             const ComponentInfo *component = nullptr;
             ecs::Observer::Handle handle;
-            delegate_method latestConditionChangedDelay;
         };
 
         std::vector<ObserverHandle> observerHandles;
         std::vector<bool> conditions;
-        bool bUseSafetyDelay;
-        int fulfilledNodeIndex;
-        int unfulfilledNodeIndex;
-        bool bFulFilled;
-        int currentNodeIndex;
+        bool bFulFilled = false;
+        delegate_method switchBranchNextUpdate;
+
+        int fulfilledNodeIndex = INVALID_CHILD_INDEX;
+        int unfulfilledNodeIndex = INVALID_CHILD_INDEX;
+        int currentNodeIndex = INVALID_CHILD_INDEX;
 
         friend class TreeInspector;
     };

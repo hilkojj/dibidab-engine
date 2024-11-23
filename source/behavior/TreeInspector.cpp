@@ -91,8 +91,7 @@ void dibidab::behavior::TreeInspector::drawNode(Tree::Node *node, uint depth)
     {
         if (node->isAborting())
         {
-            ImGui::SameLine();
-            ImGui::Text("[ABORTING...]");
+            ImGui::Text("[ABORTING..]");
         }
     }
     else if (node->hasFinishedAtLeastOnce())

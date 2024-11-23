@@ -63,6 +63,8 @@ namespace dibidab::ecs
 
         virtual void editTemplateAsset(const loaded_asset &templateAsset);
 
+        virtual void customComponentDraw(entt::entity entity, const ComponentInfo &component);
+
         Engine *const engine;
 
       private:

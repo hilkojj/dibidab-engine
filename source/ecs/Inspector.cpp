@@ -29,7 +29,7 @@ namespace dibidab::ecs
 {
     struct AddingComponent
     {
-        const dibidab::ComponentInfo *componentInfo = nullptr;
+        const ComponentInfo *componentInfo = nullptr;
         json componentJson;
         StructInspector editor;
     };
@@ -54,7 +54,7 @@ void dibidab::ecs::Inspector::draw()
     {
         updatePicking();
     }
-    else if (KeyInput::justPressed(dibidab::settings.developerKeyInput.inspectEntity))
+    else if (KeyInput::justPressed(settings.developerKeyInput.inspectEntity))
     {
         picker = createPicker();
     }
@@ -67,7 +67,7 @@ void dibidab::ecs::Inspector::draw()
         drawInspectWindows();
     }
 
-    if (KeyInput::justPressed(dibidab::settings.developerKeyInput.createEntity))
+    if (KeyInput::justPressed(settings.developerKeyInput.createEntity))
     {
         ImGui::OpenPopup("Create entity");
     }
@@ -140,6 +140,10 @@ void dibidab::ecs::Inspector::editTemplateAsset(const loaded_asset &templateAsse
     };
 }
 
+void dibidab::ecs::Inspector::customComponentDraw(entt::entity entity, const ComponentInfo &component)
+{
+}
+
 void dibidab::ecs::Inspector::updatePicking()
 {
     const entt::entity pickedEntity = picker->tryPick();
@@ -150,7 +154,7 @@ void dibidab::ecs::Inspector::updatePicking()
         delete picker;
         picker = nullptr;
     }
-    if (KeyInput::justPressed(dibidab::settings.developerKeyInput.cancel))
+    if (KeyInput::justPressed(settings.developerKeyInput.cancel))
     {
         delete picker;
         picker = nullptr;
@@ -244,7 +248,7 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
     }
     ImGui::EndChild();
 
-    const std::set<const dibidab::ComponentInfo *> ownedComponents = getComponentsForEntity(entity);
+    const std::set<const ComponentInfo *> ownedComponents = getComponentsForEntity(entity);
 
     ImGui::Columns(2);
 
@@ -259,9 +263,9 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
 
     if (ImGui::BeginPopup("AddComponent"))
     {
-        if (const dibidab::ComponentInfo *info = drawComponentSelect(&ownedComponents))
+        if (const ComponentInfo *info = drawComponentSelect(&ownedComponents))
         {
-            if (const dibidab::StructInfo *structInfo = dibidab::findStructInfo(info->structId))
+            if (const StructInfo *structInfo = findStructInfo(info->structId))
             {
                 AddingComponent &adding = engine->entities.assign_or_replace<AddingComponent>(entity, AddingComponent {
                     info,
@@ -274,7 +278,7 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
         ImGui::EndPopup();
     }
 
-    for (const dibidab::ComponentInfo *component : ownedComponents)
+    for (const ComponentInfo *component : ownedComponents)
     {
         if (component->structId == typename_utils::getTypeName<Inspecting>(false))
         {
@@ -290,7 +294,8 @@ void dibidab::ecs::Inspector::drawInspectWindow(const entt::entity entity, Inspe
         }
         if (bComponentOpened)
         {
-            if (const dibidab::StructInfo *structInfo = dibidab::findStructInfo(component->structId))
+            customComponentDraw(entity, *component);
+            if (const StructInfo *structInfo = findStructInfo(component->structId))
             {
                 if (inspecting.componentInspectors.find(component) == inspecting.componentInspectors.end())
                 {
@@ -347,7 +352,7 @@ void dibidab::ecs::Inspector::drawEntityNameField(const entt::entity entity)
     delete[] buffer;
 }
 
-const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const std::set<const dibidab::ComponentInfo *> *exclude) const
+const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const std::set<const ComponentInfo *> *exclude) const
 {
     static ImGuiTextFilter filter;
     if (ImGui::IsWindowAppearing())
@@ -356,10 +361,10 @@ const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const
     }
     filter.Draw();
 
-    const dibidab::ComponentInfo *componentToReturn = nullptr;
+    const ComponentInfo *componentToReturn = nullptr;
 
     std::vector<std::string> commonCategoryPath;
-    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    for (const auto &[name, info] : getAllComponentInfos())
     {
         int i = 0;
         for (const char *directory : info.categoryPath)
@@ -371,7 +376,7 @@ const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const
             ++i;
         }
     }
-    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    for (const auto &[name, info] : getAllComponentInfos())
     {
         int i = 0;
         for (const char *directory : info.categoryPath)
@@ -389,7 +394,7 @@ const dibidab::ComponentInfo *dibidab::ecs::Inspector::drawComponentSelect(const
         }
     }
 
-    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    for (const auto &[name, info] : getAllComponentInfos())
     {
         if (!filter.PassFilter(info.name))
         {
@@ -494,7 +499,7 @@ void dibidab::ecs::Inspector::drawMainMenuItem()
             ImGui::EndMenu();
         }
 
-        if (ImGui::MenuItem("Pick to Inspect", KeyInput::getKeyName(dibidab::settings.developerKeyInput.inspectEntity)))
+        if (ImGui::MenuItem("Pick to Inspect", KeyInput::getKeyName(settings.developerKeyInput.inspectEntity)))
         {
             delete picker;
             picker = createPicker();
@@ -785,7 +790,7 @@ void dibidab::ecs::Inspector::drawCreateEntityFromTemplate()
     if (ImGui::Begin(title.c_str(), &bOpen, ImGuiWindowFlags_NoSavedSettings))
     {
         // TODO: Ideally there is a Json editor, so we do not need the wrapper struct..
-        static StructInspector editor(*dibidab::findStructInfo(typename_utils::getTypeName<TemplateArgs>(false).c_str()));
+        static StructInspector editor(*findStructInfo(typename_utils::getTypeName<TemplateArgs>(false).c_str()));
         json jsonArgs = args;
         if (editor.draw(jsonArgs))
         {
@@ -833,7 +838,7 @@ dibidab::ecs::Template *dibidab::ecs::Inspector::getUsedTemplate(entt::entity en
 std::set<const dibidab::ComponentInfo *> dibidab::ecs::Inspector::getComponentsForEntity(entt::entity entity) const
 {
     std::set<const dibidab::ComponentInfo *> infos;
-    for (const auto &[name, info] : dibidab::getAllComponentInfos())
+    for (const auto &[name, info] : getAllComponentInfos())
     {
         if (info.hasComponent(entity, engine->entities))
         {

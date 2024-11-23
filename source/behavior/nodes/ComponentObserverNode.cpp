@@ -4,17 +4,13 @@
 
 #include <imgui.h>
 
-dibidab::behavior::ComponentObserverNode::ComponentObserverNode() :
-    bUseSafetyDelay(true),
-    fulfilledNodeIndex(INVALID_CHILD_INDEX),
-    unfulfilledNodeIndex(INVALID_CHILD_INDEX),
-    bFulFilled(false),
-    currentNodeIndex(INVALID_CHILD_INDEX)
+dibidab::behavior::ComponentObserverNode::ComponentObserverNode()
 {
 }
 
 void dibidab::behavior::ComponentObserverNode::enter()
 {
+    switchBranchNextUpdate.reset();
     CompositeNode::enter();
     enterChild();
 }
@@ -28,24 +24,15 @@ void dibidab::behavior::ComponentObserverNode::abort()
     }
     else
     {
-        finish(Node::Result::ABORTED);
+        finish(Result::ABORTED);
     }
 }
 
 void dibidab::behavior::ComponentObserverNode::finish(Result result)
 {
+    switchBranchNextUpdate.reset();
     currentNodeIndex = INVALID_CHILD_INDEX;
     Node::finish(result);
-}
-
-dibidab::behavior::ComponentObserverNode *dibidab::behavior::ComponentObserverNode::withoutSafetyDelay()
-{
-    if (!observerHandles.empty())
-    {
-        throw gu_err("Safety delay can only be disabled before observers are added: " + getReadableDebugInfo());
-    }
-    bUseSafetyDelay = false;
-    return this;
 }
 
 void dibidab::behavior::ComponentObserverNode::has(ecs::Engine *engine, entt::entity entity,
@@ -136,12 +123,12 @@ void dibidab::behavior::ComponentObserverNode::drawDebugInfo() const
 void dibidab::behavior::ComponentObserverNode::onChildFinished(Node *child, Result result)
 {
     Node::onChildFinished(child, result);
-    if (result == Node::Result::ABORTED)
+    if (result == Result::ABORTED)
     {
         if (isAborting())
         {
             // Observer was aborted.
-            finish(Node::Result::ABORTED);
+            finish(Result::ABORTED);
             return;
         }
         else if (getChildIndexToEnter() != currentNodeIndex)
@@ -158,7 +145,7 @@ void dibidab::behavior::ComponentObserverNode::onChildFinished(Node *child, Resu
 }
 
 void dibidab::behavior::ComponentObserverNode::observe(ecs::Engine *engine, entt::entity entity,
-    const dibidab::ComponentInfo *component, const bool presentValue, const bool absentValue)
+    const ComponentInfo *component, const bool presentValue, const bool absentValue)
 {
     if (isEntered())
     {
@@ -182,37 +169,21 @@ void dibidab::behavior::ComponentObserverNode::observe(ecs::Engine *engine, entt
     ecs::Observer &observer = engine->getObserverForComponent(*component);
     const int conditionIndex = int(conditions.size());
 
-    std::function<void()> onConstructCallback = [this, engine, entity, conditionIndex, presentValue]
+    const std::function<void()> onConstructCallback = [this, engine, entity, conditionIndex, presentValue]
     {
         conditions[conditionIndex] = presentValue;
         onConditionsChanged(engine, entity);
     };
 
-    ecs::Observer::Handle onConstructHandle = observer.onConstruct(entity,
-        bUseSafetyDelay ? [this, engine, onConstructCallback, conditionIndex]
-        {
-            observerHandles[conditionIndex * 2ul].latestConditionChangedDelay =
-                engine->getTimeOuts()->nextUpdate += onConstructCallback;
-        }
-        :
-        onConstructCallback
-    );
+    const ecs::Observer::Handle onConstructHandle = observer.onConstruct(entity, onConstructCallback);
 
-    std::function<void()> onDestroyCallback = [this, engine, entity, conditionIndex, absentValue]
+    const std::function<void()> onDestroyCallback = [this, engine, entity, conditionIndex, absentValue]
     {
         conditions[conditionIndex] = absentValue;
         onConditionsChanged(engine, entity);
     };
 
-    ecs::Observer::Handle onDestroyHandle = observer.onDestroy(entity,
-        bUseSafetyDelay ? [this, engine, onDestroyCallback, conditionIndex]
-        {
-            observerHandles[conditionIndex * 2ul + 1ul].latestConditionChangedDelay =
-                engine->getTimeOuts()->nextUpdate += onDestroyCallback;
-        }
-        :
-        onDestroyCallback
-    );
+    const ecs::Observer::Handle onDestroyHandle = observer.onDestroy(entity, onDestroyCallback);
 
     observerHandles.push_back({
         engine, component, onConstructHandle
@@ -235,29 +206,33 @@ bool dibidab::behavior::ComponentObserverNode::allConditionsFulfilled() const
     }
     return true;
 }
+
 void dibidab::behavior::ComponentObserverNode::onConditionsChanged(ecs::Engine *engine, entt::entity entity)
 {
-    bool bNewFulfilled = allConditionsFulfilled();
+    const bool bNewFulfilled = allConditionsFulfilled();
 
     if (bNewFulfilled != bFulFilled)
     {
         bFulFilled = bNewFulfilled;
 
-        if (isEntered())
+        switchBranchNextUpdate = engine->getTimeOuts()->nextUpdate += [&]
         {
-            if (currentNodeIndex != INVALID_CHILD_INDEX)
+            if (isEntered() && currentNodeIndex != getChildIndexToEnter())
             {
-                Node *toAbort = getChildren().at(currentNodeIndex);
-                if (!toAbort->isAborting())
+                if (currentNodeIndex != INVALID_CHILD_INDEX)
                 {
-                    toAbort->abort();
+                    Node *toAbort = getChildren().at(currentNodeIndex);
+                    if (!toAbort->isAborting())
+                    {
+                        toAbort->abort();
+                    }
+                }
+                else
+                {
+                    enterChild();
                 }
             }
-            else
-            {
-                enterChild();
-            }
-        }
+        };
     }
 }
 
@@ -268,10 +243,10 @@ int dibidab::behavior::ComponentObserverNode::getChildIndexToEnter() const
 
 void dibidab::behavior::ComponentObserverNode::enterChild()
 {
-    int toEnterIndex = getChildIndexToEnter();
+    const int toEnterIndex = getChildIndexToEnter();
     if (toEnterIndex == INVALID_CHILD_INDEX)
     {
-        finish(Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
     }
     else
     {
@@ -286,7 +261,7 @@ dibidab::behavior::ComponentObserverNode::~ComponentObserverNode()
     {
         if (observerHandle.engine->isDestructing())
         {
-            // getEntityObserver() will crash because the registry's context variables are destroyed already.
+            // getEntityObserver() will crash because part of the registry is destroyed already.
             // Unregistering is not needed because the callbacks will be destroyed anyway.
             continue;
         }

@@ -14,9 +14,9 @@
 #include <imgui.h>
 
 dibidab::behavior::Tree::Node::Node() :
-        parent(nullptr),
-        bEntered(false),
-        bAborting(false)
+    parent(nullptr),
+    bEntered(false),
+    bAborting(false)
 {
     lua_State *luaState = luau::getLuaState().lua_state();
     lua_Debug luaDebugInfo;
@@ -296,6 +296,12 @@ const char *dibidab::behavior::Tree::DecoratorNode::getName() const
 dibidab::behavior::Tree::DecoratorNode::~DecoratorNode()
 {
     delete child;
+}
+
+void dibidab::behavior::Tree::DecoratorNode::onChildFinished(Node *child, Result result)
+{
+    Node::onChildFinished(child, result);
+    finish(result);
 }
 
 constexpr static int INVALID_CHILD_INDEX = -1;
@@ -814,8 +820,6 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         }),
         sol::base_classes,
         sol::bases<Node, CompositeNode>(),
-
-        "withoutSafetyDelay", &ComponentObserverNode::withoutSafetyDelay,
 
         "has", [] (ComponentObserverNode &node, entt::entity entity, const sol::table &componentTable,
             const sol::this_environment &currentEnv)
