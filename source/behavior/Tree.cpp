@@ -222,6 +222,17 @@ void dibidab::behavior::Tree::CompositeNode::checkCorrectChildFinished(
     }
 }
 
+void dibidab::behavior::Tree::DecoratorNode::enter()
+{
+    Node *child = getChild();
+    if (child == nullptr)
+    {
+        throw gu_err("DecoratorNode has no child: " + getReadableDebugInfo());
+    }
+    Node::enter();
+    child->enter();
+}
+
 void dibidab::behavior::Tree::DecoratorNode::abort()
 {
     Node::abort();
@@ -275,6 +286,11 @@ bool dibidab::behavior::Tree::DecoratorNode::getEnteredDescription(std::vector<c
         return true;
     }
     return Node::getEnteredDescription(descriptions);
+}
+
+const char *dibidab::behavior::Tree::DecoratorNode::getName() const
+{
+    return "Decorator";
 }
 
 dibidab::behavior::Tree::DecoratorNode::~DecoratorNode()
@@ -479,17 +495,6 @@ void dibidab::behavior::Tree::ParallelNode::onChildFinished(Node *child, Node::R
     }
 }
 
-void dibidab::behavior::Tree::InverterNode::enter()
-{
-    Node *child = getChild();
-    if (child == nullptr)
-    {
-        throw gu_err("InverterNode has no child: " + getReadableDebugInfo());
-    }
-    Tree::Node::enter();
-    child->enter();
-}
-
 const char *dibidab::behavior::Tree::InverterNode::getName() const
 {
     return "Inverter";
@@ -507,6 +512,7 @@ void dibidab::behavior::Tree::InverterNode::onChildFinished(Node *child, Result 
 
 void dibidab::behavior::Tree::SucceederNode::enter()
 {
+    // Do not cal DecoratorNode::enter, because we want to succeed if there's no child!
     Node::enter();
     if (Node *child = getChild())
     {
@@ -536,6 +542,7 @@ void dibidab::behavior::Tree::SucceederNode::onChildFinished(Node *child, Result
 
 void dibidab::behavior::Tree::FailNode::enter()
 {
+    // Do not cal DecoratorNode::enter, because we want to succeed if there's no child!
     Node::enter();
     if (Node *child = getChild())
     {
@@ -646,23 +653,27 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
 
     // ------------------------ Abstract Node classes: -------------------------- //
 
-    sol::usertype<Node> nodeType = lua->new_usertype<Node>(
+    const auto nodeType = lua->new_usertype<Node>(
         "BTNode",
 
         "finish", &Node::finish,
         "setDescription", &Node::setDescription
     );
 
-    sol::usertype<CompositeNode> compositeNodeType = lua->new_usertype<CompositeNode>(
-        "BTCompositeNode",
+    const auto compositeNodeType = lua->new_usertype<CompositeNode>(
+        "BTComposite",
         sol::base_classes,
         sol::bases<Node>(),
 
         "addChild", &CompositeNode::addChild
     );
 
-    sol::usertype<DecoratorNode> decoratorNodeType = lua->new_usertype<DecoratorNode>(
-        "BTDecoratorNode",
+    const auto decoratorNodeType = lua->new_usertype<DecoratorNode>(
+        "BTDecorator",
+        sol::factories([] ()
+        {
+            return new DecoratorNode();
+        }),
         sol::base_classes,
         sol::bases<Node>(),
 
@@ -671,8 +682,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
 
     // ------------------------ Basic Node classes: -------------------------- //
 
-    sol::usertype<SequenceNode> sequenceNodeType = lua->new_usertype<SequenceNode>(
-        "BTSequenceNode",
+    const auto sequenceNodeType = lua->new_usertype<SequenceNode>(
+        "BTSequence",
         sol::factories([] ()
         {
             return new SequenceNode();
@@ -681,8 +692,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, CompositeNode>()
     );
 
-    sol::usertype<SelectorNode> selectorNodeType = lua->new_usertype<SelectorNode>(
-        "BTSelectorNode",
+    const auto selectorNodeType = lua->new_usertype<SelectorNode>(
+        "BTSelector",
         sol::factories([] ()
         {
             return new SelectorNode();
@@ -691,8 +702,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, CompositeNode>()
     );
 
-    sol::usertype<ParallelNode> parallelNodeType = lua->new_usertype<ParallelNode>(
-        "BTParallelNode",
+    const auto parallelNodeType = lua->new_usertype<ParallelNode>(
+        "BTParallel",
         sol::factories([] ()
         {
             return new ParallelNode();
@@ -701,8 +712,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, CompositeNode>()
     );
 
-    sol::usertype<InverterNode> inverterNodeType = lua->new_usertype<InverterNode>(
-        "BTInverterNode",
+    const auto inverterNodeType = lua->new_usertype<InverterNode>(
+        "BTInverter",
         sol::factories([] ()
         {
             return new InverterNode();
@@ -711,8 +722,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, DecoratorNode>()
     );
 
-    sol::usertype<SucceederNode> succeederNodeType = lua->new_usertype<SucceederNode>(
-        "BTSucceederNode",
+    const auto succeederNodeType = lua->new_usertype<SucceederNode>(
+        "BTSucceeder",
         sol::factories([] ()
         {
             return new SucceederNode();
@@ -720,8 +731,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::base_classes,
         sol::bases<Node, DecoratorNode>()
     );
-    sol::usertype<FailNode> failNodeType = lua->new_usertype<FailNode>(
-        "BTFailNode",
+    const auto failNodeType = lua->new_usertype<FailNode>(
+        "BTFail",
         sol::factories([] ()
         {
             return new FailNode();
@@ -730,7 +741,7 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, DecoratorNode>()
     );
 
-    sol::usertype<RepeaterNode> repeaterNodeType = lua->new_usertype<RepeaterNode>(
+    const auto repeaterNodeType = lua->new_usertype<RepeaterNode>(
         "BTRepeaterNode",
         sol::factories([] ()
         {
@@ -740,8 +751,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, DecoratorNode>()
     );
 
-    sol::usertype<ComponentDecoratorNode> componentDecoratorNodeType = lua->new_usertype<ComponentDecoratorNode>(
-        "BTComponentDecoratorNode",
+    const auto componentDecoratorNodeType = lua->new_usertype<ComponentDecoratorNode>(
+        "BTComponentDecorator",
         sol::factories([] ()
         {
             return new ComponentDecoratorNode();
@@ -775,8 +786,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         }
     );
 
-    sol::usertype<WaitNode> waitNodeType = lua->new_usertype<WaitNode>(
-        "BTWaitNode",
+    const auto waitNodeType = lua->new_usertype<WaitNode>(
+        "BTWait",
         sol::factories([] ()
         {
             return new WaitNode();
@@ -795,8 +806,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
 
     // ------------------------ Event-based Node classes: -------------------------- //
 
-    sol::usertype<ComponentObserverNode> componentObserverNodeType = lua->new_usertype<ComponentObserverNode>(
-        "BTComponentObserverNode",
+    const auto componentObserverNodeType = lua->new_usertype<ComponentObserverNode>(
+        "BTComponentObserver",
         sol::factories([] ()
         {
             return new ComponentObserverNode();
@@ -828,8 +839,8 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
 
     // ------------------------ Customization Node classes: -------------------------- //
 
-    sol::usertype<LuaLeafNode> luaLeafNodeType = lua->new_usertype<LuaLeafNode>(
-        "BTLuaLeafNode",
+    const auto luaLeafNodeType = lua->new_usertype<LuaLeafNode>(
+        "BTLuaLeaf",
         sol::factories([] ()
         {
             return new LuaLeafNode();
@@ -837,13 +848,13 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::base_classes,
         sol::bases<Node, LeafNode>(),
 
-        "setEnterFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+        "onEnter", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
             -> LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             luaLeafNode.luaEnterFunction = function;
             return luaLeafNode;
         },
-        "setAbortFunction", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
+        "onAbort", [] (LuaLeafNode &luaLeafNode, const sol::function &function)
             -> LuaLeafNode & // Important! Explicitly saying it returns a reference to this node to prevent segfaults.
         {
             luaLeafNode.luaAbortFunction = function;

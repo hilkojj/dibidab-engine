@@ -114,6 +114,8 @@ namespace dibidab::behavior
 
         struct DecoratorNode : public Node
         {
+            void enter() override;
+
             void abort() override;
 
             void finish(Result result) override;
@@ -124,9 +126,11 @@ namespace dibidab::behavior
 
             bool getEnteredDescription(std::vector<const char *> &descriptions) const override;
 
+            const char *getName() const override;
+
             ~DecoratorNode() override;
 
-          private:
+            private:
             Node *child = nullptr;
         };
 
@@ -198,8 +202,6 @@ namespace dibidab::behavior
 
         struct InverterNode : public DecoratorNode
         {
-            void enter() override;
-
             const char *getName() const override;
 
           protected:
