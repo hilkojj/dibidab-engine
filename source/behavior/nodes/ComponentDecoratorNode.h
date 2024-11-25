@@ -16,7 +16,7 @@ namespace dibidab::behavior
             return this;
         }
 
-        void addWhileEntered(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
+        void addWhileEntered(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component);
 
         template<class Component>
         ComponentDecoratorNode *addOnEnter(ecs::Engine *engine, entt::entity entity)
@@ -25,7 +25,7 @@ namespace dibidab::behavior
             return this;
         }
 
-        void addOnEnter(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
+        void addOnEnter(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component);
 
         template<class Component>
         ComponentDecoratorNode *removeOnFinish(ecs::Engine *engine, entt::entity entity)
@@ -34,7 +34,16 @@ namespace dibidab::behavior
             return this;
         }
 
-        void removeOnFinish(ecs::Engine *engine, entt::entity entity, const dibidab::ComponentInfo *component);
+        void removeOnFinish(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component);
+
+        template<class Component>
+        ComponentDecoratorNode *removeOnEnter(ecs::Engine *engine, entt::entity entity)
+        {
+            removeOnEnter(engine, entity, dibidab::findComponentInfo<Component>());
+            return this;
+        }
+
+        void removeOnEnter(ecs::Engine *engine, entt::entity entity, const ComponentInfo *component);
 
         void enter() override;
 
@@ -53,11 +62,12 @@ namespace dibidab::behavior
         {
             ecs::Engine *engine = nullptr;
             entt::entity entity = entt::null;
-            const dibidab::ComponentInfo *component = nullptr;
+            const ComponentInfo *component = nullptr;
         };
 
         std::vector<EntityComponent> toAddWhileEntered;
         std::vector<EntityComponent> toAddOnEnter;
         std::vector<EntityComponent> toRemoveOnFinish;
+        std::vector<EntityComponent> toRemoveOnEnter;
     };
 }

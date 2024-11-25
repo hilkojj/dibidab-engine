@@ -56,6 +56,24 @@ void dibidab::behavior::ComponentDecoratorNode::removeOnFinish(ecs::Engine *engi
     toRemoveOnFinish.push_back({engine, entity, component});
 }
 
+void dibidab::behavior::ComponentDecoratorNode::removeOnEnter(ecs::Engine *engine, entt::entity entity,
+    const ComponentInfo *component)
+{
+    if (engine == nullptr)
+    {
+        throw gu_err("Engine is a nullptr! " + getReadableDebugInfo());
+    }
+    if (!engine->entities.valid(entity))
+    {
+        throw gu_err("Entity is not valid! " + getReadableDebugInfo());
+    }
+    if (component == nullptr)
+    {
+        throw gu_err("dibidab::ComponentInfo is a nullptr! " + getReadableDebugInfo());
+    }
+    toRemoveOnEnter.push_back({engine, entity, component});
+}
+
 void dibidab::behavior::ComponentDecoratorNode::enter()
 {
     Node *child = getChild();
@@ -76,6 +94,15 @@ void dibidab::behavior::ComponentDecoratorNode::enter()
             }
             entityComponent.component->addComponent(entityComponent.entity, entityComponent.engine->entities);
         }
+    }
+    for (const EntityComponent &entityComponent : toRemoveOnEnter)
+    {
+        if (!entityComponent.engine->entities.valid(entityComponent.entity))
+        {
+            throw gu_err("Cannot remove " + std::string(entityComponent.component->name) +
+                " from an invalid entity while entering: " + getReadableDebugInfo());
+        }
+        entityComponent.component->removeComponent(entityComponent.entity, entityComponent.engine->entities);
     }
 
     child->enter();

@@ -581,8 +581,14 @@ void dibidab::behavior::Tree::RepeaterNode::enter()
 #ifndef NDEBUG
     timesRepeated = 0;
 #endif
+    bStopped = false;
     Node::enter();
     enterChild();
+}
+
+void dibidab::behavior::Tree::RepeaterNode::stop()
+{
+    bStopped = true;
 }
 
 void dibidab::behavior::Tree::RepeaterNode::onChildFinished(Node *child, Result result)
@@ -591,13 +597,20 @@ void dibidab::behavior::Tree::RepeaterNode::onChildFinished(Node *child, Result 
     switch (result)
     {
         case Result::SUCCESS:
+            if (bStopped)
+            {
+                finish(Result::SUCCESS);
+            }
+            else
+            {
 #ifndef NDEBUG
-            timesRepeated++;
+                timesRepeated++;
 #endif
-            enterChild();
+                enterChild();
+            }
             break;
         case Result::FAILURE:
-            finish(Result::SUCCESS);
+            finish(Result::FAILURE);
             break;
         case Result::ABORTED:
             finish(Result::ABORTED);
@@ -748,13 +761,15 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
     );
 
     const auto repeaterNodeType = lua->new_usertype<RepeaterNode>(
-        "BTRepeaterNode",
+        "BTRepeater",
         sol::factories([] ()
         {
             return new RepeaterNode();
         }),
         sol::base_classes,
-        sol::bases<Node, DecoratorNode>()
+        sol::bases<Node, DecoratorNode>(),
+
+        "stop", &RepeaterNode::stop
     );
 
     const auto componentDecoratorNodeType = lua->new_usertype<ComponentDecoratorNode>(
@@ -770,7 +785,7 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> ComponentDecoratorNode &
         {
-            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const ComponentInfo *component = getInfoFromUtilsTable(componentTable);
             node.addWhileEntered(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
@@ -778,7 +793,7 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> ComponentDecoratorNode &
         {
-            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const ComponentInfo *component = getInfoFromUtilsTable(componentTable);
             node.addOnEnter(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         },
@@ -786,8 +801,16 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
             const sol::this_environment &currentEnv)
         -> ComponentDecoratorNode &
         {
-            const dibidab::ComponentInfo *component = dibidab::getInfoFromUtilsTable(componentTable);
+            const ComponentInfo *component = getInfoFromUtilsTable(componentTable);
             node.removeOnFinish(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
+            return node;
+        },
+        "removeOnEnter", [] (ComponentDecoratorNode &node, entt::entity entity, const sol::table &componentTable,
+            const sol::this_environment &currentEnv)
+        -> ComponentDecoratorNode &
+        {
+            const ComponentInfo *component = getInfoFromUtilsTable(componentTable);
+            node.removeOnEnter(currentEnv.env.value().get<ecs::Engine *>(ecs::Engine::LUA_ENV_PTR_NAME), entity, component);
             return node;
         }
     );

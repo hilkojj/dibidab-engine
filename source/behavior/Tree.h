@@ -235,6 +235,8 @@ namespace dibidab::behavior
         {
             void enter() override;
 
+            void stop();
+
             const char *getName() const override;
 
             void drawDebugInfo() const override;
@@ -245,6 +247,7 @@ namespace dibidab::behavior
           private:
             void enterChild();
 
+            bool bStopped = false;
 #ifndef NDEBUG
             int timesRepeated = 0;
 #endif
