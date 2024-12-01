@@ -195,28 +195,6 @@ void dibidab::ecs::Engine::initializeLuaEnvironment()
         return getByName(name);
     };
 
-    // dibidab::ecs::PersistentRef
-    env["createPersistentRef"] = [&] (entt::entity e) -> PersistentRef
-    {
-        PersistentRef ref;
-        ref.set(e, entities);
-        return ref;
-    };
-    env["setPersistentRef"] = [&] (PersistentRef &ref, entt::entity e)
-    {
-        ref.set(e, entities);
-    };
-    env["resolvePersistentRef"] = [&] (PersistentRef &ref)
-    {
-        return ref.resolve(entities);
-    };
-    env["tryResolvePersistentRef"] = [&] (PersistentRef &ref)
-    {
-        std::pair<bool, entt::entity> result;
-        result.first = ref.tryResolve(entities, result.second);
-        return result;
-    };
-
     env["setComponent"] = [&] (entt::entity entity, const sol::table &component)
     {
         setComponentFromLua(entity, component);

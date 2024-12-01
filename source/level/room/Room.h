@@ -32,8 +32,6 @@ namespace dibidab::level
 
         bool isLoadingPersistentEntities() const;
 
-        int getNumPersistentEntities() const;
-
         void setPersistent(bool bPersistent);
 
         bool isPersistent() const;
@@ -75,7 +73,7 @@ namespace dibidab::level
 
         bool bIsPersistent = true;
 
-        json persistentEntitiesToLoad, revivableEntitiesToSave;
+        json jsonEntitiesToLoad;
         bool bLoadingPersistentEntities = false;
 
         friend void from_json(const json &j, Level &lvl);

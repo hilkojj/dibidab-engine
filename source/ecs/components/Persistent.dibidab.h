@@ -1,7 +1,11 @@
 #pragma once
-#include "../PersistentRef.h"
-
 #include "dibidab_header.h"
+
+#include <json.hpp>
+#include <entt/entity/entity.hpp>
+#include <entt/entity/registry.hpp>
+
+#include <string>
 
 namespace dibidab::ecs
 {
@@ -9,7 +13,7 @@ namespace dibidab::ecs
     {
         dibidab_component;
         dibidab_expose(lua, json);
-        PersistentID persistentId;
+        entt::entity entityHint = entt::null;
         std::string applyTemplateOnLoad;
         json data = json::object();
 

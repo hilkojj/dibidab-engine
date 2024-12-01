@@ -89,19 +89,21 @@ void dibidab::ecs::LuaTemplate::runScript()
     }
 }
 
-void dibidab::ecs::LuaTemplate::createComponents(entt::entity e, bool persistent)
+void dibidab::ecs::LuaTemplate::createComponents(entt::entity e, bool bPersistent)
 {
-    auto *p = persistent ? engine->entities.try_get<Persistent>(e) : nullptr;
+    auto *p = bPersistent ? engine->entities.try_get<Persistent>(e) : nullptr;
     if (p)
         createComponentsWithJsonArguments(e, p->data, true);
     else
-        createComponentsWithLuaArguments(e, sol::optional<sol::table>(), persistent);
+        createComponentsWithLuaArguments(e, sol::optional<sol::table>(), bPersistent);
 }
 
-void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e, sol::optional<sol::table> arguments, bool persistent)
+void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e, sol::optional<sol::table> arguments, bool bPersistent)
 {
     if (script.hasReloaded())
+    {
         runScript();
+    }
 
     try
     {
@@ -110,7 +112,9 @@ void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e,
             for (auto &[key, defaultVal] : defaultArgs)
             {
                 if (!arguments.value()[key].valid())
+                {
                     arguments.value()[key] = defaultVal;
+                }
             }
         } else arguments = defaultArgs;
 
@@ -120,46 +124,41 @@ void dibidab::ecs::LuaTemplate::createComponentsWithLuaArguments(entt::entity e,
             luaScripted.usedTemplate = this;
         }
 
-        if (persistent)
+        if (bPersistent)
         {
-            PersistentID persistentEntityID;
             std::string previousAppliedTemplate;
             if (const Persistent *pOld = engine->entities.try_get<Persistent>(e))
             {
-                persistentEntityID = pOld->persistentId;
                 previousAppliedTemplate = pOld->applyTemplateOnLoad;
             }
-            else
-            {
-                persistentEntityID = ++engine->entities.ctx_or_set<PersistentEntities>().idCounter;
-            }
-            engine->entities.ctx_or_set<PersistentEntities>().persistentEntityIdMap[persistentEntityID] = e;
 
             auto &p = engine->entities.assign_or_replace<Persistent>(e, persistency);
             if (!previousAppliedTemplate.empty())
             {
                 p.applyTemplateOnLoad = previousAppliedTemplate;
             }
-            p.persistentId = persistentEntityID;
+            p.entityHint = e;
             if (bPersistentArgs && arguments.has_value() && arguments.value().valid())
                 jsonFromLuaTable(arguments.value(), p.data);
 
             assert(p.data.is_object());
         }
 
-        sol::protected_function_result result = luaCreateComponents(
+        const sol::protected_function_result result = luaCreateComponents(
             e,
             arguments,
-            persistent
+            bPersistent
         );
         if (!result.valid())
+        {
             throw gu_err(result.get<sol::error>().what());
-        // NOTE!!: ALL REFERENCES TO COMPONENTS MIGHT BE BROKEN AFTER CALLING createFunc. (EnTT might resize containers)
+        }
+        // NOTE!!: ALL REFERENCES TO COMPONENTS MIGHT BE BROKEN AFTER CALLING luaCreateComponents. (EnTT might resize containers)
     }
-    catch (std::exception &e)
+    catch (std::exception &exception)
     {
         std::cerr << "Error while creating entity using " << script.getLoadedAsset()->fullPath << ":" << std::endl;
-        std::cerr << e.what() << std::endl;
+        std::cerr << exception.what() << std::endl;
     }
 }
 
@@ -171,18 +170,22 @@ const std::string &dibidab::ecs::LuaTemplate::getDescription() const
 json dibidab::ecs::LuaTemplate::getDefaultArgs()
 {
     if (script.hasReloaded())
+    {
         runScript();
+    }
     json j;
     jsonFromLuaTable(defaultArgs, j);
     return j;
 }
 
-void dibidab::ecs::LuaTemplate::createComponentsWithJsonArguments(entt::entity e, const json &arguments, bool persistent)
+void dibidab::ecs::LuaTemplate::createComponentsWithJsonArguments(entt::entity e, const json &arguments, bool bPersistent)
 {
     auto table = sol::table::create(luaEnvironment.lua_state());
     if (arguments.is_structured())
+    {
         jsonToLuaTable(table, arguments);
-    createComponentsWithLuaArguments(e, table, persistent);
+    }
+    createComponentsWithLuaArguments(e, table, bPersistent);
 }
 
 std::string dibidab::ecs::LuaTemplate::getUniqueID()

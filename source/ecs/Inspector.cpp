@@ -888,36 +888,4 @@ void dibidab::ecs::Inspector::addCustomDrawFunctions(StructInspector &structEdit
         }
         return bEdited;
     };
-    structEditor.customFieldDraw[typename_utils::getTypeName<PersistentRef>(false)] = [&] (json &refJson)
-    {
-        PersistentRef ref = refJson;
-        entt::entity resolvedEntity = entt::null;
-        const bool bResolved = ref.tryResolve(engine->entities, resolvedEntity);
-
-        if (!bResolved)
-        {
-            ImGui::ButtonEx("Unresolved!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
-        }
-        else if (resolvedEntity == entt::null)
-        {
-            ImGui::ButtonEx("Null", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
-        }
-        else if (!engine->entities.valid(resolvedEntity))
-        {
-            ImGui::ButtonEx("Invalid!", ImVec2(0, 0), ImGuiButtonFlags_Disabled);
-        }
-        else
-        {
-            const std::string btnTxt = "#" + std::to_string(int(resolvedEntity));
-            if (ImGui::Button(btnTxt.c_str()))
-            {
-                engine->entities.assign<Inspecting>(resolvedEntity);
-            }
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("Persistent Id: %lu", ref.getId());
-        }
-        return false;
-    };
 }

@@ -80,46 +80,72 @@ void dibidab::level::Room::loadPersistentEntities()
 {
     bLoadingPersistentEntities = true;
 
-    const char *resolveFuncName = "resolvePersistentRef";
-    const char *tryResolveFuncName = "tryResolvePersistentRef";
-    sol::function originalResolvePersistentRef = luaEnvironment[resolveFuncName];
-    sol::function originalTryResolvePersistentRef = luaEnvironment[tryResolveFuncName];
-    assert(originalResolvePersistentRef.valid());
-    assert(originalTryResolvePersistentRef.valid());
-    auto tmpResolveFunc = [] (const sol::object &)
-    {
-        throw gu_err("You shouldn't try to resolve persistent entity references while loading persistent entities!");
-    };
-    luaEnvironment[resolveFuncName] = tmpResolveFunc;
-    luaEnvironment[tryResolveFuncName] = tmpResolveFunc;
+    std::map<entt::entity, entt::entity> hintToEntity;
 
-    for (json &jsonEntity : persistentEntitiesToLoad)
+    for (const json &jsonEntity : jsonEntitiesToLoad)
     {
-        auto e = entities.create();
-        assert(entities.valid(e));
+        const entt::entity hint = jsonEntity.at("entityHint");
+        if (hint != entt::null)
+        {
+            if (hintToEntity.find(hint) != hintToEntity.end())
+            {
+                std::cerr << "Desired entity identifier #" << std::to_string(int(hint)) << " was requested before" << std::endl;
+                continue;
+            }
+
+            const entt::entity entity = entities.create(hint);
+            hintToEntity[hint] = entity;
+
+            if (hint != entt::null && hint != entity)
+            {
+                std::cerr << "Could not create desired entity identifier #" << std::to_string(int(hint)) << std::endl;
+            }
+        }
+    }
+
+    for (const json &jsonEntity : jsonEntitiesToLoad)
+    {
+        const entt::entity hint = jsonEntity.at("entityHint");
+        entt::entity entity = entt::null;
+
+        if (hint != entt::null)
+        {
+            auto hintIt = hintToEntity.find(hint);
+            if (hintIt != hintToEntity.end())
+            {
+                entity = hintIt->second;
+                hintToEntity.erase(hintIt);
+            }
+        }
+
+        if (!entities.valid(entity))
+        {
+            entity = entities.create();
+        }
+
         try
         {
-            auto &p = entities.assign<ecs::Persistent>(e);
-            p.persistentId = jsonEntity.at("persistentId");
+            auto &p = entities.assign<ecs::Persistent>(entity);
+            p.entityHint = hint;
             p.data = jsonEntity.at("data");
 
             if (jsonEntity.contains("name"))
             {
                 std::string eName = jsonEntity["name"];
-                setName(e, eName.c_str());
+                setName(entity, eName.c_str());
             }
 
             for (auto &[componentName, componentJson] : jsonEntity.at("components").items())
             {
-                if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(componentName.c_str()))
+                if (const ComponentInfo *info = findComponentInfo(componentName.c_str()))
                 {
                     if (info->setFromJson)
                     {
-                        info->setFromJson(componentJson, e, entities);
+                        info->setFromJson(componentJson, entity, entities);
                     }
                     else
                     {
-                        info->addComponent(e, entities);
+                        info->addComponent(entity, entities);
                     }
                 }
                 else
@@ -129,33 +155,26 @@ void dibidab::level::Room::loadPersistentEntities()
                 }
             }
 
-            std::string applyTemplate = jsonEntity.at("template");
+            const std::string applyTemplate = jsonEntity.at("template");
             if (!applyTemplate.empty())
             {
-                getTemplate(applyTemplate).createComponents(e, true);
+                getTemplate(applyTemplate).createComponents(entity, true);
             }
         }
         catch (std::exception &exc)
         {
             std::cerr << "Error while loading entity from JSON: \n" << exc.what() << std::endl;
             std::cerr << "entity json: " << jsonEntity.dump() << std::endl;
-            entities.destroy(e);
+            entities.destroy(entity);
         }
     }
-    persistentEntitiesToLoad.clear();
+    jsonEntitiesToLoad.clear();
     bLoadingPersistentEntities = false;
-    luaEnvironment[resolveFuncName] = originalResolvePersistentRef;
-    luaEnvironment[tryResolveFuncName] = originalTryResolvePersistentRef;
-}
-
-int dibidab::level::Room::getNumPersistentEntities() const
-{
-    return persistentEntitiesToLoad.is_array() ? persistentEntitiesToLoad.size() : 0;
 }
 
 void dibidab::level::Room::persistentEntityToJson(entt::entity e, const ecs::Persistent &persistent, json &j) const
 {
-    j["persistentId"] = persistent.persistentId;
+    j["entityHint"] = persistent.entityHint;
     j["template"] = persistent.applyTemplateOnLoad;
     j["data"] = persistent.data;
 
@@ -167,7 +186,7 @@ void dibidab::level::Room::persistentEntityToJson(entt::entity e, const ecs::Per
 
     for (auto &componentTypeName : persistent.saveComponents)
     {
-        if (const dibidab::ComponentInfo *info = dibidab::findComponentInfo(componentTypeName.c_str()))
+        if (const ComponentInfo *info = findComponentInfo(componentTypeName.c_str()))
         {
             if (info->hasComponent(e, entities))
             {
@@ -189,8 +208,7 @@ void dibidab::level::Room::exportJsonData(json &j)
     events.emit(0, "BeforeSave");
     j = json {
         {"name", name},
-        {"entities", revivableEntitiesToSave},
-        {"persistentIdCounter", entities.ctx_or_set<ecs::PersistentEntities>().idCounter}
+        {"entities", json::array()},
     };
     entities.view<const ecs::Persistent>().each([&](auto e, const ecs::Persistent &persistent)
     {
@@ -202,6 +220,5 @@ void dibidab::level::Room::exportJsonData(json &j)
 void dibidab::level::Room::loadJsonData(const json &j)
 {
     name = j.at("name");
-    persistentEntitiesToLoad = j.at("entities");
-    entities.ctx_or_set<ecs::PersistentEntities>().idCounter = j.at("persistentIdCounter");
+    jsonEntitiesToLoad = j.at("entities");
 }

@@ -18,9 +18,9 @@ namespace dibidab::ecs
 
         virtual const std::string &getDescription() const;
 
-        entt::entity create(bool persistent = false);
+        entt::entity create(bool bPersistent = false);
 
-        virtual void createComponents(entt::entity, bool persistent = false) = 0;
+        virtual void createComponents(entt::entity, bool bPersistent = false) = 0;
 
       protected:
 

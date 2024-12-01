@@ -8,9 +8,9 @@ const std::string &dibidab::ecs::Template::getDescription() const
     return description;
 }
 
-entt::entity dibidab::ecs::Template::create(bool persistent)
+entt::entity dibidab::ecs::Template::create(bool bPersistent)
 {
-    entt::entity e = engine->entities.create();
-    createComponents(e, persistent);
+    const entt::entity e = engine->entities.create();
+    createComponents(e, bPersistent);
     return e;
 }

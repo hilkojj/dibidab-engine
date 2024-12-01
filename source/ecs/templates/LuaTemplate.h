@@ -21,11 +21,11 @@ namespace dibidab::ecs
 
         json getDefaultArgs();
 
-        void createComponents(entt::entity, bool persistent) override;
+        void createComponents(entt::entity, bool bPersistent) override;
 
-        void createComponentsWithJsonArguments(entt::entity, const json &arguments, bool persistent);
+        void createComponentsWithJsonArguments(entt::entity, const json &arguments, bool bPersistent);
 
-        void createComponentsWithLuaArguments(entt::entity, sol::optional<sol::table> arguments, bool persistent);
+        void createComponentsWithLuaArguments(entt::entity, sol::optional<sol::table> arguments, bool bPersistent);
 
         sol::environment &getTemplateEnvironment();
 
