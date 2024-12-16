@@ -253,6 +253,16 @@ namespace dibidab::behavior
 #endif
         };
 
+        struct UnabortableNode : public DecoratorNode
+        {
+            void abort() override;
+
+            const char *getName() const override;
+
+          protected:
+            void onChildFinished(Node *child, Result result) override;
+        };
+
         Tree();
 
         // Note: takes ownership of root

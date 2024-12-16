@@ -201,7 +201,7 @@ dibidab::behavior::Tree::CompositeNode::~CompositeNode()
 }
 
 void dibidab::behavior::Tree::CompositeNode::checkCorrectChildFinished(
-    const int expectedChildIndex, const dibidab::behavior::Tree::Node *finishedChild
+    const int expectedChildIndex, const Node *finishedChild
 ) const
 {
     if (expectedChildIndex == INVALID_CHILD_INDEX || !isEntered())
@@ -242,7 +242,7 @@ void dibidab::behavior::Tree::DecoratorNode::abort()
     }
     else
     {
-        finish(Node::Result::ABORTED);
+        finish(Result::ABORTED);
     }
 }
 
@@ -304,8 +304,6 @@ void dibidab::behavior::Tree::DecoratorNode::onChildFinished(Node *child, Result
     finish(result);
 }
 
-constexpr static int INVALID_CHILD_INDEX = -1;
-
 dibidab::behavior::Tree::SequenceNode::SequenceNode() :
     currentChildIndex(INVALID_CHILD_INDEX)
 {
@@ -317,11 +315,11 @@ void dibidab::behavior::Tree::SequenceNode::enter()
     {
         throw gu_err("Already entered this SequenceNode: " + getReadableDebugInfo());
     }
-    Tree::Node::enter();
+    Node::enter();
 
     if (getChildren().empty())
     {
-        finish(Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
     }
     else
     {
@@ -332,7 +330,7 @@ void dibidab::behavior::Tree::SequenceNode::enter()
 
 void dibidab::behavior::Tree::SequenceNode::abort()
 {
-    Tree::Node::abort();
+    Node::abort();
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
@@ -345,7 +343,7 @@ void dibidab::behavior::Tree::SequenceNode::abort()
 void dibidab::behavior::Tree::SequenceNode::finish(Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
-    Tree::CompositeNode::finish(result);
+    CompositeNode::finish(result);
 }
 
 const char *dibidab::behavior::Tree::SequenceNode::getName() const
@@ -355,23 +353,23 @@ const char *dibidab::behavior::Tree::SequenceNode::getName() const
 
 void dibidab::behavior::Tree::SequenceNode::onChildFinished(Node *child, Result result)
 {
-    Tree::CompositeNode::onChildFinished(child, result);
+    CompositeNode::onChildFinished(child, result);
 
     const std::vector<Node *> &children = getChildren();
 
     checkCorrectChildFinished(currentChildIndex, child);
 
-    if (result == Node::Result::ABORTED)
+    if (result == Result::ABORTED)
     {
-        finish(Node::Result::ABORTED);
+        finish(Result::ABORTED);
     }
-    else if (result == Node::Result::FAILURE)
+    else if (result == Result::FAILURE)
     {
-        finish(Node::Result::FAILURE);
+        finish(Result::FAILURE);
     }
     else if (++currentChildIndex == children.size())
     {
-        finish(Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
     }
     else
     {
@@ -390,12 +388,12 @@ void dibidab::behavior::Tree::SelectorNode::enter()
     {
         throw gu_err("Already entered this SelectorNode: " + getReadableDebugInfo());
     }
-    Tree::Node::enter();
+    Node::enter();
 
     if (getChildren().empty())
     {
         // TODO
-        finish(Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
     }
     else
     {
@@ -406,7 +404,7 @@ void dibidab::behavior::Tree::SelectorNode::enter()
 
 void dibidab::behavior::Tree::SelectorNode::abort()
 {
-    Tree::Node::abort();
+    Node::abort();
 #ifndef NDEBUG
     if (currentChildIndex == INVALID_CHILD_INDEX)
     {
@@ -419,7 +417,7 @@ void dibidab::behavior::Tree::SelectorNode::abort()
 void dibidab::behavior::Tree::SelectorNode::finish(Result result)
 {
     currentChildIndex = INVALID_CHILD_INDEX;
-    Tree::CompositeNode::finish(result);
+    CompositeNode::finish(result);
 }
 
 const char *dibidab::behavior::Tree::SelectorNode::getName() const
@@ -435,17 +433,17 @@ void dibidab::behavior::Tree::SelectorNode::onChildFinished(Node *child, Result 
 
     checkCorrectChildFinished(currentChildIndex, child);
 
-    if (result == Node::Result::ABORTED)
+    if (result == Result::ABORTED)
     {
-        finish(Node::Result::ABORTED);
+        finish(Result::ABORTED);
     }
-    else if (result == Node::Result::SUCCESS)
+    else if (result == Result::SUCCESS)
     {
-        finish(Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
     }
     else if (++currentChildIndex == children.size())
     {
-        finish(Node::Result::FAILURE);
+        finish(Result::FAILURE);
     }
     else
     {
@@ -464,7 +462,7 @@ void dibidab::behavior::Tree::ParallelNode::enter()
     CompositeNode::enter();
     if (getChildren().empty())
     {
-        finish(Node::Result::SUCCESS);
+        finish(Result::SUCCESS);
         return;
     }
     numChildrenFinished = 0;
@@ -492,12 +490,12 @@ const char *dibidab::behavior::Tree::ParallelNode::getName() const
     return "Parallel";
 }
 
-void dibidab::behavior::Tree::ParallelNode::onChildFinished(Node *child, Node::Result result)
+void dibidab::behavior::Tree::ParallelNode::onChildFinished(Node *child, Result result)
 {
     // Finish if all children are finished.
     if (++numChildrenFinished == getChildren().size())
     {
-        CompositeNode::finish(isAborting() ? Node::Result::ABORTED : Node::Result::SUCCESS);
+        CompositeNode::finish(isAborting() ? Result::ABORTED : Result::SUCCESS);
     }
 }
 
@@ -641,6 +639,25 @@ void dibidab::behavior::Tree::RepeaterNode::drawDebugInfo() const
 #endif
 }
 
+void dibidab::behavior::Tree::UnabortableNode::abort()
+{
+    if (!isAborting())
+    {
+        // Mark ourselves as aborting, but do not tell our child.
+        Node::abort();
+    }
+}
+
+const char * dibidab::behavior::Tree::UnabortableNode::getName() const
+{
+    return "Unabortable";
+}
+
+void dibidab::behavior::Tree::UnabortableNode::onChildFinished(Node *child, Result result)
+{
+    DecoratorNode::onChildFinished(child, isAborting() ? Result::ABORTED : result);
+}
+
 dibidab::behavior::Tree::Tree() :
     rootNode(nullptr)
 {
@@ -770,6 +787,16 @@ void dibidab::behavior::Tree::addToLuaEnvironment(sol::state *lua)
         sol::bases<Node, DecoratorNode>(),
 
         "stop", &RepeaterNode::stop
+    );
+
+    const auto unabortableNodeType = lua->new_usertype<UnabortableNode>(
+        "BTUnabortable",
+        sol::factories([] ()
+        {
+            return new UnabortableNode();
+        }),
+        sol::base_classes,
+        sol::bases<Node, DecoratorNode>()
     );
 
     const auto componentDecoratorNodeType = lua->new_usertype<ComponentDecoratorNode>(
