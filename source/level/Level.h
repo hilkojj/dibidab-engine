@@ -43,6 +43,7 @@ namespace dibidab::level
         Level(const char *filePath);
 
         delegate<void(Room *)> beforeRoomDeletion;
+        delegate<void(bool)> onPauseChanged;
 
         int getNrOfRooms() const
         { return rooms.size(); }

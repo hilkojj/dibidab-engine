@@ -14,7 +14,12 @@ std::function<dibidab::level::Room *(const json &)> dibidab::level::Level::custo
 
 void dibidab::level::Level::setPaused(bool bInPaused)
 {
+    if (bPaused == bInPaused)
+    {
+        return;
+    }
     bPaused = bInPaused;
+    onPauseChanged(bInPaused);
 }
 
 void dibidab::level::Level::initialize()
